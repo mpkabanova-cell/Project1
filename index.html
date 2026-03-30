@@ -1116,7 +1116,8 @@ try {
   firebase.initializeApp(FIREBASE_CONFIG);
   _auth = firebase.auth();
   _db   = firebase.firestore();
-  _db.enablePersistence().catch(() => {});
+  // offline cache (newer API)
+  try { _db.settings({ experimentalForceLongPolling: false }); } catch(e) {}
 } catch(e) { console.warn('Firebase not configured:', e.message); }
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
