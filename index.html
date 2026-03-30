@@ -302,6 +302,46 @@
 
     /* autosave */
     #autosave-indicator { font-size: 0.75rem; color: var(--green); font-weight: 600; }
+
+    /* ── STATS TAB ── */
+    .stats-summary {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; text-align: center;
+    }
+    .stat-card .val { font-size: 2rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .stat-card .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+    .stat-card.best .val { color: var(--green); }
+    .stat-card.avg .val { color: var(--yellow); }
+
+    .stats-history-title {
+      font-size: 0.82rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--muted); margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .stat-row {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-row-date { font-size: 0.78rem; color: var(--muted); white-space: nowrap; min-width: 90px; }
+    .stat-row-mode {
+      font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+      white-space: nowrap;
+    }
+    .stat-row-mode.test { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .stat-row-mode.flashcard { background: rgba(67,217,162,0.15); color: var(--green); }
+    .stat-row-bar-wrap { flex: 1; background: var(--card); border-radius: 99px; height: 6px; }
+    .stat-row-bar { height: 6px; border-radius: 99px; transition: width 0.6s; }
+    .stat-row-score { font-size: 0.9rem; font-weight: 700; white-space: nowrap; min-width: 48px; text-align: right; }
+    .stats-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.92rem; }
+    .btn-clear-stats {
+      background: transparent; border: none; color: var(--muted);
+      font-size: 0.78rem; cursor: pointer; padding: 0; transition: color 0.2s;
+    }
+    .btn-clear-stats:hover { color: var(--accent2); }
   </style>
 </head>
 <body>
@@ -374,6 +414,7 @@
     <div class="set-tabs">
       <button class="set-tab active" id="tab-btn-cards" onclick="setSetTab('cards')">Карточки <span id="tab-cards-count" style="color:var(--muted);font-weight:400;font-size:0.82rem"></span></button>
       <button class="set-tab" id="tab-btn-play" onclick="setSetTab('play')">▶ Пройти</button>
+      <button class="set-tab" id="tab-btn-stats" onclick="setSetTab('stats')">📊 Статистика</button>
     </div>
 
     <!-- ── Tab: Карточки ── -->
@@ -509,6 +550,16 @@
       </div>
 
     </div><!-- /tab-play -->
+
+    <!-- ── Tab: Статистика ── -->
+    <div class="tab-panel" id="tab-stats">
+      <div class="stats-summary" id="stats-summary"></div>
+      <div class="stats-history-title">
+        <span>История прохождений</span>
+        <button class="btn-clear-stats" onclick="clearStats()">Очистить</button>
+      </div>
+      <div id="stats-history"></div>
+    </div>
 
   </div><!-- /view-set -->
 
@@ -670,6 +721,7 @@ function setSetTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-btn-' + tab).classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'stats') renderStats();
 }
 
 // ─── SET SETTINGS EDIT ───────────────────────────────────────────────────────
@@ -1048,6 +1100,7 @@ function markCard(knew) {
     document.getElementById('fc-wrong').textContent = fcState.didnt;
     document.getElementById('fc-total').textContent = fcState.cards.length;
     document.getElementById('fc-progress-bar').style.width = '100%';
+    recordResult('flashcard', fcState.knew, fcState.cards.length);
     return;
   }
   renderFlashcard();
@@ -1153,9 +1206,63 @@ function nextQuestion() {
     document.getElementById('r-wrong').textContent = quizState.wrong;
     document.getElementById('r-total').textContent = quizState.cards.length;
     document.getElementById('quiz-progress-bar').style.width = '100%';
+    recordResult('test', quizState.correct, quizState.cards.length);
     return;
   }
   renderQuizQuestion();
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function recordResult(mode, correct, total) {
+  const decks = loadDecks();
+  const d = decks.find(x => x.id === currentSetId);
+  if (!d) return;
+  if (!d.history) d.history = [];
+  d.history.unshift({ date: Date.now(), mode, correct, total, pct: Math.round(correct / total * 100) });
+  if (d.history.length > 50) d.history.length = 50;
+  saveDecks(decks);
+}
+
+function renderStats() {
+  const decks = loadDecks();
+  const d = decks.find(x => x.id === currentSetId);
+  const history = (d && d.history) ? d.history : [];
+  const summary = document.getElementById('stats-summary');
+  const histEl = document.getElementById('stats-history');
+  if (history.length === 0) {
+    summary.innerHTML = '';
+    histEl.innerHTML = '<div class="stats-empty">Вы ещё не проходили этот набор.<br>Нажмите ▶ Пройти, чтобы начать!</div>';
+    return;
+  }
+  const best = Math.max(...history.map(h => h.pct));
+  const avg = Math.round(history.reduce((s, h) => s + h.pct, 0) / history.length);
+  summary.innerHTML = `
+    <div class="stat-card"><div class="val">${history.length}</div><div class="lbl">Попыток</div></div>
+    <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
+    <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний результат</div></div>
+  `;
+  histEl.innerHTML = history.map(h => {
+    const dt = new Date(h.date);
+    const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const modeLabel = h.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+    const modeClass = h.mode === 'flashcard' ? 'flashcard' : 'test';
+    const barColor = h.pct >= 80 ? 'var(--green)' : h.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+    return `<div class="stat-row">
+      <div class="stat-row-date">${dateStr}, ${timeStr}</div>
+      <div class="stat-row-mode ${modeClass}">${modeLabel}</div>
+      <div class="stat-row-bar-wrap"><div class="stat-row-bar" style="width:${h.pct}%;background:${barColor}"></div></div>
+      <div class="stat-row-score" style="color:${barColor}">${h.pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+function clearStats() {
+  if (!confirm('Очистить всю историю прохождений этого набора?')) return;
+  const decks = loadDecks();
+  const d = decks.find(x => x.id === currentSetId);
+  if (d) { d.history = []; saveDecks(decks); }
+  renderStats();
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
