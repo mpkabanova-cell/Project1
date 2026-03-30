@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Викторина — Создание карточек</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --card: #22263a;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --green: #43d9a2;
+      --yellow: #ffd166;
+      --text: #e8eaf6;
+      --muted: #8892b0;
+      --border: #2e3250;
+      --radius: 14px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ───── HEADER ───── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: var(--accent); }
+    .nav-tabs { display: flex; gap: 6px; }
+    .nav-tab {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-tab:hover { color: var(--text); background: var(--card); }
+    .nav-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+
+    /* ───── LAYOUT ───── */
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+
+    /* ───── VIEWS ───── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ───── PAGE TITLE ───── */
+    .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+    .page-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 28px; }
+
+    /* ───── FORM ───── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+    .form-row { margin-bottom: 20px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    input[type="text"], textarea, select {
+      width: 100%;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: vertical;
+    }
+    input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { min-height: 100px; }
+
+    .options-section { margin-top: 12px; }
+    .option-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .option-row input { flex: 1; }
+    .option-correct { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; white-space: nowrap; color: var(--muted); cursor: pointer; }
+    .option-correct input[type="radio"] { accent-color: var(--green); cursor: pointer; }
+    .btn-add-option {
+      background: transparent;
+      border: 1.5px dashed var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      margin-top: 4px;
+    }
+    .btn-add-option:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-remove {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    .btn-remove:hover { color: var(--accent2); }
+
+    .form-actions { display: flex; gap: 12px; margin-top: 8px; }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 28px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+    /* ───── DECKS LIST ───── */
+    .decks-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .deck-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+      position: relative;
+    }
+    .deck-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .deck-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 6px; }
+    .deck-meta { color: var(--muted); font-size: 0.85rem; }
+    .deck-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .deck-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; }
+    .deck-actions button {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .deck-actions button:hover { color: var(--text); border-color: var(--muted); }
+    .deck-actions .del:hover { color: var(--accent2); border-color: var(--accent2); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty-state p { font-size: 1rem; }
+
+    /* ───── CARDS LIST ───── */
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; border: none; color: var(--muted);
+      font-size: 0.9rem; cursor: pointer; margin-bottom: 20px;
+      padding: 0; transition: color 0.2s;
+    }
+    .back-btn:hover { color: var(--text); }
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 20px; }
+    .qcard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .qcard:hover { border-color: var(--accent); }
+    .qcard-top { padding: 16px; }
+    .qcard-type {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; margin-bottom: 8px;
+    }
+    .qcard-q { font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
+    .qcard-bottom {
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .qcard-answer { font-size: 0.82rem; color: var(--green); font-weight: 600; }
+    .qcard-acts { display: flex; gap: 6px; }
+    .qcard-acts button {
+      background: transparent; border: none; color: var(--muted);
+      font-size: 0.85rem; cursor: pointer; transition: color 0.2s; padding: 2px 4px;
+    }
+    .qcard-acts button:hover { color: var(--text); }
+    .qcard-acts .del:hover { color: var(--accent2); }
+
+    /* ───── QUIZ MODE ───── */
+    .quiz-setup {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .quiz-deck-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .quiz-deck-pick {
+      padding: 14px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quiz-deck-pick:hover { border-color: var(--accent); }
+    .quiz-deck-pick.selected { border-color: var(--accent); background: rgba(108,99,255,0.12); }
+    .quiz-deck-pick .name { font-weight: 600; }
+    .quiz-deck-pick .cnt { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+
+    /* Quiz play */
+    .quiz-play { display: none; }
+    .quiz-play.active { display: block; }
+    .quiz-progress-bar-wrap { background: var(--card); border-radius: 99px; height: 6px; margin-bottom: 24px; }
+    .quiz-progress-bar { background: var(--accent); height: 6px; border-radius: 99px; transition: width 0.4s; }
+    .quiz-counter { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+    .quiz-question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+    .quiz-q-text { font-size: 1.3rem; font-weight: 700; line-height: 1.5; }
+    .quiz-options { display: grid; gap: 12px; margin-top: 20px; }
+    .quiz-opt {
+      padding: 14px 18px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.97rem;
+      transition: all 0.18s;
+      text-align: left;
+      color: var(--text);
+    }
+    .quiz-opt:hover:not(:disabled) { border-color: var(--accent); background: rgba(108,99,255,0.1); }
+    .quiz-opt.correct { border-color: var(--green); background: rgba(67,217,162,0.12); color: var(--green); }
+    .quiz-opt.wrong { border-color: var(--accent2); background: rgba(255,101,132,0.1); color: var(--accent2); }
+    .quiz-opt:disabled { cursor: default; }
+    .quiz-open-input { margin-top: 16px; }
+    .quiz-open-input input { margin-bottom: 12px; }
+    .quiz-feedback {
+      margin-top: 16px; padding: 14px 18px;
+      border-radius: 10px; font-weight: 600; font-size: 0.95rem;
+      display: none;
+    }
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.correct { background: rgba(67,217,162,0.1); color: var(--green); border: 1px solid var(--green); }
+    .quiz-feedback.wrong { background: rgba(255,101,132,0.1); color: var(--accent2); border: 1px solid var(--accent2); }
+    .quiz-next-btn {
+      margin-top: 16px;
+      display: none;
+    }
+    .quiz-next-btn.show { display: block; }
+
+    /* Results */
+    .quiz-results {
+      text-align: center; padding: 40px 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .results-score { font-size: 4rem; font-weight: 800; color: var(--accent); }
+    .results-label { font-size: 1rem; color: var(--muted); margin-top: 6px; }
+    .results-detail { margin: 24px 0; display: flex; justify-content: center; gap: 32px; }
+    .results-stat .val { font-size: 1.5rem; font-weight: 700; }
+    .results-stat .lbl { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+
+    /* Badges */
+    .type-badge {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; padding: 2px 8px; border-radius: 99px;
+    }
+    .type-badge.single { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .type-badge.multi { background: rgba(255,209,102,0.2); color: var(--yellow); }
+    .type-badge.open { background: rgba(67,217,162,0.2); color: var(--green); }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 20px; font-size: 0.9rem;
+      opacity: 0; pointer-events: none;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px; max-width: 500px; width: 90%;
+      box-shadow: var(--shadow);
+    }
+    .modal h3 { font-size: 1.2rem; margin-bottom: 6px; }
+    .modal p { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Quiz<span>Forge</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('decks')">Мои колоды</button>
+    <button class="nav-tab" onclick="showView('create')">+ Создать</button>
+    <button class="nav-tab" onclick="showView('quiz')">Пройти тест</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ═══ DECKS ═══ -->
+  <div class="view active" id="view-decks">
+    <div class="decks-header">
+      <div>
+        <div class="page-title">Мои колоды</div>
+        <div class="page-sub">Все наборы карточек-викторин</div>
+      </div>
+    </div>
+    <div class="decks-grid" id="decks-grid"></div>
+  </div>
+
+  <!-- ═══ CARDS LIST (nested) ═══ -->
+  <div class="view" id="view-cards">
+    <button class="back-btn" onclick="showView('decks')">← Назад к колодам</button>
+    <div id="cards-deck-title" class="page-title"></div>
+    <div class="page-sub" id="cards-deck-sub"></div>
+    <button class="btn-primary" onclick="openAddCard()" style="margin-bottom:4px">+ Добавить карточку</button>
+    <div class="cards-grid" id="cards-grid"></div>
+  </div>
+
+  <!-- ═══ CREATE ═══ -->
+  <div class="view" id="view-create">
+    <div class="page-title" id="create-title">Создать новую колоду</div>
+    <div class="page-sub">Заполните данные и добавьте карточки</div>
+
+    <div class="form-card">
+      <div class="form-row">
+        <label>Название колоды</label>
+        <input type="text" id="deck-name-input" placeholder="Например: История России, Биология 8 кл.">
+      </div>
+      <div class="form-row">
+        <label>Описание (необязательно)</label>
+        <textarea id="deck-desc-input" placeholder="О чём эта колода?" rows="2"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" onclick="saveDeck()">Сохранить колоду</button>
+        <button class="btn-secondary" onclick="resetCreateForm()">Очистить</button>
+      </div>
+    </div>
+
+    <!-- Card creator -->
+    <div id="card-creator" style="display:none; margin-top:28px">
+      <div class="page-title" style="font-size:1.2rem; margin-bottom:16px" id="card-creator-title">Добавить карточку</div>
+      <div class="form-card" id="card-form">
+        <div class="form-row">
+          <label>Тип вопроса</label>
+          <select id="q-type" onchange="renderQuestionType()">
+            <option value="single">Один верный ответ</option>
+            <option value="multi">Несколько верных ответов</option>
+            <option value="open">Открытый ответ</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Вопрос</label>
+          <textarea id="q-text" placeholder="Введите вопрос..."></textarea>
+        </div>
+        <div id="q-options-block"></div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="saveCard()">Добавить карточку</button>
+          <button class="btn-secondary" onclick="cancelEditCard()">Отмена</button>
+        </div>
+      </div>
+
+      <!-- Cards list below -->
+      <div class="cards-grid" id="new-deck-cards-grid" style="margin-top:20px"></div>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ ═══ -->
+  <div class="view" id="view-quiz">
+    <div class="page-title">Пройти тест</div>
+    <div class="page-sub">Выберите колоду и проверьте знания</div>
+
+    <div class="quiz-setup" id="quiz-setup">
+      <label style="margin-bottom:12px; display:block">Выберите колоду</label>
+      <div class="quiz-deck-list" id="quiz-deck-list"></div>
+      <button class="btn-primary" onclick="startQuiz()">Начать тест ▶</button>
+    </div>
+
+    <div class="quiz-play" id="quiz-play">
+      <div class="quiz-counter" id="quiz-counter"></div>
+      <div class="quiz-progress-bar-wrap">
+        <div class="quiz-progress-bar" id="quiz-progress-bar"></div>
+      </div>
+      <div class="quiz-question-card">
+        <div class="quiz-q-text" id="quiz-q-text"></div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-open-input" id="quiz-open-input" style="display:none">
+          <input type="text" id="quiz-open-answer" placeholder="Введите ответ..." onkeydown="if(event.key==='Enter')checkOpenAnswer()">
+          <button class="btn-primary" onclick="checkOpenAnswer()">Проверить</button>
+        </div>
+        <div class="quiz-feedback" id="quiz-feedback"></div>
+        <div class="quiz-next-btn" id="quiz-next-btn">
+          <button class="btn-primary" onclick="nextQuestion()">Следующий вопрос →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="quiz-results" id="quiz-results" style="display:none">
+      <div class="results-score" id="results-score"></div>
+      <div class="results-label">Правильных ответов</div>
+      <div class="results-detail">
+        <div class="results-stat"><div class="val" id="r-correct" style="color:var(--green)"></div><div class="lbl">Верно</div></div>
+        <div class="results-stat"><div class="val" id="r-wrong" style="color:var(--accent2)"></div><div class="lbl">Неверно</div></div>
+        <div class="results-stat"><div class="val" id="r-total"></div><div class="lbl">Всего</div></div>
+      </div>
+      <button class="btn-primary" onclick="retryQuiz()">Пройти снова</button>
+      <button class="btn-secondary" onclick="exitQuiz()" style="margin-left:10px">В меню</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal confirm -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">Подтверждение</h3>
+    <p id="modal-text"></p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn-primary" id="modal-confirm-btn" style="background:var(--accent2)">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let decks = JSON.parse(localStorage.getItem('qf_decks') || '[]');
+// deck: { id, name, desc, cards: [] }
+// card: { id, type, question, options: [{text, correct}], answer }
+
+let editingDeckId = null;   // null = new deck
+let editingCardId = null;
+let currentViewDeckId = null;
+let quizState = null;
+
+function save() { localStorage.setItem('qf_decks', JSON.stringify(decks)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ─── VIEWS ───────────────────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const tabs = { decks: 0, create: 1, quiz: 2 };
+  document.querySelectorAll('.nav-tab')[tabs[name]]?.classList.add('active');
+  if (name === 'decks') renderDecks();
+  if (name === 'quiz') renderQuizSetup();
+}
+
+// ─── DECKS ────────────────────────────────────────────────────────────────────
+function renderDecks() {
+  const grid = document.getElementById('decks-grid');
+  if (!decks.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">📚</div>
+      <p>Колод пока нет. <strong>Создайте первую!</strong></p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = decks.map(d => `
+    <div class="deck-card" onclick="openDeck('${d.id}')">
+      <div class="deck-actions">
+        <button onclick="event.stopPropagation();editDeck('${d.id}')">✏️</button>
+        <button class="del" onclick="event.stopPropagation();confirmDelete('deck','${d.id}')">🗑️</button>
+      </div>
+      <div class="deck-badge">${d.cards.length} карт.</div>
+      <div class="deck-name">${esc(d.name)}</div>
+      <div class="deck-meta">${esc(d.desc || 'Без описания')}</div>
+    </div>
+  `).join('');
+}
+
+function openDeck(id) {
+  currentViewDeckId = id;
+  const d = decks.find(x => x.id === id);
+  document.getElementById('cards-deck-title').textContent = d.name;
+  document.getElementById('cards-deck-sub').textContent = d.desc || '';
+  renderCardsGrid();
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-cards').classList.add('active');
+}
+
+function renderCardsGrid() {
+  const d = decks.find(x => x.id === currentViewDeckId);
+  const grid = document.getElementById('cards-grid');
+  if (!d.cards.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🃏</div><p>Карточек нет. Добавьте первую!</p></div>`;
+    return;
+  }
+  grid.innerHTML = d.cards.map(c => cardHTML(c, 'view')).join('');
+}
+
+function cardHTML(c, mode) {
+  const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый' }[c.type];
+  const answer = c.type === 'open'
+    ? c.answer
+    : c.options.filter(o => o.correct).map(o => o.text).join(', ');
+  const actions = mode === 'view'
+    ? `<div class="qcard-acts">
+        <button onclick="editCardInView('${c.id}')">✏️</button>
+        <button class="del" onclick="confirmDelete('card','${c.id}')">🗑️</button>
+       </div>`
+    : `<div class="qcard-acts">
+        <button onclick="editCardInCreate('${c.id}')">✏️</button>
+        <button class="del" onclick="removeCardFromNew('${c.id}')">🗑️</button>
+       </div>`;
+  return `<div class="qcard" id="qcard-${c.id}">
+    <div class="qcard-top">
+      <div class="qcard-type"><span class="type-badge ${c.type}">${typeLabel}</span></div>
+      <div class="qcard-q">${esc(c.question)}</div>
+    </div>
+    <div class="qcard-bottom">
+      <div class="qcard-answer">✓ ${esc(answer)}</div>
+      ${actions}
+    </div>
+  </div>`;
+}
+
+// ─── CREATE DECK ──────────────────────────────────────────────────────────────
+let newDeckCards = [];
+
+function resetCreateForm() {
+  editingDeckId = null;
+  newDeckCards = [];
+  document.getElementById('deck-name-input').value = '';
+  document.getElementById('deck-desc-input').value = '';
+  document.getElementById('card-creator').style.display = 'none';
+  document.getElementById('create-title').textContent = 'Создать новую колоду';
+  renderNewDeckCards();
+}
+
+function saveDeck() {
+  const name = document.getElementById('deck-name-input').value.trim();
+  if (!name) { toast('Введите название колоды'); return; }
+  if (editingDeckId) {
+    const d = decks.find(x => x.id === editingDeckId);
+    d.name = name;
+    d.desc = document.getElementById('deck-desc-input').value.trim();
+    if (newDeckCards.length) d.cards = newDeckCards;
+    save(); toast('Колода обновлена'); resetCreateForm(); showView('decks');
+  } else {
+    const d = { id: uid(), name, desc: document.getElementById('deck-desc-input').value.trim(), cards: [] };
+    decks.push(d);
+    editingDeckId = d.id;
+    newDeckCards = d.cards;
+    save();
+    document.getElementById('card-creator').style.display = 'block';
+    document.getElementById('card-creator-title').textContent = 'Добавить карточки в «' + name + '»';
+    renderQuestionType();
+    toast('Колода создана! Добавляйте карточки');
+  }
+}
+
+function editDeck(id) {
+  const d = decks.find(x => x.id === id);
+  editingDeckId = id;
+  newDeckCards = [...d.cards];
+  document.getElementById('deck-name-input').value = d.name;
+  document.getElementById('deck-desc-input').value = d.desc || '';
+  document.getElementById('create-title').textContent = 'Редактировать колоду';
+  document.getElementById('card-creator').style.display = 'block';
+  document.getElementById('card-creator-title').textContent = 'Карточки колоды «' + d.name + '»';
+  renderQuestionType();
+  renderNewDeckCards();
+  showView('create');
+}
+
+// ─── CARD FORM ────────────────────────────────────────────────────────────────
+function renderQuestionType() {
+  const type = document.getElementById('q-type').value;
+  const block = document.getElementById('q-options-block');
+  if (type === 'open') {
+    block.innerHTML = `<div class="form-row"><label>Правильный ответ</label>
+      <input type="text" id="q-open-answer" placeholder="Введите правильный ответ"></div>`;
+  } else {
+    block.innerHTML = `<div class="form-row options-section">
+      <label>Варианты ответа</label>
+      <div id="options-list"></div>
+      <button class="btn-add-option" onclick="addOption()">+ Добавить вариант</button>
+    </div>`;
+    // Default 3 options
+    if (!document.getElementById('options-list')?.children.length) {
+      addOption(); addOption(); addOption();
+    }
+  }
+}
+
+let optCount = 0;
+function addOption(text = '', correct = false) {
+  const list = document.getElementById('options-list');
+  if (!list) return;
+  const id = 'opt-' + (++optCount);
+  const row = document.createElement('div');
+  row.className = 'option-row';
+  row.id = 'row-' + id;
+  const type = document.getElementById('q-type').value;
+  row.innerHTML = `
+    <input type="text" id="${id}" value="${esc(text)}" placeholder="Вариант ответа">
+    <label class="option-correct">
+      <input type="${type === 'multi' ? 'checkbox' : 'radio'}" name="correct-opt" id="chk-${id}" ${correct ? 'checked' : ''} value="${id}">
+      верно
+    </label>
+    <button class="btn-remove" onclick="document.getElementById('row-${id}').remove()">✕</button>`;
+  list.appendChild(row);
+}
+
+function getCardFromForm(existing) {
+  const type = document.getElementById('q-type').value;
+  const question = document.getElementById('q-text').value.trim();
+  if (!question) { toast('Введите вопрос'); return null; }
+  let card = { id: existing?.id || uid(), type, question, options: [], answer: '' };
+
+  if (type === 'open') {
+    const ans = document.getElementById('q-open-answer').value.trim();
+    if (!ans) { toast('Введите правильный ответ'); return null; }
+    card.answer = ans;
+  } else {
+    const rows = document.getElementById('options-list').querySelectorAll('.option-row');
+    if (rows.length < 2) { toast('Добавьте минимум 2 варианта'); return null; }
+    let hasCorrect = false;
+    rows.forEach(row => {
+      const inp = row.querySelector('input[type=text]');
+      const chk = row.querySelector('input[type=radio], input[type=checkbox]');
+      if (inp.value.trim()) {
+        card.options.push({ text: inp.value.trim(), correct: chk.checked });
+        if (chk.checked) hasCorrect = true;
+      }
+    });
+    if (!hasCorrect) { toast('Отметьте правильный ответ'); return null; }
+    card.answer = card.options.filter(o => o.correct).map(o => o.text).join(', ');
+  }
+  return card;
+}
+
+function saveCard() {
+  const card = getCardFromForm(editingCardId ? { id: editingCardId } : null);
+  if (!card) return;
+
+  if (editingCardId) {
+    const idx = newDeckCards.findIndex(c => c.id === editingCardId);
+    if (idx !== -1) newDeckCards[idx] = card;
+    editingCardId = null;
+  } else {
+    newDeckCards.push(card);
+  }
+
+  // persist immediately if deck exists
+  if (editingDeckId) {
+    const d = decks.find(x => x.id === editingDeckId);
+    if (d) d.cards = newDeckCards;
+    save();
+  }
+
+  clearCardForm();
+  renderNewDeckCards();
+  toast('Карточка добавлена');
+}
+
+function clearCardForm() {
+  document.getElementById('q-text').value = '';
+  optCount = 0;
+  renderQuestionType();
+  editingCardId = null;
+}
+
+function cancelEditCard() { clearCardForm(); editingCardId = null; }
+
+function editCardInCreate(id) {
+  const card = newDeckCards.find(c => c.id === id);
+  if (!card) return;
+  editingCardId = id;
+  document.getElementById('q-type').value = card.type;
+  document.getElementById('q-text').value = card.question;
+  renderQuestionType();
+  setTimeout(() => {
+    if (card.type === 'open') {
+      document.getElementById('q-open-answer').value = card.answer;
+    } else {
+      const list = document.getElementById('options-list');
+      list.innerHTML = '';
+      optCount = 0;
+      card.options.forEach(o => addOption(o.text, o.correct));
+    }
+    document.getElementById('card-form').scrollIntoView({ behavior: 'smooth' });
+  }, 50);
+}
+
+function removeCardFromNew(id) {
+  newDeckCards = newDeckCards.filter(c => c.id !== id);
+  if (editingDeckId) {
+    const d = decks.find(x => x.id === editingDeckId);
+    if (d) { d.cards = newDeckCards; save(); }
+  }
+  renderNewDeckCards();
+}
+
+function renderNewDeckCards() {
+  const grid = document.getElementById('new-deck-cards-grid');
+  grid.innerHTML = newDeckCards.length
+    ? newDeckCards.map(c => cardHTML(c, 'create')).join('')
+    : '';
+}
+
+// ─── VIEW DECK CARDS ──────────────────────────────────────────────────────────
+function openAddCard() {
+  newDeckCards = decks.find(x => x.id === currentViewDeckId)?.cards || [];
+  editingDeckId = currentViewDeckId;
+  editDeck(currentViewDeckId);
+}
+
+function editCardInView(id) {
+  openAddCard();
+  setTimeout(() => editCardInCreate(id), 100);
+}
+
+// ─── DELETE ───────────────────────────────────────────────────────────────────
+let pendingDelete = null;
+function confirmDelete(type, id) {
+  pendingDelete = { type, id };
+  const d = type === 'deck' ? decks.find(x => x.id === id)?.name : null;
+  const c = type === 'card' ? findCard(id)?.question : null;
+  document.getElementById('modal-title').textContent = type === 'deck' ? 'Удалить колоду?' : 'Удалить карточку?';
+  document.getElementById('modal-text').textContent = type === 'deck'
+    ? `Колода «${d}» и все её карточки будут удалены.`
+    : `Карточка «${c?.slice(0, 60)}...» будет удалена.`;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('modal-confirm-btn').onclick = doDelete;
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); pendingDelete = null; }
+function doDelete() {
+  if (!pendingDelete) return;
+  if (pendingDelete.type === 'deck') {
+    decks = decks.filter(d => d.id !== pendingDelete.id);
+    save(); renderDecks(); showView('decks');
+  } else {
+    const d = decks.find(d => d.cards.some(c => c.id === pendingDelete.id));
+    if (d) { d.cards = d.cards.filter(c => c.id !== pendingDelete.id); save(); }
+    if (currentViewDeckId) renderCardsGrid();
+    newDeckCards = newDeckCards.filter(c => c.id !== pendingDelete.id);
+    renderNewDeckCards();
+  }
+  closeModal(); toast('Удалено');
+}
+
+function findCard(id) {
+  for (const d of decks) { const c = d.cards.find(c => c.id === id); if (c) return c; }
+  return null;
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────────────────────────
+let selectedQuizDeckId = null;
+
+function renderQuizSetup() {
+  document.getElementById('quiz-setup').style.display = 'block';
+  document.getElementById('quiz-play').classList.remove('active');
+  document.getElementById('quiz-results').style.display = 'none';
+  const list = document.getElementById('quiz-deck-list');
+  const valid = decks.filter(d => d.cards.length > 0);
+  if (!valid.length) {
+    list.innerHTML = `<div style="color:var(--muted);font-size:.9rem">Нет колод с карточками.</div>`;
+    return;
+  }
+  list.innerHTML = valid.map(d => `
+    <div class="quiz-deck-pick ${selectedQuizDeckId === d.id ? 'selected' : ''}" onclick="selectQuizDeck('${d.id}')">
+      <div class="name">${esc(d.name)}</div>
+      <div class="cnt">${d.cards.length} карточек</div>
+    </div>
+  `).join('');
+}
+
+function selectQuizDeck(id) {
+  selectedQuizDeckId = id;
+  document.querySelectorAll('.quiz-deck-pick').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+}
+
+function startQuiz() {
+  if (!selectedQuizDeckId) { toast('Выберите колоду'); return; }
+  const d = decks.find(x => x.id === selectedQuizDeckId);
+  const cards = shuffle([...d.cards]);
+  quizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
+  document.getElementById('quiz-setup').style.display = 'none';
+  document.getElementById('quiz-play').classList.add('active');
+  document.getElementById('quiz-results').style.display = 'none';
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  const { cards, idx } = quizState;
+  const card = cards[idx];
+  const total = cards.length;
+  document.getElementById('quiz-counter').textContent = `Вопрос ${idx + 1} из ${total}`;
+  document.getElementById('quiz-progress-bar').style.width = ((idx) / total * 100) + '%';
+  document.getElementById('quiz-q-text').textContent = card.question;
+  document.getElementById('quiz-feedback').className = 'quiz-feedback';
+  document.getElementById('quiz-feedback').textContent = '';
+  document.getElementById('quiz-next-btn').className = 'quiz-next-btn';
+  quizState.answered = false;
+
+  const optsCont = document.getElementById('quiz-options');
+  const openCont = document.getElementById('quiz-open-input');
+
+  if (card.type === 'open') {
+    optsCont.style.display = 'none';
+    openCont.style.display = 'block';
+    document.getElementById('quiz-open-answer').value = '';
+    document.getElementById('quiz-open-answer').disabled = false;
+  } else {
+    optsCont.style.display = 'grid';
+    openCont.style.display = 'none';
+    const shuffled = shuffle([...card.options]);
+    optsCont.innerHTML = shuffled.map((o, i) => {
+      if (card.type === 'multi') {
+        return `<button class="quiz-opt" onclick="toggleMulti(this,'${escAttr(o.text)}',${o.correct})" data-correct="${o.correct}">${esc(o.text)}</button>`;
+      }
+      return `<button class="quiz-opt" onclick="checkSingle(this,${o.correct},'${escAttr(card.options.filter(x=>x.correct).map(x=>x.text).join(', '))}')">${esc(o.text)}</button>`;
+    }).join('');
+    if (card.type === 'multi') {
+      optsCont.innerHTML += `<button class="btn-primary" id="multi-submit" onclick="checkMulti()" style="margin-top:8px">Проверить</button>`;
+    }
+  }
+}
+
+function checkSingle(btn, correct, correctText) {
+  if (quizState.answered) return;
+  quizState.answered = true;
+  document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'correct' : 'wrong');
+  if (!correct) {
+    document.querySelectorAll('.quiz-opt').forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
+  }
+  // Actually single: find which is correct by checking all options
+  showFeedback(correct, correctText);
+}
+
+function toggleMulti(btn) {
+  if (quizState.answered) return;
+  btn.classList.toggle('selected-multi');
+  btn.style.borderColor = btn.classList.contains('selected-multi') ? 'var(--accent)' : 'var(--border)';
+}
+
+function checkMulti() {
+  if (quizState.answered) return;
+  quizState.answered = true;
+  const card = quizState.cards[quizState.idx];
+  const opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach(b => b.disabled = true);
+  const correctTexts = card.options.filter(o => o.correct).map(o => o.text);
+  let allRight = true;
+  opts.forEach(b => {
+    const selected = b.classList.contains('selected-multi');
+    const isCorrect = b.dataset.correct === 'true';
+    b.style.borderColor = '';
+    if (isCorrect) b.classList.add('correct');
+    if (selected && !isCorrect) { b.classList.add('wrong'); allRight = false; }
+    if (!selected && isCorrect) allRight = false;
+  });
+  document.getElementById('multi-submit')?.remove();
+  showFeedback(allRight, correctTexts.join(', '));
+}
+
+function checkOpenAnswer() {
+  if (quizState.answered) return;
+  const card = quizState.cards[quizState.idx];
+  const input = document.getElementById('quiz-open-answer');
+  const userAns = input.value.trim().toLowerCase();
+  const correct = card.answer.toLowerCase();
+  const isCorrect = userAns === correct;
+  input.disabled = true;
+  quizState.answered = true;
+  showFeedback(isCorrect, card.answer);
+}
+
+function showFeedback(correct, correctText) {
+  if (correct) quizState.correct++; else quizState.wrong++;
+  const fb = document.getElementById('quiz-feedback');
+  fb.textContent = correct ? '✓ Правильно!' : `✗ Неверно. Правильный ответ: ${correctText}`;
+  fb.className = 'quiz-feedback show ' + (correct ? 'correct' : 'wrong');
+  document.getElementById('quiz-next-btn').className = 'quiz-next-btn show';
+}
+
+function nextQuestion() {
+  quizState.idx++;
+  if (quizState.idx >= quizState.cards.length) {
+    showResults(); return;
+  }
+  renderQuizQuestion();
+}
+
+function showResults() {
+  document.getElementById('quiz-play').classList.remove('active');
+  const r = document.getElementById('quiz-results');
+  r.style.display = 'block';
+  const pct = Math.round(quizState.correct / quizState.cards.length * 100);
+  document.getElementById('results-score').textContent = pct + '%';
+  document.getElementById('r-correct').textContent = quizState.correct;
+  document.getElementById('r-wrong').textContent = quizState.wrong;
+  document.getElementById('r-total').textContent = quizState.cards.length;
+  document.getElementById('quiz-progress-bar').style.width = '100%';
+}
+
+function retryQuiz() { startQuiz(); }
+function exitQuiz() { selectedQuizDeckId = null; showView('quiz'); }
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderDecks();
+renderQuestionType();
+</script>
+</body>
+</html>
