@@ -506,6 +506,140 @@
       font-size: 0.78rem; cursor: pointer; padding: 0; transition: color 0.2s;
     }
     .btn-clear-stats:hover { color: var(--accent2); }
+
+    /* ═══════════════════════════════════════════════════════
+       RESPONSIVE — телефон / планшет / компьютер
+    ═══════════════════════════════════════════════════════ */
+
+    /* ── Планшет (≤ 860px) ── */
+    @media (max-width: 860px) {
+      main { padding: 24px 16px; }
+      .decks-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+      .set-tabs { gap: 2px; }
+      .set-tab { padding: 8px 12px; font-size: 0.82rem; }
+      .stats-summary { gap: 10px; }
+      .stat-card { padding: 14px 12px; min-width: 90px; }
+    }
+
+    /* ── Телефон (≤ 600px) ── */
+    @media (max-width: 600px) {
+
+      /* Шапка */
+      header { padding: 10px 14px; gap: 8px; }
+      .logo { font-size: 1.1rem; }
+      #teacher-nav { display: none !important; } /* навигация спрятана — используем кнопки на странице */
+      #header-user-name { display: none; }       /* имя скрыто — экономим место */
+      .btn-new-set { padding: 7px 12px; font-size: 0.82rem; }
+      .btn-signout { padding: 6px 10px; font-size: 0.78rem; }
+
+      /* Контент */
+      main { padding: 16px 12px; }
+      .page-title { font-size: 1.3rem; }
+      .page-sub { font-size: 0.88rem; margin-bottom: 18px; }
+
+      /* Библиотека наборов — 1 колонка */
+      .decks-grid { grid-template-columns: 1fr; gap: 10px; }
+
+      /* Страница набора — шапка */
+      .set-header {
+        flex-direction: column; align-items: flex-start; gap: 10px;
+      }
+      .set-header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+
+      /* Вкладки набора — горизонтальный скролл */
+      .set-tabs {
+        overflow-x: auto; -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap; gap: 0; border-radius: 10px;
+        scrollbar-width: none;
+      }
+      .set-tabs::-webkit-scrollbar { display: none; }
+      .set-tab { padding: 9px 12px; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0; }
+
+      /* Форма карточки */
+      .form-card { padding: 16px; }
+      .form-actions { flex-direction: column; }
+      .form-actions .btn-primary,
+      .form-actions .btn-secondary { width: 100%; text-align: center; }
+
+      /* Вопросы-опции */
+      .option-row { flex-wrap: wrap; }
+      .option-correct { font-size: 0.78rem; }
+
+      /* Карточки в списке */
+      .qcard-top { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .qcard-actions { flex-wrap: wrap; gap: 4px; }
+
+      /* Режим переключения */
+      .mode-toggle { width: 100%; }
+      .mode-btn { flex: 1; padding: 9px 8px; font-size: 0.82rem; }
+
+      /* Флэш-карточка */
+      .flashcard-inner { font-size: 0.95rem; }
+      .flashcard-wrap { perspective: 900px; }
+      .fc-card { min-height: 220px; }
+      .fc-front, .fc-back { padding: 24px 16px; font-size: 0.95rem; }
+      .fc-controls { flex-wrap: wrap; gap: 8px; }
+      .fc-controls .btn-primary,
+      .fc-controls .btn-secondary { flex: 1; min-width: 120px; text-align: center; }
+
+      /* Квиз */
+      .quiz-options { gap: 8px; }
+      .quiz-option { padding: 12px 14px; font-size: 0.9rem; }
+      .quiz-header { flex-direction: column; gap: 4px; }
+
+      /* Статистика */
+      .stats-summary { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat-card { padding: 12px 10px; }
+      .stat-card .val { font-size: 1.6rem; }
+
+      .stat-row { flex-wrap: wrap; gap: 4px; }
+      .stat-row-date { min-width: unset; width: 100%; }
+      .stat-row-bar-wrap { order: 3; width: 100%; }
+      .stat-row-score { order: 2; }
+      .stat-row-mode { order: 1; }
+
+      .results-row { flex-wrap: wrap; gap: 4px; }
+      .results-row-name { width: 100%; font-size: 0.88rem; }
+      .results-row-date { font-size: 0.72rem; }
+      .results-row-bar-wrap { order: 4; width: 60px; }
+      .results-row-score { order: 3; }
+
+      /* Модалки — на весь экран снизу */
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal {
+        border-radius: 20px 20px 0 0; max-width: 100% !important;
+        width: 100%; margin: 0; padding: 24px 20px 32px;
+        max-height: 92vh; overflow-y: auto;
+      }
+
+      /* Блок шаринга */
+      .share-url-row { flex-direction: column; gap: 8px; }
+      .share-url-row input { width: 100%; }
+      .share-url-row .btn-primary { width: 100%; }
+
+      /* Авторизация */
+      .auth-wrap { align-items: flex-start; padding-top: 32px; }
+      .auth-box { max-width: 100%; }
+
+      /* Студент — кнопки результата */
+      #st-copy-btn, .st-retry-btn { width: 100%; text-align: center; }
+
+      /* Кнопка «Назад» */
+      .back-btn { font-size: 0.85rem; margin-bottom: 14px; }
+
+      /* Пустой экран */
+      .empty-state { padding: 32px 16px; }
+      .empty-icon { font-size: 2.5rem; }
+    }
+
+    /* ── Очень маленький телефон (≤ 380px) ── */
+    @media (max-width: 380px) {
+      header { padding: 8px 10px; }
+      .logo { font-size: 1rem; }
+      main { padding: 12px 10px; }
+      .btn-new-set { padding: 6px 10px; font-size: 0.78rem; }
+      .stats-summary { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -615,10 +749,15 @@
 
   <!-- ═══ DECKS LIST ═══ -->
   <div class="view" id="view-decks">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
       <div>
         <div class="page-title">Библиотека</div>
         <div class="page-sub" style="margin-bottom:0">Все наборы карточек-викторин</div>
+      </div>
+      <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
+      <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
+        <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="showStatsPage()">📊 Статистика</button>
+        <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="showNewSetModal()">+ Создать</button>
       </div>
     </div>
     <div class="decks-grid" id="decks-grid"></div>
@@ -1216,6 +1355,9 @@ function _applyUserUI() {
   document.getElementById('teacher-nav').style.display    = isTeacher ? '' : 'none';
   document.getElementById('btn-create-new').style.display = isTeacher ? '' : 'none';
   document.getElementById('btn-signout').style.display    = '';
+  // Mobile: show inline buttons on deck page since header nav is hidden
+  const mba = document.getElementById('mobile-decks-actions');
+  if (mba && isTeacher) mba.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
 }
 
 async function _loadTeacherDecks() {
