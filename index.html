@@ -811,8 +811,7 @@
     <div class="set-tabs">
       <button class="set-tab active" id="tab-btn-cards" onclick="setSetTab('cards')">Карточки <span id="tab-cards-count" style="color:var(--muted);font-weight:400;font-size:0.82rem"></span></button>
       <button class="set-tab" id="tab-btn-play" onclick="setSetTab('play')">▶ Пройти</button>
-      <button class="set-tab" id="tab-btn-results" onclick="setSetTab('results')">👥 Результаты</button>
-      <button class="set-tab" id="tab-btn-stats" onclick="setSetTab('stats')">📊 Моя статистика</button>
+      <button class="set-tab" id="tab-btn-results" onclick="setSetTab('results')">👥 Результаты учеников</button>
     </div>
 
     <!-- ── Tab: Карточки ── -->
@@ -976,14 +975,17 @@
 <!-- ═══ GLOBAL STATS VIEW ═══ -->
 <div class="view" id="view-stats">
   <button class="back-btn" onclick="goHome()">← Все наборы</button>
-  <div class="page-title" style="margin-bottom:4px">Статистика профиля</div>
-  <div class="page-sub" style="margin-bottom:28px">Ваш прогресс и результаты учеников</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px">
+    <div>
+      <div class="page-title" style="margin-bottom:4px">Результаты учеников</div>
+      <div class="page-sub" style="margin-bottom:0">Все прохождения по всем наборам</div>
+    </div>
+    <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="renderGlobalStats()">🔄 Обновить</button>
+  </div>
   <div class="stats-summary" id="global-summary"></div>
-  <div class="stats-history-title" style="margin-top:28px;margin-bottom:12px"><span>По наборам</span></div>
-  <div id="global-sets"></div>
   <div class="stats-history-title" style="margin-top:28px;margin-bottom:12px">
-    <span>Последние попытки</span>
-    <button class="btn-clear-stats" onclick="clearAllHistory()">Очистить историю</button>
+    <span>Все результаты</span>
+    <button class="btn-clear-stats" onclick="clearAllHistory()">Очистить</button>
   </div>
   <div id="global-history"></div>
 </div>
@@ -1626,7 +1628,6 @@ function setSetTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   if (tab === 'results') { renderTeacherResults(); }
   else if (_resultsUnsubscribe && tab !== 'results') { _resultsUnsubscribe(); _resultsUnsubscribe = null; }
-  if (tab === 'stats') renderSetStats();
 }
 
 // ─── SET SETTINGS EDIT ───────────────────────────────────────────────────────
@@ -2672,79 +2673,73 @@ function showStatsPage() {
 }
 
 async function renderGlobalStats() {
-  const allHistory = [];
-  decks.forEach(d => {
-    (d.history || []).forEach(h => allHistory.push({ ...h, setName: d.name, setId: d.id }));
-  });
-  allHistory.sort((a, b) => b.date - a.date);
-
   const sumEl  = document.getElementById('global-summary');
-  const setsEl = document.getElementById('global-sets');
   const histEl = document.getElementById('global-history');
-
-  // Count total student submissions from Firestore
-  let totalStudents = 0;
-  if (_db && currentUser) {
-    try {
-      const snap = await _db.collection('results')
-        .where('teacherId', '==', currentUser.uid).get();
-
-      totalStudents = snap.size;
-    } catch(e) {}
+  sumEl.innerHTML = '<div style="color:var(--muted);font-size:0.88rem">Загрузка…</div>';
+  histEl.innerHTML = '';
+  if (!_db || !currentUser) {
+    sumEl.innerHTML = '';
+    histEl.innerHTML = '<div class="stats-empty">Firebase не настроен</div>';
+    return;
   }
-
-  const best = allHistory.length ? Math.max(...allHistory.map(h => h.pct)) : null;
-  const avg  = allHistory.length ? Math.round(allHistory.reduce((s, h) => s + h.pct, 0) / allHistory.length) : null;
-
-  sumEl.innerHTML = `
-    <div class="stat-card"><div class="val">${allHistory.length}</div><div class="lbl">Моих попыток</div></div>
-    <div class="stat-card best"><div class="val">${best !== null ? best + '%' : '—'}</div><div class="lbl">Лучший результат</div></div>
-    <div class="stat-card avg"><div class="val">${avg !== null ? avg + '%' : '—'}</div><div class="lbl">Средний результат</div></div>
-    <div class="stat-card" style="border-color:rgba(108,99,255,0.3)"><div class="val" style="color:var(--accent)">${totalStudents}</div><div class="lbl">Работ учеников</div></div>
-  `;
-
-  if (!decks.length) {
-    setsEl.innerHTML = '<div class="stats-empty" style="padding:20px 0">Нет наборов</div>';
-  } else {
-    setsEl.innerHTML = decks.map(d => {
-      const h  = d.history || [];
-      const bp = h.length ? Math.max(...h.map(x => x.pct)) : null;
-      const c  = bp !== null ? (bp >= 80 ? 'var(--green)' : bp >= 50 ? 'var(--yellow)' : 'var(--accent2)') : 'var(--muted)';
-      const ml = d.mode === 'flashcard' ? '🃏' : '🧠';
-      return `<div class="stat-row" onclick="openSet('${d.id}','play')" style="cursor:pointer">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px">${esc(d.name)}</div>
-          <div style="font-size:0.78rem;color:var(--muted)">${ml} · ${d.cards.length} карт. · ${h.length} попыток</div>
-        </div>
-        <div style="font-size:1.2rem;font-weight:800;color:${c}">${bp !== null ? bp + '%' : '—'}</div>
-      </div>`;
-    }).join('');
-  }
-
-  if (!allHistory.length) {
-    histEl.innerHTML = '<div class="stats-empty">История пуста — пройдите хотя бы один набор</div>';
-  } else {
-    histEl.innerHTML = allHistory.slice(0, 20).map(h => {
-      const dt = new Date(h.date);
+  try {
+    const snap = await _db.collection('results')
+      .where('teacherId', '==', currentUser.uid).get();
+    const results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
+        const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
+        return tb - ta;
+      });
+    if (!results.length) {
+      sumEl.innerHTML = '';
+      histEl.innerHTML = `<div class="stats-empty">
+        Ученики ещё не проходили ваши тесты.<br>
+        Нажмите <strong>🔗 Поделиться</strong> на любом наборе и отправьте ссылку.
+      </div>`; return;
+    }
+    const total  = results.length;
+    const best   = Math.max(...results.map(r => r.pct));
+    const avg    = Math.round(results.reduce((s, r) => s + r.pct, 0) / total);
+    const unique = new Set(results.map(r => r.studentId || r.studentName)).size;
+    sumEl.innerHTML = `
+      <div class="stat-card"><div class="val">${total}</div><div class="lbl">Всего работ</div></div>
+      <div class="stat-card" style="border-color:rgba(108,99,255,0.2)"><div class="val" style="color:var(--accent)">${unique}</div><div class="lbl">Учеников</div></div>
+      <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
+      <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
+    `;
+    histEl.innerHTML = results.map(r => {
+      const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || Date.now());
       const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
       const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      const ml = h.mode === 'flashcard' ? '🃏' : '🧠';
-      const mc = h.mode === 'flashcard' ? 'flashcard' : 'test';
-      const c  = h.pct >= 80 ? 'var(--green)' : h.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+      const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+      const ml = r.mode === 'flashcard' ? '🃏' : '🧠';
       return `<div class="stat-row">
-        <div class="stat-row-date">${d}, ${t}</div>
-        <div class="stat-row-mode ${mc}">${ml} ${esc(h.setName)}</div>
-        <div class="stat-row-bar-wrap"><div class="stat-row-bar" style="width:${h.pct}%;background:${c}"></div></div>
-        <div class="stat-row-score" style="color:${c}">${h.pct}%</div>
+        <div class="results-row-name">${esc(r.studentName || '—')}</div>
+        <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ml} ${esc(r.deckName || '—')}</div>
+        <div class="results-row-date">${d}, ${t}</div>
+        <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
+        <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
       </div>`;
     }).join('');
+  } catch(e) {
+    console.error('renderGlobalStats:', e);
+    sumEl.innerHTML = '';
+    histEl.innerHTML = `<div class="stats-empty">❌ Ошибка: ${e.code || e.message}</div>`;
   }
 }
 
-function clearAllHistory() {
-  if (!confirm('Очистить всю историю ваших попыток?')) return;
-  decks.forEach(d => { d.history = []; save(d.id); });
-  renderGlobalStats();
+async function clearAllHistory() {
+  if (!confirm('Удалить ВСЕ результаты учеников? Это нельзя отменить.')) return;
+  if (!_db || !currentUser) return;
+  try {
+    const snap = await _db.collection('results').where('teacherId', '==', currentUser.uid).get();
+    const batch = _db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+    toast('Все результаты удалены');
+    renderGlobalStats();
+  } catch(e) { toast('Ошибка: ' + (e.code || e.message)); }
 }
 
 // ─── IMAGE HANDLING ───────────────────────────────────────────────────────────
