@@ -1116,8 +1116,6 @@ try {
   firebase.initializeApp(FIREBASE_CONFIG);
   _auth = firebase.auth();
   _db   = firebase.firestore();
-  // offline cache (newer API)
-  try { _db.settings({ experimentalForceLongPolling: false }); } catch(e) {}
 } catch(e) { console.warn('Firebase not configured:', e.message); }
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
@@ -1225,15 +1223,21 @@ function _applyUserUI() {
 
 async function _loadTeacherDecks() {
   try {
+    console.log('[decks] loading for uid:', currentUser.uid);
     const snap = await _db.collection('decks')
       .where('teacherId', '==', currentUser.uid).get();
+    console.log('[decks] found:', snap.size);
     decks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     decks.sort((a, b) => {
       const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
       const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
       return tb - ta;
     });
-  } catch(e) { console.error('loadTeacherDecks:', e); decks = []; }
+  } catch(e) {
+    console.error('[decks] load error:', e.code, e.message);
+    decks = [];
+    toast('Не удалось загрузить наборы: ' + (e.code || e.message), 5000);
+  }
   showPage('decks');
   renderDecks();
 }
