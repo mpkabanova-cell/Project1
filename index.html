@@ -1750,13 +1750,20 @@ async function createNewSet() {
       const d = { id: ref.id, ...data, createdAt: new Date() };
       decks.unshift(d);
       openSet(ref.id, 'cards');
-    } catch(e) { console.error('createNewSet error:', e); toast('Ошибка: ' + (e.message || e.code || 'неизвестная')); return; }
+      toast('Набор создан! Добавляйте карточки');
+    } catch(e) {
+      console.error('createNewSet error:', e);
+      const msg = e.code === 'permission-denied' || (e.message && e.message.includes('permission'))
+        ? 'Нет доступа к базе данных. Обновите правила Firestore (Rules) в Firebase Console: allow read, write: if request.auth != null'
+        : 'Ошибка сохранения: ' + (e.message || e.code || 'неизвестная');
+      toast(msg, 6000);
+    }
   } else {
     const d = { id: uid(), ...data };
     decks.unshift(d);
     openSet(d.id, 'cards');
+    toast('Набор создан! (локально — настройте Firebase для синхронизации)');
   }
-  toast('Набор создан! Добавляйте карточки');
   if (btn) { btn.textContent = 'Создать набор →'; btn.disabled = false; }
 }
 
@@ -2611,10 +2618,11 @@ function resetImageForm() {
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function toast(msg) {
+function toast(msg, duration) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), duration || 2500);
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
