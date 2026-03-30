@@ -1225,10 +1225,14 @@ function _applyUserUI() {
 async function _loadTeacherDecks() {
   try {
     const snap = await _db.collection('decks')
-      .where('teacherId', '==', currentUser.uid)
-      .orderBy('createdAt', 'desc').get();
+      .where('teacherId', '==', currentUser.uid).get();
     decks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch(e) { decks = []; }
+    decks.sort((a, b) => {
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
+      return tb - ta;
+    });
+  } catch(e) { console.error('loadTeacherDecks:', e); decks = []; }
   showPage('decks');
   renderDecks();
 }
@@ -1240,9 +1244,13 @@ async function _showStudentHome() {
   // Load student's past results
   try {
     const snap = await _db.collection('results')
-      .where('studentId', '==', currentUser.uid)
-      .orderBy('date', 'desc').limit(30).get();
-    const results = snap.docs.map(d => d.data());
+      .where('studentId', '==', currentUser.uid).get();
+    const results = snap.docs.map(d => d.data())
+      .sort((a, b) => {
+        const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
+        const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
+        return tb - ta;
+      }).slice(0, 30);
     const el = document.getElementById('student-home-results');
     if (!results.length) return;
     el.innerHTML = results.map(r => {
@@ -2381,46 +2389,67 @@ function renderTeacherResults() {
   if (!_db || !currentSetId) { container.innerHTML = '<div class="stats-empty">Firebase не настроен</div>'; return; }
 
   if (_resultsUnsubscribe) { _resultsUnsubscribe(); _resultsUnsubscribe = null; }
+  _loadAndRenderResults(container);
+}
 
-  _resultsUnsubscribe = _db.collection('results')
-    .where('deckId', '==', currentSetId)
-    .orderBy('date', 'desc')
-    .onSnapshot(snap => {
-      const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (!results.length) {
-        container.innerHTML = `<div class="stats-empty">
-          Результатов пока нет.<br>
-          Нажмите <strong>🔗 Поделиться</strong> — ученики пройдут тест и результаты появятся здесь автоматически.
-        </div>`; return;
-      }
-      const best = Math.max(...results.map(r => r.pct));
-      const avg  = Math.round(results.reduce((s, r) => s + r.pct, 0) / results.length);
-      container.innerHTML = `
-        <div class="stats-summary" style="margin-bottom:20px">
-          <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Учеников</div></div>
-          <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
-          <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
-        </div>
-        <div class="stats-history-title">
-          <span>Список учеников</span>
+async function _loadAndRenderResults(container) {
+  try {
+    const snap = await _db.collection('results')
+      .where('deckId', '==', currentSetId).get();
+    const results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
+        const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
+        return tb - ta;
+      });
+
+    if (!results.length) {
+      container.innerHTML = `<div class="stats-empty">
+        Результатов пока нет.<br>
+        Нажмите <strong>🔗 Поделиться</strong> — ученики пройдут тест и результаты появятся здесь.
+        <br><br><button class="btn-secondary" style="margin-top:8px" onclick="renderTeacherResults()">🔄 Обновить</button>
+      </div>`; return;
+    }
+
+    const best = Math.max(...results.map(r => r.pct));
+    const avg  = Math.round(results.reduce((s, r) => s + r.pct, 0) / results.length);
+    container.innerHTML = `
+      <div class="stats-summary" style="margin-bottom:20px">
+        <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Учеников</div></div>
+        <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
+        <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
+      </div>
+      <div class="stats-history-title">
+        <span>Список учеников</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="renderTeacherResults()">🔄 Обновить</button>
           <button class="btn-clear-stats" onclick="clearTeacherResults()">Очистить</button>
         </div>
-        ${results.map(r => {
-          const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date);
-          const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-          const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-          const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
-          return `<div class="stat-row">
-            <div class="results-row-name">${esc(r.studentName || r.name || '—')}</div>
-            <div class="results-row-date">${d}, ${t}</div>
-            <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
-            <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
-          </div>`;
-        }).join('')}
-      `;
-    }, err => {
-      container.innerHTML = `<div class="stats-empty">Ошибка загрузки. Проверьте правила Firestore.</div>`;
-    });
+      </div>
+      ${results.map(r => {
+        const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || Date.now());
+        const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+        return `<div class="stat-row">
+          <div class="results-row-name">${esc(r.studentName || r.name || '—')}</div>
+          <div class="results-row-date">${d}, ${t}</div>
+          <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
+          <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+        </div>`;
+      }).join('')}
+    `;
+  } catch(e) {
+    console.error('loadResults error:', e.code, e.message);
+    const hint = e.code === 'permission-denied'
+      ? 'Правила Firestore блокируют запрос.<br>Убедитесь что вы опубликовали правила: <code>allow read, write: if request.auth != null</code>'
+      : `Код ошибки: <code>${e.code || e.message}</code>`;
+    container.innerHTML = `<div class="stats-empty">
+      ❌ Ошибка загрузки результатов.<br><br>
+      <span style="font-size:0.82rem">${hint}</span>
+      <br><br><button class="btn-secondary" style="margin-top:8px" onclick="renderTeacherResults()">🔄 Попробовать снова</button>
+    </div>`;
+  }
 }
 
 async function clearTeacherResults() {
@@ -2505,6 +2534,7 @@ async function renderGlobalStats() {
     try {
       const snap = await _db.collection('results')
         .where('teacherId', '==', currentUser.uid).get();
+
       totalStudents = snap.size;
     } catch(e) {}
   }
