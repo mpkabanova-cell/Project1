@@ -864,6 +864,7 @@ let currentSetId = null;       // currently open set
 let currentSetMode = 'test';   // mode of the currently open set
 let setCards = [];             // working copy of cards for current set
 let editingCardId = null;
+let currentImageData = null; // base64 image for current card form
 let quizState = null;
 let fcState = null;
 let shouldShuffle = true;
@@ -1026,6 +1027,7 @@ function closeCardForm() {
   document.getElementById('q-text').value = '';
   optCount = 0;
   editingCardId = null;
+  resetImageForm();
 }
 
 function renderQuestionType() {
@@ -1082,11 +1084,11 @@ function getCardFromForm(existing) {
   if (currentSetMode === 'flashcard') {
     const ans = document.getElementById('q-open-answer').value.trim();
     if (!ans) { toast('Введите ответ'); return null; }
-    return { id: existing?.id || uid(), type: 'flashcard', question, answer: ans, options: [] };
+    return { id: existing?.id || uid(), type: 'flashcard', question, answer: ans, options: [], image: currentImageData };
   }
 
   const type = document.getElementById('q-type').value;
-  let card = { id: existing?.id || uid(), type, question, options: [], answer: '' };
+  let card = { id: existing?.id || uid(), type, question, options: [], answer: '', image: currentImageData };
   if (type === 'open') {
     const ans = document.getElementById('q-open-answer').value.trim();
     if (!ans) { toast('Введите правильный ответ'); return null; }
@@ -1146,6 +1148,15 @@ function editCard(id) {
       list.innerHTML = ''; optCount = 0;
       card.options.forEach(o => addOption(o.text, o.correct));
     }
+    // Restore image
+    if (card.image) {
+      currentImageData = card.image;
+      document.getElementById('img-preview').src = card.image;
+      document.getElementById('img-preview').style.display = 'block';
+      document.getElementById('img-placeholder').style.display = 'none';
+      document.getElementById('img-remove-btn').style.display = 'block';
+      document.getElementById('img-upload-area').classList.add('has-image');
+    }
     document.getElementById('card-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 40);
 }
@@ -1184,13 +1195,17 @@ function renderSetCards() {
     const answer = (c.type === 'flashcard' || c.type === 'open') ? c.answer : c.options.filter(o => o.correct).map(o => o.text).join(', ');
     const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
     const isFirst = idx === 0, isLast = idx === setCards.length - 1;
+    const thumbHtml = c.image ? `<img src="${c.image}" class="qcard-thumb" alt="">` : '';
     return `<div class="qcard" id="qcard-${c.id}">
-      <div class="qcard-top">
+      <div class="qcard-top" style="display:flex;gap:10px;align-items:flex-start">
+        ${thumbHtml}
+        <div style="flex:1;min-width:0">
         <div class="qcard-type">
           <span class="type-badge ${badgeClass}">${typeLabel}</span>
           <span style="font-size:0.68rem;color:var(--muted);margin-left:6px">#${idx+1}</span>
         </div>
         <div class="qcard-q">${esc(c.question)}</div>
+        </div>
       </div>
       <div class="qcard-bottom">
         <div class="qcard-answer" title="${esc(answer)}">✓ ${esc(answer)}</div>
@@ -1328,6 +1343,9 @@ function renderFlashcard() {
   document.getElementById('fc-card').classList.remove('flipped');
   fcState.flipped = false;
   document.getElementById('fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
+  const wrap = document.getElementById('fc-img-wrap');
+  if (card.image) { document.getElementById('fc-img').src = card.image; wrap.style.display = 'block'; }
+  else { wrap.style.display = 'none'; }
 }
 
 function flipCurrentCard() {
@@ -1366,6 +1384,9 @@ function renderQuizQuestion() {
   document.getElementById('quiz-feedback').textContent = '';
   document.getElementById('quiz-next-btn').className = 'quiz-next-btn';
   quizState.answered = false;
+  const qImg = document.getElementById('quiz-q-image');
+  if (card.image) { document.getElementById('quiz-q-img').src = card.image; qImg.style.display = 'block'; }
+  else { qImg.style.display = 'none'; }
 
   const optsCont = document.getElementById('quiz-options');
   const openCont = document.getElementById('quiz-open-input');
@@ -1584,6 +1605,9 @@ function stRenderFlashcard() {
   document.getElementById('st-fc-answer').textContent = ans;
   document.getElementById('st-fc-card').classList.remove('flipped');
   document.getElementById('st-fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
+  const stWrap = document.getElementById('st-fc-img-wrap');
+  if (card.image) { document.getElementById('st-fc-img').src = card.image; stWrap.style.display = 'block'; }
+  else { stWrap.style.display = 'none'; }
 }
 
 function stFlipCard() {
@@ -1612,6 +1636,9 @@ function stRenderQuestion() {
   document.getElementById('st-feedback').className = 'quiz-feedback';
   document.getElementById('st-next-btn').className = 'quiz-next-btn';
   stQuizState.answered = false;
+  const stQImg = document.getElementById('st-quiz-q-image');
+  if (card.image) { document.getElementById('st-quiz-q-img').src = card.image; stQImg.style.display = 'block'; }
+  else { stQImg.style.display = 'none'; }
   const opts = document.getElementById('st-quiz-opts');
   const open = document.getElementById('st-quiz-open');
   if (card.type === 'open') {
@@ -1910,6 +1937,57 @@ function clearAllHistory() {
   decks.forEach(d => { d.history = []; });
   save();
   renderGlobalStats();
+}
+
+// ─── IMAGE HANDLING ───────────────────────────────────────────────────────────
+function triggerImgUpload() { document.getElementById('img-file-input').click(); }
+
+function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      currentImageData = canvas.toDataURL('image/jpeg', 0.78);
+      document.getElementById('img-preview').src = currentImageData;
+      document.getElementById('img-preview').style.display = 'block';
+      document.getElementById('img-placeholder').style.display = 'none';
+      document.getElementById('img-remove-btn').style.display = 'block';
+      document.getElementById('img-upload-area').classList.add('has-image');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function removeImage() {
+  currentImageData = null;
+  document.getElementById('img-preview').src = '';
+  document.getElementById('img-preview').style.display = 'none';
+  document.getElementById('img-placeholder').style.display = 'flex';
+  document.getElementById('img-remove-btn').style.display = 'none';
+  document.getElementById('img-upload-area').classList.remove('has-image');
+}
+
+function resetImageForm() {
+  currentImageData = null;
+  const prev = document.getElementById('img-preview');
+  if (!prev) return;
+  prev.src = ''; prev.style.display = 'none';
+  document.getElementById('img-placeholder').style.display = 'flex';
+  document.getElementById('img-remove-btn').style.display = 'none';
+  document.getElementById('img-upload-area').classList.remove('has-image');
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
