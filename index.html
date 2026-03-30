@@ -343,6 +343,30 @@
     }
     .btn-share:hover { background: rgba(108,99,255,0.12); }
 
+    /* ── SHARE MODAL ── */
+    .share-qr-wrap {
+      display: flex; justify-content: center; margin: 20px 0;
+    }
+    .share-qr-wrap img {
+      width: 190px; height: 190px; border-radius: 10px;
+      background: #fff; padding: 8px; display: block;
+    }
+    .share-url-row { display: flex; gap: 8px; align-items: stretch; }
+    .share-url-row input {
+      flex: 1; font-size: 0.78rem; font-family: monospace;
+      cursor: pointer; color: var(--muted); overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .share-url-row .btn-copy {
+      flex-shrink: 0; padding: 8px 14px; font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    .share-warning {
+      margin-top: 14px; font-size: 0.8rem; color: var(--yellow);
+      background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.3);
+      border-radius: 8px; padding: 10px 12px; line-height: 1.5;
+    }
+
     /* ── STATS TAB ── */
     .stats-summary {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px;
@@ -717,6 +741,29 @@
         </button>
         <button class="btn-secondary" onclick="stRetry()">Пройти снова</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SHARE MODAL ═══ -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal" style="max-width:440px">
+    <h3>Поделиться набором</h3>
+    <div class="modal-sub" id="share-modal-name"></div>
+    <div class="share-qr-wrap">
+      <img id="share-qr" src="" alt="QR-код загружается...">
+    </div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">Ссылка для учеников</div>
+    <div class="share-url-row">
+      <input type="text" id="share-url-input" readonly onclick="this.select()">
+      <button class="btn-primary btn-copy" id="btn-copy-share" onclick="copyShareUrl()">Копировать</button>
+    </div>
+    <div class="share-warning" id="share-warning" style="display:none">
+      ⚠️ Ссылка начинается с <code>file://</code> — она работает только на этом компьютере.<br>
+      Чтобы ученики могли открыть её со своих устройств, опубликуйте сайт на GitHub Pages.
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-secondary" onclick="closeShareModal()">Закрыть</button>
     </div>
   </div>
 </div>
@@ -1648,9 +1695,27 @@ function generateShareLink() {
   if (!d.cards.length) { toast('Добавьте карточки перед отправкой'); return; }
   const encoded = urlEncode(packDeck(d));
   const url = location.href.split('#')[0] + '#quiz=' + encoded;
+  document.getElementById('share-modal-name').textContent = d.name;
+  document.getElementById('share-url-input').value = url;
+  document.getElementById('btn-copy-share').textContent = 'Копировать';
+  document.getElementById('share-warning').style.display = url.startsWith('file://') ? 'block' : 'none';
+  const qrData = encodeURIComponent(url);
+  document.getElementById('share-qr').src =
+    `https://api.qrserver.com/v1/create-qr-code/?size=190x190&color=e8eaf6&bgcolor=1a1d27&qzone=1&data=${qrData}`;
+  document.getElementById('share-modal').classList.add('show');
+}
+
+function copyShareUrl() {
+  const url = document.getElementById('share-url-input').value;
   navigator.clipboard.writeText(url).then(() => {
-    toast('🔗 Ссылка для учеников скопирована!');
-  }).catch(() => { prompt('Ссылка для учеников:', url); });
+    document.getElementById('btn-copy-share').textContent = '✓ Скопировано';
+    setTimeout(() => document.getElementById('btn-copy-share').textContent = 'Копировать', 2500);
+  }).catch(() => { document.getElementById('share-url-input').select(); });
+}
+
+function closeShareModal() {
+  document.getElementById('share-modal').classList.remove('show');
+  document.getElementById('share-qr').src = '';
 }
 
 // ─── TEACHER RESULTS ─────────────────────────────────────────────────────────
