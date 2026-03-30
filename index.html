@@ -74,6 +74,12 @@
       border-radius: 10px; padding: 11px 20px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
     }
     .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+    .btn-signout {
+      background: transparent; color: var(--accent2); border: 1.5px solid rgba(244,63,94,0.3);
+      border-radius: 10px; padding: 7px 16px; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-signout:hover { background: rgba(244,63,94,0.08); border-color: var(--accent2); }
     .btn-ghost {
       background: transparent; border: none; color: var(--muted);
       font-size: 0.88rem; cursor: pointer; padding: 6px 10px; border-radius: 7px; transition: all 0.2s;
@@ -97,12 +103,14 @@
     .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
     .form-row { margin-bottom: 18px; }
     label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .5px; }
-    input[type="text"], textarea, select {
+    input[type="text"], input[type="email"], input[type="password"], textarea, select {
       width: 100%; background: var(--card); border: 1.5px solid var(--border);
       border-radius: 10px; color: var(--text); font-size: 1rem;
       padding: 11px 14px; outline: none; transition: border-color 0.2s; resize: vertical;
+      box-sizing: border-box;
     }
-    input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus,
+    textarea:focus, select:focus { border-color: var(--accent); }
     textarea { min-height: 80px; }
     .form-actions { display: flex; gap: 10px; margin-top: 4px; }
     .option-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
@@ -514,7 +522,7 @@
       <span id="header-user-role-badge"></span>
     </div>
     <button class="btn-new-set" id="btn-create-new" onclick="showNewSetModal()" style="display:none">+ Создать</button>
-    <button class="btn-secondary" id="btn-signout" onclick="doSignOut()" style="display:none;padding:7px 14px;font-size:0.85rem">Выйти</button>
+    <button class="btn-signout" id="btn-signout" onclick="doSignOut()" style="display:none">↩ Выйти</button>
   </div>
 </header>
 
@@ -577,9 +585,32 @@
           </div>
         </div>
 
-        <div style="text-align:center;margin-top:16px;font-size:0.78rem;color:var(--muted);line-height:1.6">
-          Для работы нужен Firebase.<br>
-          <a href="#" style="color:var(--accent)" onclick="showFirebaseHelp();return false">Как подключить?</a>
+        <!-- Demo accounts -->
+        <div style="margin-top:16px;border:1.5px dashed var(--border);border-radius:12px;padding:14px 16px;background:var(--card)">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+            🧪 Тестовые аккаунты
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button onclick="fillDemo('teacher')" style="flex:1;padding:8px;border:1.5px solid rgba(99,91,255,0.3);background:rgba(99,91,255,0.06);color:var(--accent);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.2s"
+              onmouseover="this.style.background='rgba(99,91,255,0.12)'" onmouseout="this.style.background='rgba(99,91,255,0.06)'">
+              👩‍🏫 Учитель
+            </button>
+            <button onclick="fillDemo('student')" style="flex:1;padding:8px;border:1.5px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.06);color:var(--green);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.2s"
+              onmouseover="this.style.background='rgba(16,185,129,0.14)'" onmouseout="this.style.background='rgba(16,185,129,0.06)'">
+              🎓 Ученик
+            </button>
+          </div>
+          <div id="demo-creds" style="font-size:0.78rem;color:var(--muted);line-height:1.7;display:none"></div>
+          <button onclick="createDemoAccounts()" id="btn-create-demo"
+            style="width:100%;margin-top:6px;padding:7px;border:1.5px solid var(--border);background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;font-size:0.78rem;transition:all 0.2s"
+            onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
+            Создать демо-аккаунты автоматически
+          </button>
+          <div id="demo-msg" style="font-size:0.78rem;margin-top:6px;text-align:center;display:none"></div>
+        </div>
+
+        <div style="text-align:center;margin-top:12px;font-size:0.78rem;color:var(--muted)">
+          <a href="#" style="color:var(--accent)" onclick="showFirebaseHelp();return false">Как подключить Firebase?</a>
         </div>
       </div>
     </div>
@@ -2557,6 +2588,62 @@ function toast(msg) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('shuffle-knob').style.left = '21px';
+// ─── DEMO ACCOUNTS ───────────────────────────────────────────────────────────
+const DEMO_TEACHER = { email: 'teacher@demo.test', password: 'demo123456', name: 'Иванова Анна (учитель)', role: 'teacher' };
+const DEMO_STUDENT = { email: 'student@demo.test', password: 'demo123456', name: 'Петров Иван (ученик)', role: 'student' };
+
+function fillDemo(role) {
+  const acc = role === 'teacher' ? DEMO_TEACHER : DEMO_STUDENT;
+  // Switch to login tab
+  switchAuthTab('login');
+  document.getElementById('login-email').value    = acc.email;
+  document.getElementById('login-password').value = acc.password;
+  // Show credentials
+  const el = document.getElementById('demo-creds');
+  el.innerHTML = `<strong>${role === 'teacher' ? '👩‍🏫 Учитель' : '🎓 Ученик'}:</strong><br>
+    Email: <code style="background:var(--border);padding:1px 5px;border-radius:4px">${acc.email}</code><br>
+    Пароль: <code style="background:var(--border);padding:1px 5px;border-radius:4px">${acc.password}</code>`;
+  el.style.display = 'block';
+}
+
+async function createDemoAccounts() {
+  if (!_auth || !_db) {
+    const el = document.getElementById('demo-msg');
+    el.textContent = '⚠️ Сначала настройте Firebase (замените REPLACE_* в коде)';
+    el.style.color = 'var(--accent2)';
+    el.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('btn-create-demo');
+  btn.textContent = 'Создаю…'; btn.disabled = true;
+  const msg = document.getElementById('demo-msg');
+  msg.style.display = 'block';
+
+  const accounts = [DEMO_TEACHER, DEMO_STUDENT];
+  let created = 0, skipped = 0;
+
+  for (const acc of accounts) {
+    try {
+      const cred = await _auth.createUserWithEmailAndPassword(acc.email, acc.password);
+      await _db.collection('users').doc(cred.user.uid).set({
+        name: acc.name, email: acc.email, role: acc.role,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await _auth.signOut();
+      created++;
+    } catch(e) {
+      if (e.code === 'auth/email-already-in-use') skipped++;
+      else { msg.textContent = '❌ Ошибка: ' + e.message; msg.style.color = 'var(--accent2)'; btn.textContent = 'Создать демо-аккаунты автоматически'; btn.disabled = false; return; }
+    }
+  }
+
+  msg.style.color = 'var(--green)';
+  msg.textContent = created > 0
+    ? `✓ Создано ${created} аккаунт(а)${skipped ? `, ${skipped} уже существовал(и)` : ''}. Нажмите кнопку учителя или ученика выше для входа.`
+    : `✓ Аккаунты уже существуют. Нажмите кнопку выше для входа.`;
+  btn.textContent = '✓ Готово';
+}
+
 initApp();
 </script>
 </body>
