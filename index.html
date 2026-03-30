@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Викторина — Создание карточек</title>
+  <title>QuizForge — Карточки викторин</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -427,7 +427,7 @@
 <header>
   <div class="logo">Quiz<span>Forge</span></div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showView('decks')">Мои колоды</button>
+    <button class="nav-tab active" onclick="showView('decks')">Мои наборы</button>
     <button class="nav-tab" onclick="showView('create')">+ Создать</button>
     <button class="nav-tab" onclick="showView('quiz')">Пройти тест</button>
   </div>
@@ -439,7 +439,7 @@
   <div class="view active" id="view-decks">
     <div class="decks-header">
       <div>
-        <div class="page-title">Мои колоды</div>
+        <div class="page-title">Мои наборы</div>
         <div class="page-sub">Все наборы карточек-викторин</div>
       </div>
     </div>
@@ -448,7 +448,7 @@
 
   <!-- ═══ CARDS LIST (nested) ═══ -->
   <div class="view" id="view-cards">
-    <button class="back-btn" onclick="showView('decks')">← Назад к колодам</button>
+    <button class="back-btn" onclick="showView('decks')">← Все наборы</button>
     <div id="cards-deck-title" class="page-title"></div>
     <div class="page-sub" id="cards-deck-sub"></div>
     <button class="btn-primary" onclick="openAddCard()" style="margin-bottom:4px">+ Добавить карточку</button>
@@ -457,7 +457,7 @@
 
   <!-- ═══ CREATE ═══ -->
   <div class="view" id="view-create">
-    <div class="page-title" id="create-title">Создать новую колоду</div>
+    <div class="page-title" id="create-title">Создать новый набор</div>
     <div class="page-sub">Заполните данные и добавьте карточки</div>
 
     <div class="form-card">
@@ -470,21 +470,24 @@
       </div>
       <div class="form-row">
         <label>Название колоды</label>
-        <input type="text" id="deck-name-input" placeholder="Например: История России, Биология 8 кл.">
+        <input type="text" id="deck-name-input" placeholder="Например: История России, Математика 8 кл.">
       </div>
       <div class="form-row">
         <label>Описание (необязательно)</label>
         <textarea id="deck-desc-input" placeholder="О чём эта колода?" rows="2"></textarea>
       </div>
       <div class="form-actions">
-        <button class="btn-primary" onclick="saveDeck()">Сохранить колоду</button>
+        <button class="btn-primary" onclick="saveDeck()">Сохранить набор</button>
         <button class="btn-secondary" onclick="resetCreateForm()">Очистить</button>
       </div>
     </div>
 
     <!-- Card creator -->
     <div id="card-creator" style="display:none; margin-top:28px">
-      <div class="page-title" style="font-size:1.2rem; margin-bottom:16px" id="card-creator-title">Добавить карточку</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="page-title" style="font-size:1.2rem;margin-bottom:0" id="card-creator-title">Добавить карточку</div>
+        <span style="font-size:0.78rem;color:var(--green);font-weight:600" id="autosave-indicator"></span>
+      </div>
       <div class="form-card" id="card-form">
         <!-- Test mode fields -->
         <div id="q-type-row" class="form-row">
@@ -514,10 +517,10 @@
   <!-- ═══ QUIZ ═══ -->
   <div class="view" id="view-quiz">
     <div class="page-title">Пройти тест</div>
-    <div class="page-sub">Выберите колоду и проверьте знания</div>
+    <div class="page-sub">Выберите набор и проверьте знания</div>
 
     <div class="quiz-setup" id="quiz-setup">
-      <label style="margin-bottom:12px; display:block">Выберите колоду</label>
+      <label style="margin-bottom:12px; display:block">Выберите набор</label>
       <div class="quiz-deck-list" id="quiz-deck-list"></div>
       <button class="btn-primary" onclick="startQuizByMode()">Начать ▶</button>
     </div>
@@ -621,11 +624,20 @@ let currentViewDeckId = null;
 let quizState = null;
 let currentDeckMode = 'test';
 
-function save() { localStorage.setItem('qf_decks', JSON.stringify(decks)); }
+function save() {
+  localStorage.setItem('qf_decks', JSON.stringify(decks));
+  const el = document.getElementById('autosave-indicator');
+  if (el) { el.textContent = '✓ Сохранено'; clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ''; }, 2000); }
+}
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 // ─── VIEWS ───────────────────────────────────────────────────────────────────
 function showView(name) {
+  // Auto-save any open draft before navigating away
+  if (name !== 'create' && editingDeckId) {
+    const d = decks.find(x => x.id === editingDeckId);
+    if (d) { d.cards = newDeckCards; save(); }
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
@@ -641,7 +653,7 @@ function renderDecks() {
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
-      <p>Колод пока нет. <strong>Создайте первую!</strong></p>
+      <p>Наборов пока нет. <strong>Создайте первый!</strong></p>
     </div>`;
     return;
   }
@@ -730,21 +742,21 @@ function resetCreateForm() {
   document.getElementById('deck-name-input').value = '';
   document.getElementById('deck-desc-input').value = '';
   document.getElementById('card-creator').style.display = 'none';
-  document.getElementById('create-title').textContent = 'Создать новую колоду';
+  document.getElementById('create-title').textContent = 'Создать новый набор';
   setDeckMode('test');
   renderNewDeckCards();
 }
 
 function saveDeck() {
   const name = document.getElementById('deck-name-input').value.trim();
-  if (!name) { toast('Введите название колоды'); return; }
+  if (!name) { toast('Введите название набора'); return; }
   if (editingDeckId) {
     const d = decks.find(x => x.id === editingDeckId);
     d.name = name;
     d.desc = document.getElementById('deck-desc-input').value.trim();
     d.mode = currentDeckMode;
-    if (newDeckCards.length) d.cards = newDeckCards;
-    save(); toast('Колода обновлена'); resetCreateForm(); showView('decks');
+    d.cards = newDeckCards;
+    save(); toast('Набор сохранён'); resetCreateForm(); showView('decks');
   } else {
     const d = { id: uid(), name, desc: document.getElementById('deck-desc-input').value.trim(), mode: currentDeckMode, cards: [] };
     decks.push(d);
@@ -754,7 +766,7 @@ function saveDeck() {
     document.getElementById('card-creator').style.display = 'block';
     document.getElementById('card-creator-title').textContent = 'Добавить карточки в «' + name + '»';
     renderQuestionType();
-    toast('Колода создана! Добавляйте карточки');
+    toast('Набор создан! Добавляйте карточки');
   }
 }
 
@@ -765,9 +777,9 @@ function editDeck(id) {
   currentDeckMode = d.mode || 'test';
   document.getElementById('deck-name-input').value = d.name;
   document.getElementById('deck-desc-input').value = d.desc || '';
-  document.getElementById('create-title').textContent = 'Редактировать колоду';
+  document.getElementById('create-title').textContent = 'Редактировать набор';
   document.getElementById('card-creator').style.display = 'block';
-  document.getElementById('card-creator-title').textContent = 'Карточки колоды «' + d.name + '»';
+  document.getElementById('card-creator-title').textContent = 'Карточки набора «' + d.name + '»';
   setDeckMode(currentDeckMode);
   renderNewDeckCards();
   showView('create');
@@ -878,7 +890,7 @@ function saveCard() {
 
   clearCardForm();
   renderNewDeckCards();
-  toast('Карточка добавлена');
+  toast('Карточка сохранена ✓');
 }
 
 function clearCardForm() {
@@ -944,9 +956,9 @@ function confirmDelete(type, id) {
   pendingDelete = { type, id };
   const d = type === 'deck' ? decks.find(x => x.id === id)?.name : null;
   const c = type === 'card' ? findCard(id)?.question : null;
-  document.getElementById('modal-title').textContent = type === 'deck' ? 'Удалить колоду?' : 'Удалить карточку?';
+  document.getElementById('modal-title').textContent = type === 'deck' ? 'Удалить набор?' : 'Удалить карточку?';
   document.getElementById('modal-text').textContent = type === 'deck'
-    ? `Колода «${d}» и все её карточки будут удалены.`
+    ? `Набор «${d}» и все его карточки будут удалены.`
     : `Карточка «${c?.slice(0, 60)}...» будет удалена.`;
   document.getElementById('modal-overlay').classList.add('show');
   document.getElementById('modal-confirm-btn').onclick = doDelete;
@@ -985,7 +997,7 @@ function renderQuizSetup() {
   const list = document.getElementById('quiz-deck-list');
   const valid = decks.filter(d => d.cards.length > 0);
   if (!valid.length) {
-    list.innerHTML = `<div style="color:var(--muted);font-size:.9rem">Нет колод с карточками.</div>`;
+    list.innerHTML = `<div style="color:var(--muted);font-size:.9rem">Нет наборов с карточками.</div>`;
     return;
   }
   list.innerHTML = valid.map(d => {
