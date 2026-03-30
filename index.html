@@ -1298,6 +1298,12 @@ function save(deckId) {
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function generateShortCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // без похожих 0/O, 1/I/L
+  let c = '';
+  for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+  return c;
+}
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 if (_auth) {
@@ -1415,9 +1421,21 @@ async function openQuizByCode(code) {
   if (!_db) { toast('Firebase не настроен'); return; }
   showLoadingOverlay(true);
   try {
-    const doc = await _db.collection('decks').doc(code.trim()).get();
-    if (!doc.exists) { toast('Набор не найден'); showLoadingOverlay(false); return; }
-    studentDeck = { id: doc.id, ...doc.data() };
+    let docSnap = null;
+    const trimmed = code.trim().toUpperCase();
+    // Try short code first (6 chars)
+    if (trimmed.length <= 8) {
+      const snap = await _db.collection('decks')
+        .where('shortCode', '==', trimmed).limit(1).get();
+      if (!snap.empty) docSnap = snap.docs[0];
+    }
+    // Fall back to Firestore document ID
+    if (!docSnap) {
+      const d = await _db.collection('decks').doc(code.trim()).get();
+      if (d.exists) docSnap = d;
+    }
+    if (!docSnap) { toast('Набор не найден — проверьте код'); showLoadingOverlay(false); return; }
+    studentDeck = { id: docSnap.id, ...docSnap.data() };
     isStudentMode = true;
     document.getElementById('main-header').style.display = 'none';
     showPage('student');
@@ -1428,11 +1446,28 @@ async function openQuizByCode(code) {
       `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
     document.getElementById('st-set-name').textContent = studentDeck.name;
     document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
-    // Pre-fill name from account
+
+    // If logged in — skip name form, start quiz immediately
     if (currentUserData?.name) {
-      const parts = currentUserData.name.split(' ');
-      document.getElementById('st-lastname').value  = parts[0] || '';
-      document.getElementById('st-firstname').value = parts.slice(1).join(' ') || '';
+      studentName = currentUserData.name;
+      document.getElementById('st-name-label').textContent  = studentName;
+      document.getElementById('st-name-label2').textContent = studentName;
+      document.getElementById('student-step-name').style.display = 'none';
+      document.getElementById('student-step-quiz').style.display = 'block';
+      const cards = shouldShuffle ? shuffle([...studentDeck.cards]) : [...studentDeck.cards];
+      if (studentDeck.mode === 'flashcard') {
+        stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
+        document.getElementById('st-fc-play').classList.add('active');
+        stRenderFlashcard();
+      } else {
+        stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
+        document.getElementById('st-quiz-play').classList.add('active');
+        stRenderQuestion();
+      }
+    } else {
+      document.getElementById('student-step-name').style.display = 'block';
+      document.getElementById('student-step-quiz').style.display = 'none';
+      document.getElementById('student-step-results').style.display = 'none';
     }
   } catch(e) { toast('Ошибка загрузки набора'); }
   showLoadingOverlay(false);
@@ -1900,6 +1935,7 @@ async function createNewSet() {
     teacherId: currentUser?.uid || 'local',
     name, desc: document.getElementById('new-set-desc').value.trim(),
     mode: newSetMode, cards: [], history: [],
+    shortCode: generateShortCode(),
     createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
   };
   closeNewSetModal();
@@ -2493,13 +2529,22 @@ async function generateShareLink() {
 
   document.getElementById('share-modal-name').textContent = d.name;
 
-  // Show the deck ID prominently as the "code"
-  document.getElementById('share-url-input').value = fullUrl;
+  // Short code (generate if missing for old decks)
+  if (!d.shortCode) {
+    d.shortCode = generateShortCode();
+    save(d.id);
+  }
+  const codeEl = document.getElementById('share-deck-code');
+  if (codeEl) codeEl.textContent = d.shortCode;
+
+  // URL with short code
+  const shareUrl = base + '#q=' + d.shortCode;
+  document.getElementById('share-url-input').value = shareUrl;
   document.getElementById('share-url-input').disabled = false;
   document.getElementById('btn-copy-share').textContent = 'Копировать';
   document.getElementById('btn-copy-share').disabled = false;
 
-  const isLocal = fullUrl.startsWith('file://');
+  const isLocal = base.startsWith('file://');
   document.getElementById('share-warning').style.display = isLocal ? 'block' : 'none';
   if (isLocal) {
     document.getElementById('share-warning').textContent =
@@ -2508,13 +2553,9 @@ async function generateShareLink() {
 
   document.getElementById('share-modal').classList.add('show');
 
-  // Show deck ID as short code
-  const codeEl = document.getElementById('share-deck-code');
-  if (codeEl) { codeEl.textContent = d.id; codeEl.style.display = ''; }
-
   // QR code
   document.getElementById('share-qr').src =
-    `https://api.qrserver.com/v1/create-qr-code/?size=190x190&color=1e2140&bgcolor=ffffff&qzone=1&data=${encodeURIComponent(fullUrl)}`;
+    `https://api.qrserver.com/v1/create-qr-code/?size=190x190&color=1e2140&bgcolor=ffffff&qzone=1&data=${encodeURIComponent(shareUrl)}`;
 }
 
 function copyShareUrl() {
