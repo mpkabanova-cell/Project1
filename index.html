@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -308,6 +312,63 @@
     /* autosave */
     #autosave-indicator { font-size: 0.75rem; color: var(--green); font-weight: 600; }
 
+    /* ── LOADING OVERLAY ── */
+    #loading-overlay {
+      display: none; position: fixed; inset: 0;
+      background: var(--bg); z-index: 9999;
+      align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+    }
+    #loading-overlay.show { display: flex; }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── AUTH VIEW ── */
+    .auth-wrap {
+      min-height: calc(100vh - 140px); display: flex;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .auth-box { width: 100%; max-width: 400px; }
+    .auth-logo { text-align: center; font-size: 1.5rem; font-weight: 800; margin-bottom: 28px; }
+    .auth-logo span { color: var(--accent); }
+    .auth-tab-row {
+      display: flex; border-bottom: 2px solid var(--border); margin-bottom: 24px;
+    }
+    .auth-tab-btn {
+      flex: 1; padding: 10px; background: none; border: none; border-bottom: 2px solid transparent;
+      margin-bottom: -2px; font-size: 0.95rem; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .auth-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .auth-err {
+      color: var(--accent2); font-size: 0.84rem; text-align: center;
+      margin-top: 10px; display: none; padding: 8px 12px;
+      background: rgba(244,63,94,0.07); border-radius: 8px;
+    }
+    .auth-err.show { display: block; }
+
+    /* ── STUDENT HOME ── */
+    .quiz-code-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      max-width: 440px; margin-bottom: 32px;
+      box-shadow: var(--shadow);
+    }
+    .quiz-code-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .student-result-row {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .srr-name { font-weight: 600; font-size: 0.92rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .srr-date { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+    .srr-bar-wrap { width: 80px; background: var(--card); border-radius: 99px; height: 6px; }
+    .srr-bar { height: 6px; border-radius: 99px; }
+    .srr-score { font-weight: 700; font-size: 0.88rem; min-width: 42px; text-align: right; }
+
     /* ── IMAGE UPLOAD ── */
     .img-upload-area {
       border: 1.5px dashed var(--border); border-radius: 10px;
@@ -441,19 +502,91 @@
 </head>
 <body>
 
-<header id="main-header">
+<header id="main-header" style="display:none">
   <div class="logo" onclick="goHome()">Опросы<span> и карточки</span></div>
-  <div class="nav-tabs">
+  <div class="nav-tabs" id="teacher-nav" style="display:none">
     <button class="nav-tab active" id="nav-home" onclick="goHome()">Библиотека</button>
     <button class="nav-tab" id="nav-stats" onclick="showStatsPage()">📊 Статистика</button>
   </div>
-  <button class="btn-new-set" onclick="showNewSetModal()">+ Создать</button>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div id="header-user-info" style="display:none;align-items:center;gap:8px">
+      <span id="header-user-name" style="font-size:0.85rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <span id="header-user-role-badge"></span>
+    </div>
+    <button class="btn-new-set" id="btn-create-new" onclick="showNewSetModal()" style="display:none">+ Создать</button>
+    <button class="btn-secondary" id="btn-signout" onclick="doSignOut()" style="display:none;padding:7px 14px;font-size:0.85rem">Выйти</button>
+  </div>
 </header>
+
+<div id="loading-overlay"><div class="spinner"></div><div style="font-size:0.85rem;color:var(--muted)">Загрузка…</div></div>
 
 <main>
 
+  <!-- ═══ AUTH VIEW ═══ -->
+  <div class="view" id="view-auth">
+    <div class="auth-wrap">
+      <div class="auth-box">
+        <div class="auth-logo">Опросы<span> и карточки</span></div>
+        <div class="form-card">
+          <div class="auth-tab-row">
+            <button class="auth-tab-btn active" id="at-login" onclick="switchAuthTab('login')">Войти</button>
+            <button class="auth-tab-btn" id="at-register" onclick="switchAuthTab('register')">Регистрация</button>
+          </div>
+
+          <!-- Войти -->
+          <div id="auth-login-form">
+            <div class="form-row">
+              <label>Email</label>
+              <input type="email" id="login-email" placeholder="teacher@school.ru" autocomplete="email">
+            </div>
+            <div class="form-row" style="margin-bottom:20px">
+              <label>Пароль</label>
+              <input type="password" id="login-password" placeholder="••••••••"
+                     autocomplete="current-password"
+                     onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <button class="btn-primary" id="btn-login" style="width:100%;padding:13px;font-size:1rem" onclick="doLogin()">Войти</button>
+            <div class="auth-err" id="login-err"></div>
+          </div>
+
+          <!-- Регистрация -->
+          <div id="auth-register-form" style="display:none">
+            <div class="form-row">
+              <label>Роль</label>
+              <div class="mode-toggle">
+                <button class="mode-btn active" id="rrole-teacher" onclick="setRegRole('teacher')">👩‍🏫 Учитель</button>
+                <button class="mode-btn" id="rrole-student" onclick="setRegRole('student')">🎓 Ученик</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Имя и фамилия</label>
+              <input type="text" id="reg-name" placeholder="Иванова Мария Петровна" autocomplete="name">
+            </div>
+            <div class="form-row">
+              <label>Email</label>
+              <input type="email" id="reg-email" placeholder="student@school.ru" autocomplete="email">
+            </div>
+            <div class="form-row" style="margin-bottom:20px">
+              <label>Пароль</label>
+              <input type="password" id="reg-password" placeholder="Минимум 6 символов"
+                     autocomplete="new-password"
+                     onkeydown="if(event.key==='Enter')doRegister()">
+            </div>
+            <button class="btn-primary" id="btn-register" style="width:100%;padding:13px;font-size:1rem" onclick="doRegister()">Создать аккаунт</button>
+            <div class="auth-err" id="reg-err"></div>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:16px;font-size:0.78rem;color:var(--muted);line-height:1.6">
+          Для работы нужен Firebase.<br>
+          <a href="#" style="color:var(--accent)" onclick="showFirebaseHelp();return false">Как подключить?</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ DECKS LIST ═══ -->
-  <div class="view active" id="view-decks">
+  <div class="view" id="view-decks">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
       <div>
         <div class="page-title">Библиотека</div>
@@ -512,6 +645,7 @@
       <button class="set-tab active" id="tab-btn-cards" onclick="setSetTab('cards')">Карточки <span id="tab-cards-count" style="color:var(--muted);font-weight:400;font-size:0.82rem"></span></button>
       <button class="set-tab" id="tab-btn-play" onclick="setSetTab('play')">▶ Пройти</button>
       <button class="set-tab" id="tab-btn-results" onclick="setSetTab('results')">👥 Результаты</button>
+      <button class="set-tab" id="tab-btn-stats" onclick="setSetTab('stats')">📊 Моя статистика</button>
     </div>
 
     <!-- ── Tab: Карточки ── -->
@@ -664,6 +798,10 @@
       <div id="teacher-results-container"></div>
     </div>
 
+    <div class="tab-panel" id="tab-stats">
+      <div id="set-stats-container"></div>
+    </div>
+
   </div><!-- /view-set -->
 
 </main>
@@ -794,20 +932,73 @@
   <div class="modal" style="max-width:440px">
     <h3>Поделиться набором</h3>
     <div class="modal-sub" id="share-modal-name"></div>
+
+    <!-- Short code for students -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+      <div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:2px">Код набора (ученик вводит в приложении)</div>
+        <div id="share-deck-code" style="font-size:1.1rem;font-weight:800;font-family:monospace;color:var(--accent);letter-spacing:1px"></div>
+      </div>
+    </div>
+
     <div class="share-qr-wrap">
       <img id="share-qr" src="" alt="QR-код загружается...">
     </div>
-    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">Ссылка для учеников</div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">Прямая ссылка (откроет тест сразу)</div>
     <div class="share-url-row">
       <input type="text" id="share-url-input" readonly onclick="this.select()">
       <button class="btn-primary btn-copy" id="btn-copy-share" onclick="copyShareUrl()">Копировать</button>
     </div>
-    <div class="share-warning" id="share-warning" style="display:none">
-      ⚠️ Ссылка начинается с <code>file://</code> — она работает только на этом компьютере.<br>
-      Чтобы ученики могли открыть её со своих устройств, опубликуйте сайт на GitHub Pages.
-    </div>
+    <div class="share-warning" id="share-warning" style="display:none"></div>
     <div class="modal-actions" style="margin-top:20px">
       <button class="btn-secondary" onclick="closeShareModal()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ STUDENT HOME VIEW ═══ -->
+<div class="view" id="view-student-home">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div>
+      <div class="page-title" id="student-home-title">Добро пожаловать!</div>
+      <div class="page-sub" style="margin-bottom:0">Введите код набора, чтобы начать</div>
+    </div>
+  </div>
+
+  <div class="quiz-code-card">
+    <h3>Пройти тест по коду</h3>
+    <div style="display:flex;gap:10px">
+      <input type="text" id="quiz-code-input" placeholder="Код набора (от учителя)"
+             style="flex:1" onkeydown="if(event.key==='Enter')openQuizByCode(this.value.trim())">
+      <button class="btn-primary" onclick="openQuizByCode(document.getElementById('quiz-code-input').value.trim())" style="white-space:nowrap">Начать →</button>
+    </div>
+  </div>
+
+  <div class="stats-history-title" style="margin-bottom:12px">
+    <span>Мои результаты</span>
+  </div>
+  <div id="student-home-results">
+    <div class="empty-state" style="padding:32px 20px">
+      <div class="empty-icon">📋</div>
+      <p>Вы ещё не прошли ни одного теста</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FIREBASE HELP MODAL ═══ -->
+<div class="modal-overlay" id="firebase-help-modal">
+  <div class="modal" style="max-width:560px">
+    <h3>Как подключить Firebase</h3>
+    <div class="modal-sub">Без настройки Firebase авторизация не работает</div>
+    <ol style="font-size:0.88rem;line-height:1.9;color:var(--text);padding-left:20px">
+      <li>Зайдите на <strong>console.firebase.google.com</strong> и создайте проект</li>
+      <li>В проекте: <strong>Build → Firestore Database</strong> → создайте базу (Start in test mode)</li>
+      <li><strong>Build → Authentication</strong> → Sign-in method → включите <strong>Email/Password</strong></li>
+      <li>В настройках проекта (<code>⚙️ → Project settings</code>) найдите раздел <strong>Your apps → Web app</strong>, скопируйте конфигурацию</li>
+      <li>В этом файле найдите строку <code>REPLACE_API_KEY</code> и замените все REPLACE_* на свои значения</li>
+    </ol>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-primary" onclick="closeModal2()">Понятно</button>
     </div>
   </div>
 </div>
@@ -854,40 +1045,278 @@
 <div id="toast"></div>
 
 <script>
-// ─── STATE ──────────────────────────────────────────────────────────────────
-let decks = JSON.parse(localStorage.getItem('qf_decks') || '[]');
-// deck: { id, name, desc, mode: 'test'|'flashcard', cards: [] }
-// test card:      { id, type: 'single'|'multi'|'open', question, options, answer }
-// flashcard card: { id, type: 'flashcard', question, answer }
+// ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
+// ⚠️ Замените значения своими из Firebase Console → Project Settings → Your Apps
+const FIREBASE_CONFIG = {
+  apiKey:            "REPLACE_API_KEY",
+  authDomain:        "REPLACE_PROJECT_ID.firebaseapp.com",
+  projectId:         "REPLACE_PROJECT_ID",
+  storageBucket:     "REPLACE_PROJECT_ID.appspot.com",
+  messagingSenderId: "REPLACE_SENDER_ID",
+  appId:             "REPLACE_APP_ID"
+};
 
-let currentSetId = null;       // currently open set
-let currentSetMode = 'test';   // mode of the currently open set
-let setCards = [];             // working copy of cards for current set
-let editingCardId = null;
-let currentImageData = null; // base64 image for current card form
+let _db = null, _auth = null;
+try {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  _auth = firebase.auth();
+  _db   = firebase.firestore();
+  _db.enablePersistence().catch(() => {});
+} catch(e) { console.warn('Firebase not configured:', e.message); }
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+// deck: { id, name, desc, mode, cards: [], history: [], teacherId }
+// result: { deckId, deckName, teacherId, studentId, studentName, correct, total, pct, mode, date }
+
+let currentUser     = null;
+let currentUserData = null;  // { name, role }
+let decks = [];
+let currentSetId   = null;
+let currentSetMode = 'test';
+let setCards   = [];
+let editingCardId   = null;
+let currentImageData = null;
 let quizState = null;
-let fcState = null;
+let fcState   = null;
 let shouldShuffle = true;
 let newSetMode = 'test';
+let regRole    = 'teacher';
+let pendingQuizCode = null;
 
-// ─── PERSIST ────────────────────────────────────────────────────────────────
-function save() {
-  localStorage.setItem('qf_decks', JSON.stringify(decks));
-  const el = document.getElementById('autosave-indicator');
-  if (el) { el.textContent = '✓ Сохранено'; clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ''; }, 2000); }
+// ─── FIREBASE HELPERS ────────────────────────────────────────────────────────
+function showLoadingOverlay(on) {
+  document.getElementById('loading-overlay').classList.toggle('show', on);
 }
+
+async function persistDeck(deckId) {
+  if (!_db || !currentUser) return;
+  const d = decks.find(x => x.id === deckId);
+  if (!d) return;
+  const { id, ...data } = d;
+  try { await _db.collection('decks').doc(deckId).set(data, { merge: true }); }
+  catch(e) { console.error('persistDeck:', e); }
+}
+
+function save(deckId) {
+  const id = deckId || currentSetId;
+  const el = document.getElementById('autosave-indicator');
+  if (el) { el.textContent = '✓ Сохранено'; clearTimeout(el._t); el._t = setTimeout(() => el.textContent = '', 2000); }
+  if (_db && currentUser) {
+    if (id) persistDeck(id);
+  } else {
+    // Fallback: localStorage
+    localStorage.setItem('qf_decks', JSON.stringify(decks));
+  }
+}
+
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+if (_auth) {
+  _auth.onAuthStateChanged(async (user) => {
+    showLoadingOverlay(true);
+    if (user) {
+      currentUser = user;
+      try {
+        const doc = await _db.collection('users').doc(user.uid).get();
+        currentUserData = doc.exists ? doc.data() : { name: user.email, role: 'teacher' };
+      } catch(e) { currentUserData = { name: user.email, role: 'teacher' }; }
+      _applyUserUI();
+      const code = pendingQuizCode || (location.hash.startsWith('#q=') ? location.hash.slice(3) : null);
+      if (code) {
+        pendingQuizCode = null;
+        history.replaceState(null, '', location.pathname);
+        await openQuizByCode(code);
+      } else if (currentUserData.role === 'teacher') {
+        await _loadTeacherDecks();
+      } else {
+        await _showStudentHome();
+      }
+    } else {
+      currentUser = null; currentUserData = null;
+      if (location.hash.startsWith('#q=')) {
+        pendingQuizCode = location.hash.slice(3);
+        history.replaceState(null, '', location.pathname);
+      }
+      document.getElementById('main-header').style.display = 'none';
+      showPage('auth');
+    }
+    showLoadingOverlay(false);
+  });
+}
+
+function _applyUserUI() {
+  document.getElementById('main-header').style.display = '';
+  document.getElementById('header-user-info').style.display = 'flex';
+  document.getElementById('header-user-name').textContent = currentUserData?.name || '';
+  const isTeacher = currentUserData?.role === 'teacher';
+  const roleLabel = isTeacher ? '👩‍🏫 Учитель' : '🎓 Ученик';
+  const roleBg    = isTeacher ? 'rgba(99,91,255,0.1)' : 'rgba(16,185,129,0.12)';
+  const roleColor = isTeacher ? 'var(--accent)' : 'var(--green)';
+  document.getElementById('header-user-role-badge').innerHTML =
+    `<span class="deck-badge" style="background:${roleBg};color:${roleColor}">${roleLabel}</span>`;
+  document.getElementById('teacher-nav').style.display    = isTeacher ? '' : 'none';
+  document.getElementById('btn-create-new').style.display = isTeacher ? '' : 'none';
+  document.getElementById('btn-signout').style.display    = '';
+}
+
+async function _loadTeacherDecks() {
+  try {
+    const snap = await _db.collection('decks')
+      .where('teacherId', '==', currentUser.uid)
+      .orderBy('createdAt', 'desc').get();
+    decks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch(e) { decks = []; }
+  showPage('decks');
+  renderDecks();
+}
+
+async function _showStudentHome() {
+  showPage('student-home');
+  document.getElementById('student-home-title').textContent =
+    `Привет, ${currentUserData?.name?.split(' ')[0] || 'ученик'}!`;
+  // Load student's past results
+  try {
+    const snap = await _db.collection('results')
+      .where('studentId', '==', currentUser.uid)
+      .orderBy('date', 'desc').limit(30).get();
+    const results = snap.docs.map(d => d.data());
+    const el = document.getElementById('student-home-results');
+    if (!results.length) return;
+    el.innerHTML = results.map(r => {
+      const dt   = r.date?.toDate ? r.date.toDate() : new Date(r.date);
+      const d    = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      const t    = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const c    = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+      return `<div class="student-result-row">
+        <div class="srr-name">${esc(r.deckName || '—')}</div>
+        <div class="srr-date">${d}, ${t}</div>
+        <div class="srr-bar-wrap"><div class="srr-bar" style="width:${r.pct}%;background:${c}"></div></div>
+        <div class="srr-score" style="color:${c}">${r.pct}%</div>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function openQuizByCode(code) {
+  if (!code) { toast('Введите код набора'); return; }
+  if (!_db) { toast('Firebase не настроен'); return; }
+  showLoadingOverlay(true);
+  try {
+    const doc = await _db.collection('decks').doc(code.trim()).get();
+    if (!doc.exists) { toast('Набор не найден'); showLoadingOverlay(false); return; }
+    studentDeck = { id: doc.id, ...doc.data() };
+    isStudentMode = true;
+    document.getElementById('main-header').style.display = 'none';
+    showPage('student');
+    const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+    const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+    const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    document.getElementById('st-set-badge').innerHTML =
+      `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
+    document.getElementById('st-set-name').textContent = studentDeck.name;
+    document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
+    // Pre-fill name from account
+    if (currentUserData?.name) {
+      const parts = currentUserData.name.split(' ');
+      document.getElementById('st-lastname').value  = parts[0] || '';
+      document.getElementById('st-firstname').value = parts.slice(1).join(' ') || '';
+    }
+  } catch(e) { toast('Ошибка загрузки набора'); }
+  showLoadingOverlay(false);
+}
+
+// ─── AUTH ACTIONS ─────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-password').value;
+  if (!email || !pw) { showAuthErr('login', 'Заполните все поля'); return; }
+  if (!_auth) { showAuthErr('login', 'Firebase не настроен — замените REPLACE_* в коде'); return; }
+  const btn = document.getElementById('btn-login');
+  btn.textContent = 'Вхожу…'; btn.disabled = true;
+  document.getElementById('login-err').classList.remove('show');
+  try {
+    await _auth.signInWithEmailAndPassword(email, pw);
+  } catch(e) {
+    btn.textContent = 'Войти'; btn.disabled = false;
+    showAuthErr('login', _authErrMsg(e.code));
+  }
+}
+
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pw    = document.getElementById('reg-password').value;
+  if (!name || !email || !pw) { showAuthErr('reg', 'Заполните все поля'); return; }
+  if (pw.length < 6) { showAuthErr('reg', 'Пароль минимум 6 символов'); return; }
+  if (!_auth) { showAuthErr('reg', 'Firebase не настроен — замените REPLACE_* в коде'); return; }
+  const btn = document.getElementById('btn-register');
+  btn.textContent = 'Создаю…'; btn.disabled = true;
+  document.getElementById('reg-err').classList.remove('show');
+  try {
+    const cred = await _auth.createUserWithEmailAndPassword(email, pw);
+    await _db.collection('users').doc(cred.user.uid).set({
+      name, email, role: regRole,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) {
+    btn.textContent = 'Создать аккаунт'; btn.disabled = false;
+    showAuthErr('reg', _authErrMsg(e.code));
+  }
+}
+
+async function doSignOut() {
+  if (_auth) await _auth.signOut();
+  decks = []; currentUser = null; currentUserData = null; isStudentMode = false;
+}
+
+function setRegRole(r) {
+  regRole = r;
+  document.getElementById('rrole-teacher').classList.toggle('active', r === 'teacher');
+  document.getElementById('rrole-student').classList.toggle('active', r === 'student');
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('auth-login-form').style.display    = tab === 'login'    ? '' : 'none';
+  document.getElementById('auth-register-form').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('at-login').classList.toggle('active',    tab === 'login');
+  document.getElementById('at-register').classList.toggle('active', tab === 'register');
+  document.getElementById('login-err').classList.remove('show');
+  document.getElementById('reg-err').classList.remove('show');
+}
+
+function showAuthErr(form, msg) {
+  const el = document.getElementById(form === 'login' ? 'login-err' : 'reg-err');
+  el.textContent = msg; el.classList.add('show');
+}
+
+function _authErrMsg(code) {
+  return ({
+    'auth/user-not-found':       'Пользователь не найден',
+    'auth/wrong-password':       'Неверный пароль',
+    'auth/invalid-credential':   'Неверный email или пароль',
+    'auth/email-already-in-use': 'Email уже используется',
+    'auth/invalid-email':        'Неверный формат email',
+    'auth/weak-password':        'Пароль слишком простой (минимум 6 символов)',
+    'auth/too-many-requests':    'Слишком много попыток. Подождите.',
+  })[code] || 'Ошибка. Попробуйте ещё раз';
+}
+
+function showFirebaseHelp() { document.getElementById('firebase-help-modal').classList.add('show'); }
+function closeModal2() { document.getElementById('firebase-help-modal').classList.remove('show'); }
 
 // ─── NAVIGATION ─────────────────────────────────────────────────────────────
 function showPage(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  document.getElementById('nav-home').classList.toggle('active', name === 'decks');
+  const nh = document.getElementById('nav-home');
+  if (nh) nh.classList.toggle('active', name === 'decks');
   const ns = document.getElementById('nav-stats');
   if (ns) ns.classList.toggle('active', name === 'stats');
 }
 
 function goHome() {
+  if (currentUserData?.role === 'student') { _showStudentHome(); return; }
   showPage('decks');
   renderDecks();
 }
@@ -971,7 +1400,9 @@ function setSetTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-btn-' + tab).classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'results') renderTeacherResults();
+  if (tab === 'results') { renderTeacherResults(); }
+  else if (_resultsUnsubscribe && tab !== 'results') { _resultsUnsubscribe(); _resultsUnsubscribe = null; }
+  if (tab === 'stats') renderSetStats();
 }
 
 // ─── SET SETTINGS EDIT ───────────────────────────────────────────────────────
@@ -1239,15 +1670,32 @@ function setNewMode(mode) {
   document.getElementById('new-mode-flashcard').classList.toggle('active', mode === 'flashcard');
 }
 
-function createNewSet() {
+async function createNewSet() {
   const name = document.getElementById('new-set-name').value.trim();
   if (!name) { toast('Введите название набора'); return; }
-  const d = { id: uid(), name, desc: document.getElementById('new-set-desc').value.trim(), mode: newSetMode, cards: [] };
-  decks.push(d);
-  save();
+  const btn = document.querySelector('#new-set-modal .btn-primary');
+  if (btn) { btn.textContent = 'Создаю…'; btn.disabled = true; }
+  const data = {
+    teacherId: currentUser?.uid || 'local',
+    name, desc: document.getElementById('new-set-desc').value.trim(),
+    mode: newSetMode, cards: [], history: [],
+    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+  };
   closeNewSetModal();
-  openSet(d.id, 'cards');
+  if (_db && currentUser) {
+    try {
+      const ref = await _db.collection('decks').add(data);
+      const d = { id: ref.id, ...data, createdAt: new Date() };
+      decks.unshift(d);
+      openSet(ref.id, 'cards');
+    } catch(e) { toast('Ошибка создания набора'); return; }
+  } else {
+    const d = { id: uid(), ...data };
+    decks.unshift(d);
+    openSet(d.id, 'cards');
+  }
   toast('Набор создан! Добавляйте карточки');
+  if (btn) { btn.textContent = 'Создать набор →'; btn.disabled = false; }
 }
 
 // ─── DELETE ──────────────────────────────────────────────────────────────────
@@ -1273,14 +1721,17 @@ function confirmDeleteCard(id) {
 
 function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); pendingDelete = null; }
 
-function doDelete() {
+async function doDelete() {
   if (!pendingDelete) return;
   if (pendingDelete.type === 'deck') {
-    decks = decks.filter(d => d.id !== pendingDelete.id);
-    save();
+    const id = pendingDelete.id;
+    decks = decks.filter(d => d.id !== id);
     closeModal();
     toast('Набор удалён');
     goHome();
+    if (_db && currentUser) {
+      try { await _db.collection('decks').doc(id).delete(); } catch(e) {}
+    }
   } else {
     removeCard(pendingDelete.id);
     closeModal();
@@ -1492,6 +1943,17 @@ function recordResult(mode, correct, total) {
   save();
 }
 
+async function saveStudentResult(deckId, deckName, teacherId, studentName, correct, total) {
+  if (!_db || !currentUser) return;
+  const pct = Math.round(correct / total * 100);
+  await _db.collection('results').add({
+    deckId, deckName: deckName || '', teacherId: teacherId || '',
+    studentId: currentUser.uid, studentName,
+    correct, total, pct, mode: studentDeck?.mode || 'test',
+    date: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
 // ─── URL ENCODE / DECODE ──────────────────────────────────────────────────────
 // Compact deck: only the fields needed for quiz (strip history, keep minimal keys)
 function packDeck(d) {
@@ -1530,38 +1992,42 @@ let stResultData = null;
 
 // ─── INIT (replaces bare renderDecks() call) ──────────────────────────────────
 function initApp() {
-  const hash = location.hash;
-  if (hash.startsWith('#quiz=')) {
-    try {
-      studentDeck = unpackDeck(urlDecode(hash.slice(6)));
-      isStudentMode = true;
-      document.getElementById('main-header').style.display = 'none';
-      showPage('student');
-      const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-      const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
-      const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
-      document.getElementById('st-set-badge').innerHTML =
-        `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
-      document.getElementById('st-set-name').textContent = studentDeck.name;
-      document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
-    } catch(e) {
+  // Firebase auth listener handles routing.
+  // But if Firebase is not configured, fall back to teacher-only local mode.
+  if (!_auth) {
+    document.getElementById('main-header').style.display = '';
+    document.getElementById('teacher-nav').style.display = '';
+    document.getElementById('btn-create-new').style.display = '';
+    // Load from localStorage as fallback
+    decks = JSON.parse(localStorage.getItem('qf_decks') || '[]');
+    const hash = location.hash;
+    if (hash.startsWith('#quiz=')) {
+      try {
+        studentDeck = unpackDeck(urlDecode(hash.slice(6)));
+        isStudentMode = true;
+        document.getElementById('main-header').style.display = 'none';
+        showPage('student');
+        const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+        const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+        const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+        document.getElementById('st-set-badge').innerHTML =
+          `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
+        document.getElementById('st-set-name').textContent = studentDeck.name;
+        document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
+      } catch(e) { history.replaceState(null, '', location.pathname); renderDecks(); }
+    } else if (hash.startsWith('#q=')) {
+      const code = hash.slice(3);
       history.replaceState(null, '', location.pathname);
+      if (_db) { pendingQuizCode = code; }
+      else { toast('Firebase не настроен — замените REPLACE_* в коде'); renderDecks(); }
+    } else {
       renderDecks();
-      setTimeout(() => toast('Неверная ссылка на набор'), 200);
     }
-  } else if (hash.startsWith('#result=')) {
-    try {
-      const result = urlDecode(hash.slice(8));
-      receiveStudentResult(result);
-    } catch(e) {}
-    history.replaceState(null, '', location.pathname);
-    renderDecks();
-  } else {
-    renderDecks();
   }
+  // else: Firebase auth listener in onAuthStateChanged handles everything
 }
 
-// ─── RECEIVE RESULT FROM STUDENT URL ─────────────────────────────────────────
+// ─── RECEIVE RESULT FROM STUDENT URL (legacy fallback) ───────────────────────
 function receiveStudentResult(result) {
   const key = 'qf_results_' + result.setId;
   const existing = JSON.parse(localStorage.getItem(key) || '[]');
@@ -1725,12 +2191,36 @@ function stNextQ() {
   stRenderQuestion();
 }
 
-function stFinish(mode, correct, total) {
+async function stFinish(mode, correct, total) {
   document.getElementById('st-fc-play').classList.remove('active');
   document.getElementById('st-quiz-play').classList.remove('active');
   const pct = Math.round(correct / total * 100);
   stResultData = { setId: studentDeck.id, setName: studentDeck.name, name: studentName,
     mode, correct, total, pct, date: Date.now() };
+
+  // Auto-save to Firestore
+  const copyBtn = document.getElementById('st-copy-btn');
+  copyBtn.style.display = 'none';
+  if (_db && currentUser && studentDeck) {
+    try {
+      await saveStudentResult(
+        studentDeck.id, studentDeck.name, studentDeck.teacherId || '',
+        currentUserData?.name || studentName, correct, total
+      );
+      copyBtn.textContent = '✓ Результат отправлен учителю автоматически';
+      copyBtn.style.display = '';
+      copyBtn.disabled = true;
+      copyBtn.style.opacity = '0.7';
+    } catch(e) {
+      copyBtn.textContent = '📋 Скопировать результат для учителя';
+      copyBtn.style.display = '';
+      copyBtn.disabled = false;
+    }
+  } else {
+    copyBtn.textContent = '📋 Скопировать результат для учителя';
+    copyBtn.style.display = '';
+  }
+
   document.getElementById('student-step-quiz').style.display = 'none';
   document.getElementById('student-step-results').style.display = 'block';
   document.getElementById('st-score').textContent = pct + '%';
@@ -1739,7 +2229,6 @@ function stFinish(mode, correct, total) {
   document.getElementById('st-r-correct').textContent = correct;
   document.getElementById('st-r-wrong').textContent   = total - correct;
   document.getElementById('st-r-total').textContent   = total;
-  document.getElementById('st-copy-btn').textContent  = '📋 Скопировать результат для учителя';
 }
 
 function copyStudentResult() {
@@ -1764,43 +2253,40 @@ async function generateShareLink() {
   const d = decks.find(x => x.id === currentSetId);
   if (!d) return;
   if (!d.cards.length) { toast('Добавьте карточки перед отправкой'); return; }
-  const encoded = urlEncode(packDeck(d));
-  const fullUrl = location.href.split('#')[0] + '#quiz=' + encoded;
-  const isLocal = fullUrl.startsWith('file://');
 
-  // Show modal immediately
-  document.getElementById('share-modal-name').textContent = d.name;
-  document.getElementById('share-url-input').value = isLocal ? fullUrl : 'Сокращаю ссылку…';
-  document.getElementById('share-url-input').disabled = !isLocal;
-  document.getElementById('btn-copy-share').textContent = 'Копировать';
-  document.getElementById('btn-copy-share').disabled = !isLocal;
-  document.getElementById('share-warning').style.display = isLocal ? 'block' : 'none';
-  document.getElementById('share-qr').src = '';
-  document.getElementById('share-modal').classList.add('show');
-
-  let shareUrl = fullUrl;
-
-  if (!isLocal) {
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 6000);
-      const resp = await fetch(
-        `https://is.gd/create.php?format=json&url=${encodeURIComponent(fullUrl)}`,
-        { signal: ctrl.signal }
-      );
-      clearTimeout(t);
-      const data = await resp.json();
-      if (data.shorturl) shareUrl = data.shorturl;
-    } catch(e) { /* fall back to full URL */ }
-
-    document.getElementById('share-url-input').value = shareUrl;
-    document.getElementById('share-url-input').disabled = false;
-    document.getElementById('btn-copy-share').disabled = false;
+  // Ensure deck has teacherId saved (for result routing)
+  if (_db && currentUser && !d.teacherId) {
+    d.teacherId = currentUser.uid;
+    save();
   }
 
-  // QR code (light theme: dark dots on white)
+  const base = location.href.split('#')[0];
+  const fullUrl = base + '#q=' + d.id;  // Short link: just the deck ID!
+
+  document.getElementById('share-modal-name').textContent = d.name;
+
+  // Show the deck ID prominently as the "code"
+  document.getElementById('share-url-input').value = fullUrl;
+  document.getElementById('share-url-input').disabled = false;
+  document.getElementById('btn-copy-share').textContent = 'Копировать';
+  document.getElementById('btn-copy-share').disabled = false;
+
+  const isLocal = fullUrl.startsWith('file://');
+  document.getElementById('share-warning').style.display = isLocal ? 'block' : 'none';
+  if (isLocal) {
+    document.getElementById('share-warning').textContent =
+      '⚠️ Вы открываете файл локально. Опубликуйте сайт (GitHub Pages), чтобы ученики могли открыть ссылку.';
+  }
+
+  document.getElementById('share-modal').classList.add('show');
+
+  // Show deck ID as short code
+  const codeEl = document.getElementById('share-deck-code');
+  if (codeEl) { codeEl.textContent = d.id; codeEl.style.display = ''; }
+
+  // QR code
   document.getElementById('share-qr').src =
-    `https://api.qrserver.com/v1/create-qr-code/?size=190x190&color=1e2140&bgcolor=ffffff&qzone=1&data=${encodeURIComponent(shareUrl)}`;
+    `https://api.qrserver.com/v1/create-qr-code/?size=190x190&color=1e2140&bgcolor=ffffff&qzone=1&data=${encodeURIComponent(fullUrl)}`;
 }
 
 function copyShareUrl() {
@@ -1818,70 +2304,141 @@ function closeShareModal() {
 }
 
 // ─── TEACHER RESULTS ─────────────────────────────────────────────────────────
+let _resultsUnsubscribe = null;
+
 function renderTeacherResults() {
-  const key = 'qf_results_' + currentSetId;
-  const results = JSON.parse(localStorage.getItem(key) || '[]');
   const container = document.getElementById('teacher-results-container');
-  if (!results.length) {
-    container.innerHTML = `<div class="stats-empty">
-      Результатов пока нет.<br>
-      Нажмите <strong>🔗 Поделиться</strong> и отправьте ссылку ученикам.
-    </div>`;
-    return;
+  container.innerHTML = '<div class="stats-empty">Загрузка…</div>';
+  if (!_db || !currentSetId) { container.innerHTML = '<div class="stats-empty">Firebase не настроен</div>'; return; }
+
+  if (_resultsUnsubscribe) { _resultsUnsubscribe(); _resultsUnsubscribe = null; }
+
+  _resultsUnsubscribe = _db.collection('results')
+    .where('deckId', '==', currentSetId)
+    .orderBy('date', 'desc')
+    .onSnapshot(snap => {
+      const results = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (!results.length) {
+        container.innerHTML = `<div class="stats-empty">
+          Результатов пока нет.<br>
+          Нажмите <strong>🔗 Поделиться</strong> — ученики пройдут тест и результаты появятся здесь автоматически.
+        </div>`; return;
+      }
+      const best = Math.max(...results.map(r => r.pct));
+      const avg  = Math.round(results.reduce((s, r) => s + r.pct, 0) / results.length);
+      container.innerHTML = `
+        <div class="stats-summary" style="margin-bottom:20px">
+          <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Учеников</div></div>
+          <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
+          <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
+        </div>
+        <div class="stats-history-title">
+          <span>Список учеников</span>
+          <button class="btn-clear-stats" onclick="clearTeacherResults()">Очистить</button>
+        </div>
+        ${results.map(r => {
+          const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date);
+          const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+          const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+          const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+          return `<div class="stat-row">
+            <div class="results-row-name">${esc(r.studentName || r.name || '—')}</div>
+            <div class="results-row-date">${d}, ${t}</div>
+            <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
+            <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+          </div>`;
+        }).join('')}
+      `;
+    }, err => {
+      container.innerHTML = `<div class="stats-empty">Ошибка загрузки. Проверьте правила Firestore.</div>`;
+    });
+}
+
+async function clearTeacherResults() {
+  if (!confirm('Очистить все результаты учеников для этого набора?')) return;
+  if (!_db) return;
+  const snap = await _db.collection('results').where('deckId', '==', currentSetId).get();
+  const batch = _db.batch();
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
+  toast('Результаты очищены');
+}
+
+// ─── GLOBAL STATS PAGE ────────────────────────────────────────────────────────
+function renderSetStats() {
+  // Per-set stats (teacher's own plays) - kept in deck.history
+  const d = decks.find(x => x.id === currentSetId);
+  const el = document.getElementById('set-stats-container');
+  if (!el) return;
+  if (!d) { el.innerHTML = ''; return; }
+  const history = d.history || [];
+  if (!history.length) {
+    el.innerHTML = '<div class="stats-empty">Вы ещё не проходили этот набор</div>'; return;
   }
-  const best = Math.max(...results.map(r => r.pct));
-  const avg  = Math.round(results.reduce((s, r) => s + r.pct, 0) / results.length);
-  container.innerHTML = `
+  const best = Math.max(...history.map(h => h.pct));
+  const avg  = Math.round(history.reduce((s, h) => s + h.pct, 0) / history.length);
+  el.innerHTML = `
     <div class="stats-summary" style="margin-bottom:20px">
-      <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Учеников</div></div>
+      <div class="stat-card"><div class="val">${history.length}</div><div class="lbl">Попыток</div></div>
       <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
-      <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
+      <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний результат</div></div>
     </div>
     <div class="stats-history-title">
-      <span>Список учеников</span>
-      <button class="btn-clear-stats" onclick="clearTeacherResults()">Очистить</button>
+      <span>История</span>
+      <button class="btn-clear-stats" onclick="clearSetStats()">Очистить</button>
     </div>
-    ${results.map(r => {
-      const dt = new Date(r.date);
-      const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-      const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+    ${history.slice(0,20).map(h => {
+      const dt = new Date(h.date);
+      const ds = dt.toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+      const ts = dt.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+      const c  = h.pct>=80?'var(--green)':h.pct>=50?'var(--yellow)':'var(--accent2)';
+      const ml = h.mode==='flashcard'?'🃏':'🧠';
       return `<div class="stat-row">
-        <div class="results-row-name">${esc(r.name)}</div>
-        <div class="results-row-date">${d}, ${t}</div>
-        <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
-        <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+        <div class="stat-row-date">${ds}, ${ts}</div>
+        <div class="stat-row-mode">${ml} ${h.correct}/${h.total}</div>
+        <div class="stat-row-bar-wrap"><div class="stat-row-bar" style="width:${h.pct}%;background:${c}"></div></div>
+        <div class="stat-row-score" style="color:${c}">${h.pct}%</div>
       </div>`;
     }).join('')}
   `;
 }
 
-function clearTeacherResults() {
-  if (!confirm('Очистить все результаты учеников для этого набора?')) return;
-  localStorage.removeItem('qf_results_' + currentSetId);
-  renderTeacherResults();
+function clearSetStats() {
+  if (!confirm('Очистить историю прохождений этого набора?')) return;
+  const d = decks.find(x => x.id === currentSetId);
+  if (d) { d.history = []; save(); }
+  renderSetStats();
 }
 
-// ─── GLOBAL STATS PAGE ────────────────────────────────────────────────────────
 function showStatsPage() {
   showPage('stats');
-  document.getElementById('nav-home').classList.remove('active');
-  document.getElementById('nav-stats').classList.add('active');
+  const nh = document.getElementById('nav-home');
+  const ns = document.getElementById('nav-stats');
+  if (nh) nh.classList.remove('active');
+  if (ns) ns.classList.add('active');
   renderGlobalStats();
 }
 
-function renderGlobalStats() {
+async function renderGlobalStats() {
   const allHistory = [];
-  let totalStudents = 0;
   decks.forEach(d => {
     (d.history || []).forEach(h => allHistory.push({ ...h, setName: d.name, setId: d.id }));
-    totalStudents += JSON.parse(localStorage.getItem('qf_results_' + d.id) || '[]').length;
   });
   allHistory.sort((a, b) => b.date - a.date);
 
   const sumEl  = document.getElementById('global-summary');
   const setsEl = document.getElementById('global-sets');
   const histEl = document.getElementById('global-history');
+
+  // Count total student submissions from Firestore
+  let totalStudents = 0;
+  if (_db && currentUser) {
+    try {
+      const snap = await _db.collection('results')
+        .where('teacherId', '==', currentUser.uid).get();
+      totalStudents = snap.size;
+    } catch(e) {}
+  }
 
   const best = allHistory.length ? Math.max(...allHistory.map(h => h.pct)) : null;
   const avg  = allHistory.length ? Math.round(allHistory.reduce((s, h) => s + h.pct, 0) / allHistory.length) : null;
@@ -1898,14 +2455,13 @@ function renderGlobalStats() {
   } else {
     setsEl.innerHTML = decks.map(d => {
       const h  = d.history || [];
-      const sr = JSON.parse(localStorage.getItem('qf_results_' + d.id) || '[]');
       const bp = h.length ? Math.max(...h.map(x => x.pct)) : null;
       const c  = bp !== null ? (bp >= 80 ? 'var(--green)' : bp >= 50 ? 'var(--yellow)' : 'var(--accent2)') : 'var(--muted)';
       const ml = d.mode === 'flashcard' ? '🃏' : '🧠';
       return `<div class="stat-row" onclick="openSet('${d.id}','play')" style="cursor:pointer">
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px">${esc(d.name)}</div>
-          <div style="font-size:0.78rem;color:var(--muted)">${ml} · ${d.cards.length} карт. · ${h.length} попыток · ${sr.length} учеников</div>
+          <div style="font-size:0.78rem;color:var(--muted)">${ml} · ${d.cards.length} карт. · ${h.length} попыток</div>
         </div>
         <div style="font-size:1.2rem;font-weight:800;color:${c}">${bp !== null ? bp + '%' : '—'}</div>
       </div>`;
@@ -1934,8 +2490,7 @@ function renderGlobalStats() {
 
 function clearAllHistory() {
   if (!confirm('Очистить всю историю ваших попыток?')) return;
-  decks.forEach(d => { d.history = []; });
-  save();
+  decks.forEach(d => { d.history = []; save(d.id); });
   renderGlobalStats();
 }
 
