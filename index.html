@@ -22,603 +22,530 @@
       --shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      min-height: 100vh;
-    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
 
-    /* ───── HEADER ───── */
+    /* ── HEADER ── */
     header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 100;
     }
-    .logo { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+    .logo { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.5px; cursor: pointer; }
     .logo span { color: var(--accent); }
     .nav-tabs { display: flex; gap: 6px; }
     .nav-tab {
-      padding: 8px 18px;
-      border-radius: 8px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 8px 18px; border-radius: 8px; border: none;
+      background: transparent; color: var(--muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
     }
     .nav-tab:hover { color: var(--text); background: var(--card); }
     .nav-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+    .btn-new-set {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 8px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+    }
+    .btn-new-set:hover { opacity: 0.88; }
 
-    /* ───── LAYOUT ───── */
+    /* ── LAYOUT ── */
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
-
-    /* ───── VIEWS ───── */
     .view { display: none; }
     .view.active { display: block; }
 
-    /* ───── PAGE TITLE ───── */
+    /* ── TYPOGRAPHY ── */
     .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
     .page-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 28px; }
 
-    /* ───── FORM ───── */
-    .form-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      box-shadow: var(--shadow);
-    }
-    .form-row { margin-bottom: 20px; }
-    label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
-    input[type="text"], textarea, select {
-      width: 100%;
-      background: var(--card);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-size: 1rem;
-      padding: 12px 16px;
-      outline: none;
-      transition: border-color 0.2s;
-      resize: vertical;
-    }
-    input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
-    textarea { min-height: 100px; }
-
-    .options-section { margin-top: 12px; }
-    .option-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-    .option-row input { flex: 1; }
-    .option-correct { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; white-space: nowrap; color: var(--muted); cursor: pointer; }
-    .option-correct input[type="radio"] { accent-color: var(--green); cursor: pointer; }
-    .btn-add-option {
-      background: transparent;
-      border: 1.5px dashed var(--border);
-      color: var(--muted);
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      width: 100%;
-      margin-top: 4px;
-    }
-    .btn-add-option:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-remove {
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 1.1rem;
-      line-height: 1;
-      padding: 4px;
-      transition: color 0.2s;
-    }
-    .btn-remove:hover { color: var(--accent2); }
-
-    .form-actions { display: flex; gap: 12px; margin-top: 8px; }
+    /* ── BUTTONS ── */
     .btn-primary {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 12px 28px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
+      background: var(--accent); color: #fff; border: none; border-radius: 10px;
+      padding: 11px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s;
     }
     .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
     .btn-primary:active { transform: translateY(0); }
     .btn-secondary {
-      background: transparent;
-      color: var(--muted);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 24px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      background: transparent; color: var(--muted); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 11px 20px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
     }
     .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
-
-    /* ───── DECKS LIST ───── */
-    .decks-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-    .deck-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      cursor: pointer;
-      transition: border-color 0.2s, transform 0.2s;
-      position: relative;
-    }
-    .deck-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .deck-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 6px; }
-    .deck-meta { color: var(--muted); font-size: 0.85rem; }
-    .deck-badge {
-      display: inline-block;
-      background: var(--accent);
-      color: #fff;
-      font-size: 0.72rem;
-      padding: 2px 8px;
-      border-radius: 99px;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
-    .deck-actions { position: absolute; top: 14px; right: 14px; display: flex; gap: 6px; }
-    .deck-actions button {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--muted);
-      padding: 4px 8px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .deck-actions button:hover { color: var(--text); border-color: var(--muted); }
-    .deck-actions .del:hover { color: var(--accent2); border-color: var(--accent2); }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
-    }
-    .empty-icon { font-size: 3rem; margin-bottom: 16px; }
-    .empty-state p { font-size: 1rem; }
-
-    /* ───── CARDS LIST ───── */
-    .back-btn {
-      display: inline-flex; align-items: center; gap: 6px;
+    .btn-ghost {
       background: transparent; border: none; color: var(--muted);
-      font-size: 0.9rem; cursor: pointer; margin-bottom: 20px;
-      padding: 0; transition: color 0.2s;
+      font-size: 0.88rem; cursor: pointer; padding: 6px 10px; border-radius: 7px; transition: all 0.2s;
+    }
+    .btn-ghost:hover { color: var(--text); background: var(--card); }
+    .btn-ghost.danger:hover { color: var(--accent2); }
+    .btn-icon {
+      background: var(--card); border: 1px solid var(--border); color: var(--muted);
+      border-radius: 7px; padding: 5px 10px; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-icon:hover { color: var(--text); border-color: var(--muted); }
+    .btn-icon.danger:hover { color: var(--accent2); border-color: var(--accent2); }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: transparent; border: none; color: var(--muted);
+      font-size: 0.88rem; cursor: pointer; padding: 0; margin-bottom: 20px; transition: color 0.2s;
     }
     .back-btn:hover { color: var(--text); }
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 20px; }
-    .qcard {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .qcard:hover { border-color: var(--accent); }
-    .qcard-top { padding: 16px; }
-    .qcard-type {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .5px; margin-bottom: 8px;
-    }
-    .qcard-q { font-size: 0.95rem; font-weight: 600; line-height: 1.4; }
-    .qcard-bottom {
-      border-top: 1px solid var(--border);
-      padding: 10px 16px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .qcard-answer { font-size: 0.82rem; color: var(--green); font-weight: 600; }
-    .qcard-acts { display: flex; gap: 6px; }
-    .qcard-acts button {
-      background: transparent; border: none; color: var(--muted);
-      font-size: 0.85rem; cursor: pointer; transition: color 0.2s; padding: 2px 4px;
-    }
-    .qcard-acts button:hover { color: var(--text); }
-    .qcard-acts .del:hover { color: var(--accent2); }
 
-    /* ───── QUIZ MODE ───── */
-    .quiz-setup {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
+    /* ── FORM ── */
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+    .form-row { margin-bottom: 18px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .5px; }
+    input[type="text"], textarea, select {
+      width: 100%; background: var(--card); border: 1.5px solid var(--border);
+      border-radius: 10px; color: var(--text); font-size: 1rem;
+      padding: 11px 14px; outline: none; transition: border-color 0.2s; resize: vertical;
     }
-    .quiz-deck-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
-    .quiz-deck-pick {
-      padding: 14px;
-      border-radius: 10px;
-      border: 2px solid var(--border);
-      cursor: pointer;
+    input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { min-height: 80px; }
+    .form-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .option-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .option-row input { flex: 1; }
+    .option-correct { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; white-space: nowrap; color: var(--muted); cursor: pointer; }
+    .option-correct input[type="radio"] { accent-color: var(--green); cursor: pointer; }
+    .btn-add-option {
+      background: transparent; border: 1.5px dashed var(--border); color: var(--muted);
+      border-radius: 8px; padding: 7px 12px; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; width: 100%; margin-top: 4px;
+    }
+    .btn-add-option:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-remove { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 4px; transition: color 0.2s; }
+    .btn-remove:hover { color: var(--accent2); }
+
+    /* ── MODE TOGGLE ── */
+    .mode-toggle { display: flex; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); width: fit-content; }
+    .mode-btn { padding: 9px 20px; border: none; background: transparent; color: var(--muted); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .mode-btn:hover { color: var(--text); }
+    .mode-btn.active { background: var(--accent); color: #fff; }
+
+    /* ── DECKS LIST ── */
+    .decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .deck-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s; position: relative;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .deck-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .deck-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .deck-badge {
+      display: inline-block; background: var(--accent); color: #fff;
+      font-size: 0.7rem; padding: 2px 9px; border-radius: 99px; font-weight: 600;
+    }
+    .deck-name { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+    .deck-meta { color: var(--muted); font-size: 0.82rem; }
+    .deck-footer {
+      display: flex; gap: 8px; margin-top: 6px;
+      padding-top: 12px; border-top: 1px solid var(--border);
+    }
+    .deck-footer .btn-start {
+      flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 8px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+    }
+    .deck-footer .btn-start:hover { opacity: 0.88; }
+    .deck-footer .btn-edit {
+      background: var(--card); border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+    }
+    .deck-footer .btn-edit:hover { color: var(--text); border-color: var(--muted); }
+    .deck-card .btn-del-deck {
+      position: absolute; top: 12px; right: 12px;
+      background: transparent; border: none; color: var(--border); font-size: 0.85rem;
+      cursor: pointer; padding: 3px 6px; border-radius: 5px; transition: all 0.2s;
+    }
+    .deck-card .btn-del-deck:hover { color: var(--accent2); background: rgba(255,101,132,0.1); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+
+    /* ── SET PAGE ── */
+    .set-header {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px 28px; margin-bottom: 4px;
+    }
+    .set-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .set-title-group { flex: 1; }
+    .set-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; line-height: 1.2; }
+    .set-desc { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .set-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* Edit settings panel */
+    .set-edit-panel {
+      margin-top: 20px; padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+    .set-edit-panel.open { display: block; }
+
+    /* ── TABS ── */
+    .set-tabs {
+      display: flex; gap: 0; border-bottom: 2px solid var(--border);
+      margin-bottom: 24px; margin-top: 20px;
+    }
+    .set-tab {
+      padding: 11px 22px; border: none; background: transparent;
+      color: var(--muted); font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; border-bottom: 2px solid transparent; margin-bottom: -2px;
+    }
+    .set-tab:hover { color: var(--text); }
+    .set-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── CARDS GRID ── */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .qcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+    .qcard:hover { border-color: var(--accent); }
+    .qcard-top { padding: 14px 16px; }
+    .qcard-type { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px; }
+    .qcard-q { font-size: 0.93rem; font-weight: 600; line-height: 1.4; }
+    .qcard-bottom { border-top: 1px solid var(--border); padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .qcard-answer { font-size: 0.8rem; color: var(--green); font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .qcard-acts { display: flex; gap: 4px; flex-shrink: 0; }
+    .qcard-acts button { background: transparent; border: none; color: var(--muted); font-size: 0.82rem; cursor: pointer; transition: color 0.2s; padding: 2px 5px; border-radius: 4px; }
+    .qcard-acts button:hover { color: var(--text); background: var(--card); }
+    .qcard-acts .del:hover { color: var(--accent2); }
+    .qcard-acts button:disabled { opacity: 0.3; cursor: default; }
+    .qcard-acts button:disabled:hover { color: var(--muted); background: transparent; }
+
+    /* Badges */
+    .type-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 2px 8px; border-radius: 99px; }
+    .type-badge.single { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .type-badge.multi { background: rgba(255,209,102,0.2); color: var(--yellow); }
+    .type-badge.open { background: rgba(67,217,162,0.2); color: var(--green); }
+
+    /* ── ADD CARD FORM (inline) ── */
+    .add-card-bar { margin-bottom: 20px; }
+    .add-card-toggle {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1.5px dashed var(--border);
+      border-radius: var(--radius); padding: 14px 20px; cursor: pointer;
+      color: var(--muted); font-size: 0.9rem; font-weight: 600; width: 100%;
       transition: all 0.2s;
     }
-    .quiz-deck-pick:hover { border-color: var(--accent); }
-    .quiz-deck-pick.selected { border-color: var(--accent); background: rgba(108,99,255,0.12); }
-    .quiz-deck-pick .name { font-weight: 600; }
-    .quiz-deck-pick .cnt { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+    .add-card-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .add-card-toggle .plus { font-size: 1.2rem; line-height: 1; }
+    .card-form-wrap { display: none; margin-bottom: 4px; }
+    .card-form-wrap.open { display: block; }
 
-    /* Quiz play */
-    .quiz-play { display: none; }
-    .quiz-play.active { display: block; }
-    .quiz-progress-bar-wrap { background: var(--card); border-radius: 99px; height: 6px; margin-bottom: 24px; }
-    .quiz-progress-bar { background: var(--accent); height: 6px; border-radius: 99px; transition: width 0.4s; }
-    .quiz-counter { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
-    .quiz-question-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      margin-bottom: 20px;
-    }
-    .quiz-q-text { font-size: 1.3rem; font-weight: 700; line-height: 1.5; }
-    .quiz-options { display: grid; gap: 12px; margin-top: 20px; }
+    /* ── PLAY TAB ── */
+    .play-setup { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; }
+    .play-setup h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; }
+    .shuffle-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .toggle-wrap { width: 42px; height: 24px; background: var(--accent); border-radius: 99px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+    .toggle-knob { width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 3px; left: 21px; transition: left 0.2s; }
+    .toggle-label { font-size: 0.92rem; color: var(--text); cursor: pointer; user-select: none; }
+
+    /* Quiz progress */
+    .quiz-running { display: none; }
+    .quiz-running.active { display: block; }
+    .quiz-progress-bar-wrap { background: var(--card); border-radius: 99px; height: 5px; margin-bottom: 20px; }
+    .quiz-progress-bar { background: var(--accent); height: 5px; border-radius: 99px; transition: width 0.4s; }
+    .quiz-counter { font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .quiz-question-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 16px; }
+    .quiz-q-text { font-size: 1.25rem; font-weight: 700; line-height: 1.5; }
+    .quiz-options { display: grid; gap: 10px; margin-top: 18px; }
     .quiz-opt {
-      padding: 14px 18px;
-      background: var(--card);
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 0.97rem;
-      transition: all 0.18s;
-      text-align: left;
-      color: var(--text);
+      padding: 13px 16px; background: var(--card); border: 2px solid var(--border);
+      border-radius: 10px; cursor: pointer; font-size: 0.95rem; transition: all 0.18s; text-align: left; color: var(--text);
     }
     .quiz-opt:hover:not(:disabled) { border-color: var(--accent); background: rgba(108,99,255,0.1); }
     .quiz-opt.correct { border-color: var(--green); background: rgba(67,217,162,0.12); color: var(--green); }
     .quiz-opt.wrong { border-color: var(--accent2); background: rgba(255,101,132,0.1); color: var(--accent2); }
     .quiz-opt:disabled { cursor: default; }
-    .quiz-open-input { margin-top: 16px; }
-    .quiz-open-input input { margin-bottom: 12px; }
-    .quiz-feedback {
-      margin-top: 16px; padding: 14px 18px;
-      border-radius: 10px; font-weight: 600; font-size: 0.95rem;
-      display: none;
-    }
+    .quiz-open-input { margin-top: 14px; }
+    .quiz-open-input input { margin-bottom: 10px; }
+    .quiz-feedback { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 0.92rem; display: none; }
     .quiz-feedback.show { display: block; }
     .quiz-feedback.correct { background: rgba(67,217,162,0.1); color: var(--green); border: 1px solid var(--green); }
     .quiz-feedback.wrong { background: rgba(255,101,132,0.1); color: var(--accent2); border: 1px solid var(--accent2); }
-    .quiz-next-btn {
-      margin-top: 16px;
-      display: none;
-    }
+    .quiz-next-btn { margin-top: 14px; display: none; }
     .quiz-next-btn.show { display: block; }
 
     /* Results */
-    .quiz-results {
-      text-align: center; padding: 40px 20px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-    .results-score { font-size: 4rem; font-weight: 800; color: var(--accent); }
-    .results-label { font-size: 1rem; color: var(--muted); margin-top: 6px; }
-    .results-detail { margin: 24px 0; display: flex; justify-content: center; gap: 32px; }
-    .results-stat .val { font-size: 1.5rem; font-weight: 700; }
-    .results-stat .lbl { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+    .quiz-results { text-align: center; padding: 36px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .results-score { font-size: 3.5rem; font-weight: 800; color: var(--accent); }
+    .results-label { font-size: 0.95rem; color: var(--muted); margin-top: 4px; }
+    .results-detail { margin: 20px 0; display: flex; justify-content: center; gap: 32px; }
+    .results-stat .val { font-size: 1.4rem; font-weight: 700; }
+    .results-stat .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
 
-    /* Badges */
-    .type-badge {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .5px; padding: 2px 8px; border-radius: 99px;
-    }
-    .type-badge.single { background: rgba(108,99,255,0.2); color: var(--accent); }
-    .type-badge.multi { background: rgba(255,209,102,0.2); color: var(--yellow); }
-    .type-badge.open { background: rgba(67,217,162,0.2); color: var(--green); }
-
-    /* ───── MODE TOGGLE ───── */
-    .mode-toggle { display: flex; gap: 0; margin-bottom: 24px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); width: fit-content; }
-    .mode-btn {
-      padding: 10px 24px; border: none; background: transparent;
-      color: var(--muted); font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .mode-btn:hover { color: var(--text); }
-    .mode-btn.active { background: var(--accent); color: #fff; }
-
-    /* ───── FLIP CARD ───── */
-    .flashcard-wrap {
-      perspective: 1200px;
-      margin-bottom: 24px;
-      cursor: pointer;
-    }
-    .flashcard {
-      width: 100%; height: 280px;
-      position: relative;
-      transform-style: preserve-3d;
-      transition: transform 0.55s cubic-bezier(.4,0,.2,1);
-      border-radius: var(--radius);
-    }
+    /* ── FLIP CARD ── */
+    .flashcard-wrap { perspective: 1200px; margin-bottom: 20px; cursor: pointer; }
+    .flashcard { width: 100%; height: 260px; position: relative; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(.4,0,.2,1); border-radius: var(--radius); }
     .flashcard.flipped { transform: rotateY(180deg); }
-    .flashcard-face {
-      position: absolute; inset: 0;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      border-radius: var(--radius);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 36px 32px; text-align: center;
-      border: 1px solid var(--border);
-    }
+    .flashcard-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; border: 1px solid var(--border); }
     .flashcard-front { background: var(--surface); }
-    .flashcard-back {
-      background: var(--card);
-      transform: rotateY(180deg);
-      border-color: var(--accent);
-    }
-    .flashcard-label {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .8px; color: var(--muted); margin-bottom: 20px;
-    }
+    .flashcard-back { background: var(--card); transform: rotateY(180deg); border-color: var(--accent); }
+    .flashcard-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 16px; }
     .flashcard-back .flashcard-label { color: var(--accent); }
-    .flashcard-text {
-      font-size: 1.4rem; font-weight: 700; line-height: 1.5; color: var(--text);
-    }
-    .flashcard-back .flashcard-text { color: var(--green); font-size: 1.3rem; }
-    .flashcard-hint {
-      margin-top: 20px; font-size: 0.82rem; color: var(--muted);
-    }
-    .flashcard-actions {
-      display: flex; gap: 16px; justify-content: center;
-      margin-top: 8px;
-    }
-    .fc-btn-knew {
-      flex: 1; max-width: 180px;
-      padding: 14px 20px; border-radius: 10px; border: 2px solid var(--green);
-      background: rgba(67,217,162,0.1); color: var(--green);
-      font-size: 1rem; font-weight: 700; cursor: pointer;
-      transition: all 0.2s;
-    }
+    .flashcard-text { font-size: 1.35rem; font-weight: 700; line-height: 1.5; color: var(--text); }
+    .flashcard-back .flashcard-text { color: var(--green); font-size: 1.2rem; }
+    .flashcard-hint { margin-top: 16px; font-size: 0.78rem; color: var(--muted); }
+    .flashcard-actions { display: flex; gap: 14px; justify-content: center; margin-top: 10px; }
+    .fc-btn-knew { flex: 1; max-width: 180px; padding: 13px 18px; border-radius: 10px; border: 2px solid var(--green); background: rgba(67,217,162,0.1); color: var(--green); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
     .fc-btn-knew:hover { background: rgba(67,217,162,0.2); transform: translateY(-2px); }
-    .fc-btn-no {
-      flex: 1; max-width: 180px;
-      padding: 14px 20px; border-radius: 10px; border: 2px solid var(--accent2);
-      background: rgba(255,101,132,0.1); color: var(--accent2);
-      font-size: 1rem; font-weight: 700; cursor: pointer;
-      transition: all 0.2s;
-    }
+    .fc-btn-no { flex: 1; max-width: 180px; padding: 13px 18px; border-radius: 10px; border: 2px solid var(--accent2); background: rgba(255,101,132,0.1); color: var(--accent2); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
     .fc-btn-no:hover { background: rgba(255,101,132,0.2); transform: translateY(-2px); }
     .flashcard-actions-hidden { display: none; }
 
-    /* Toast */
-    #toast {
-      position: fixed; bottom: 28px; right: 28px;
-      background: var(--surface); color: var(--text);
-      border: 1px solid var(--border); border-radius: 10px;
-      padding: 12px 20px; font-size: 0.9rem;
-      opacity: 0; pointer-events: none;
-      transform: translateY(10px);
-      transition: all 0.3s;
-      z-index: 999;
-    }
+    /* ── TOAST ── */
+    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 0.88rem; opacity: 0; pointer-events: none; transform: translateY(10px); transition: all 0.3s; z-index: 999; }
     #toast.show { opacity: 1; transform: translateY(0); }
 
-    /* Modal */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); z-index: 200;
-      align-items: center; justify-content: center;
-    }
+    /* ── MODAL ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: center; justify-content: center; }
     .modal-overlay.show { display: flex; }
-    .modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 28px; max-width: 500px; width: 90%;
-      box-shadow: var(--shadow);
-    }
-    .modal h3 { font-size: 1.2rem; margin-bottom: 6px; }
-    .modal p { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; max-width: 480px; width: 92%; box-shadow: var(--shadow); }
+    .modal h3 { font-size: 1.2rem; margin-bottom: 8px; }
+    .modal .modal-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
+    /* autosave */
+    #autosave-indicator { font-size: 0.75rem; color: var(--green); font-weight: 600; }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Quiz<span>Forge</span></div>
+  <div class="logo" onclick="goHome()">Quiz<span>Forge</span></div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showView('decks')">Мои наборы</button>
-    <button class="nav-tab" onclick="showView('create')">+ Создать</button>
-    <button class="nav-tab" onclick="showView('quiz')">Пройти тест</button>
+    <button class="nav-tab active" id="nav-home" onclick="goHome()">Мои наборы</button>
   </div>
+  <button class="btn-new-set" onclick="showNewSetModal()">+ Новый набор</button>
 </header>
 
 <main>
 
-  <!-- ═══ DECKS ═══ -->
+  <!-- ═══ DECKS LIST ═══ -->
   <div class="view active" id="view-decks">
-    <div class="decks-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
       <div>
         <div class="page-title">Мои наборы</div>
-        <div class="page-sub">Все наборы карточек-викторин</div>
+        <div class="page-sub" style="margin-bottom:0">Все наборы карточек-викторин</div>
       </div>
     </div>
     <div class="decks-grid" id="decks-grid"></div>
   </div>
 
-  <!-- ═══ CARDS LIST (nested) ═══ -->
-  <div class="view" id="view-cards">
-    <button class="back-btn" onclick="showView('decks')">← Все наборы</button>
-    <div id="cards-deck-title" class="page-title"></div>
-    <div class="page-sub" id="cards-deck-sub"></div>
-    <button class="btn-primary" onclick="openAddCard()" style="margin-bottom:4px">+ Добавить карточку</button>
-    <div class="cards-grid" id="cards-grid"></div>
-  </div>
+  <!-- ═══ SET PAGE ═══ -->
+  <div class="view" id="view-set">
 
-  <!-- ═══ CREATE ═══ -->
-  <div class="view" id="view-create">
-    <div class="page-title" id="create-title">Создать новый набор</div>
-    <div class="page-sub">Заполните данные и добавьте карточки</div>
+    <!-- Header -->
+    <button class="back-btn" onclick="goHome()">← Все наборы</button>
 
-    <div class="form-card">
-      <div class="form-row">
-        <label>Тип набора</label>
-        <div class="mode-toggle" id="deck-mode-toggle">
-          <button class="mode-btn active" id="deck-mode-test" onclick="setDeckMode('test')">🧠 Тест</button>
-          <button class="mode-btn" id="deck-mode-flashcard" onclick="setDeckMode('flashcard')">🃏 Карточки</button>
+    <div class="set-header">
+      <div class="set-header-top">
+        <div class="set-title-group">
+          <div id="set-badges" style="display:flex;gap:6px;margin-bottom:10px"></div>
+          <div class="set-name" id="set-name"></div>
+          <div class="set-desc" id="set-desc"></div>
+        </div>
+        <div class="set-header-actions">
+          <button class="btn-icon" onclick="toggleEditPanel()" id="btn-edit-settings">✏️ Изменить</button>
+          <button class="btn-icon danger" onclick="confirmDelete('deck', currentSetId)">🗑️</button>
         </div>
       </div>
-      <div class="form-row">
-        <label>Название набора</label>
-        <input type="text" id="deck-name-input" placeholder="Например: История России, Математика 8 кл.">
-      </div>
-      <div class="form-row">
-        <label>Описание (необязательно)</label>
-        <textarea id="deck-desc-input" placeholder="О чём этот набор?" rows="2"></textarea>
-      </div>
-      <div class="form-actions">
-        <button class="btn-primary" onclick="saveDeck()">Сохранить набор</button>
-        <button class="btn-secondary" onclick="resetCreateForm()">Очистить</button>
-      </div>
-    </div>
 
-    <!-- Card creator -->
-    <div id="card-creator" style="display:none; margin-top:28px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div class="page-title" style="font-size:1.2rem;margin-bottom:0" id="card-creator-title">Добавить карточку</div>
-        <span style="font-size:0.78rem;color:var(--green);font-weight:600" id="autosave-indicator"></span>
-      </div>
-      <div class="form-card" id="card-form">
-        <!-- Test mode fields -->
-        <div id="q-type-row" class="form-row">
-          <label>Тип вопроса</label>
-          <select id="q-type" onchange="renderQuestionType()">
-            <option value="single">Один верный ответ</option>
-            <option value="multi">Несколько верных ответов</option>
-            <option value="open">Открытый ответ</option>
-          </select>
+      <!-- Edit settings panel (collapsed by default) -->
+      <div class="set-edit-panel" id="set-edit-panel">
+        <div class="form-row">
+          <label>Тип набора</label>
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="edit-mode-test" onclick="setEditMode('test')">🧠 Тест</button>
+            <button class="mode-btn" id="edit-mode-flashcard" onclick="setEditMode('flashcard')">🃏 Карточки</button>
+          </div>
         </div>
         <div class="form-row">
-          <label>Вопрос</label>
-          <textarea id="q-text" placeholder="Введите вопрос..."></textarea>
+          <label>Название</label>
+          <input type="text" id="edit-name" placeholder="Название набора">
         </div>
-        <div id="q-options-block"></div>
-        <div class="form-actions">
-          <button class="btn-primary" onclick="saveCard()">Добавить карточку</button>
-          <button class="btn-secondary" onclick="cancelEditCard()">Отмена</button>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Описание</label>
+          <textarea id="edit-desc" placeholder="О чём этот набор?" rows="2"></textarea>
         </div>
-      </div>
-
-      <!-- Cards list below -->
-      <div id="cards-in-set-section" style="margin-top:28px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div style="font-size:1rem;font-weight:700">Карточки в наборе</div>
-          <span id="cards-in-set-count" style="font-size:0.82rem;color:var(--muted)"></span>
-        </div>
-        <div class="cards-grid" id="new-deck-cards-grid"></div>
-        <div id="new-deck-empty" style="text-align:center;padding:28px 0;color:var(--muted);font-size:0.9rem;display:none">
-          Карточек пока нет — добавьте первую выше ↑
+        <div class="form-actions" style="margin-top:16px">
+          <button class="btn-primary" onclick="saveSetSettings()">Сохранить изменения</button>
+          <button class="btn-secondary" onclick="toggleEditPanel()">Отмена</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ═══ QUIZ ═══ -->
-  <div class="view" id="view-quiz">
-    <div class="page-title">Пройти тест</div>
-    <div class="page-sub">Выберите набор и проверьте знания</div>
-
-    <div class="quiz-setup" id="quiz-setup">
-      <label style="margin-bottom:12px; display:block">Выберите набор</label>
-      <div class="quiz-deck-list" id="quiz-deck-list"></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-        <label class="shuffle-toggle" style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
-          <div class="toggle-wrap" id="shuffle-toggle-wrap" onclick="toggleShuffle()" style="width:40px;height:22px;background:var(--accent);border-radius:99px;position:relative;transition:background 0.2s;cursor:pointer">
-            <div id="shuffle-knob" style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;left:21px;transition:left 0.2s"></div>
-          </div>
-          <span style="font-size:0.9rem;color:var(--text)" id="shuffle-label">Перемешать карточки</span>
-        </label>
-      </div>
-      <button class="btn-primary" onclick="startQuizByMode()">Начать ▶</button>
+    <!-- Tabs -->
+    <div class="set-tabs">
+      <button class="set-tab active" id="tab-btn-cards" onclick="setSetTab('cards')">Карточки <span id="tab-cards-count" style="color:var(--muted);font-weight:400;font-size:0.82rem"></span></button>
+      <button class="set-tab" id="tab-btn-play" onclick="setSetTab('play')">▶ Пройти</button>
     </div>
 
-    <!-- Flashcard play -->
-    <div class="quiz-play" id="fc-play">
-      <div class="quiz-counter" id="fc-counter"></div>
-      <div class="quiz-progress-bar-wrap">
-        <div class="quiz-progress-bar" id="fc-progress-bar"></div>
-      </div>
-      <div class="flashcard-wrap" onclick="flipCurrentCard()">
-        <div class="flashcard" id="fc-card">
-          <div class="flashcard-face flashcard-front">
-            <div class="flashcard-label">Вопрос</div>
-            <div class="flashcard-text" id="fc-question"></div>
-            <div class="flashcard-hint">Нажмите, чтобы увидеть ответ</div>
-          </div>
-          <div class="flashcard-face flashcard-back">
-            <div class="flashcard-label">Ответ</div>
-            <div class="flashcard-text" id="fc-answer"></div>
-            <div class="flashcard-hint">Вы знали этот ответ?</div>
+    <!-- ── Tab: Карточки ── -->
+    <div class="tab-panel active" id="tab-cards">
+
+      <!-- Add card toggle -->
+      <div class="add-card-bar">
+        <button class="add-card-toggle" id="add-card-toggle-btn" onclick="toggleCardForm()">
+          <span class="plus">＋</span> Добавить карточку
+        </button>
+        <div class="card-form-wrap" id="card-form-wrap">
+          <div class="form-card" style="margin-top:10px" id="card-form">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div style="font-weight:700;font-size:1rem" id="card-form-title">Новая карточка</div>
+              <span id="autosave-indicator"></span>
+            </div>
+            <div id="q-type-row" class="form-row">
+              <label>Тип вопроса</label>
+              <select id="q-type" onchange="renderQuestionType()">
+                <option value="single">Один верный ответ</option>
+                <option value="multi">Несколько верных ответов</option>
+                <option value="open">Открытый ответ</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Вопрос</label>
+              <textarea id="q-text" placeholder="Введите вопрос..."></textarea>
+            </div>
+            <div id="q-options-block"></div>
+            <div class="form-actions">
+              <button class="btn-primary" onclick="saveCard()">Сохранить карточку</button>
+              <button class="btn-secondary" onclick="cancelEditCard()">Отмена</button>
+            </div>
           </div>
         </div>
       </div>
-      <div class="flashcard-actions flashcard-actions-hidden" id="fc-actions">
-        <button class="fc-btn-no" onclick="markCard(false)">✗ Не знал</button>
-        <button class="fc-btn-knew" onclick="markCard(true)">✓ Знал!</button>
+
+      <!-- Cards list -->
+      <div id="set-cards-grid" class="cards-grid"></div>
+      <div id="set-cards-empty" class="empty-state" style="display:none">
+        <div class="empty-icon">🃏</div>
+        <p>Карточек пока нет — добавьте первую выше</p>
       </div>
     </div>
 
-    <div class="quiz-results" id="fc-results" style="display:none">
-      <div class="results-score" id="fc-score"></div>
-      <div class="results-label">Знал правильный ответ</div>
-      <div class="results-detail">
-        <div class="results-stat"><div class="val" id="fc-correct" style="color:var(--green)"></div><div class="lbl">Знал</div></div>
-        <div class="results-stat"><div class="val" id="fc-wrong" style="color:var(--accent2)"></div><div class="lbl">Не знал</div></div>
-        <div class="results-stat"><div class="val" id="fc-total"></div><div class="lbl">Всего</div></div>
-      </div>
-      <button class="btn-primary" onclick="retryFlashcards()">Повторить снова</button>
-      <button class="btn-secondary" onclick="exitQuiz()" style="margin-left:10px">В меню</button>
-    </div>
+    <!-- ── Tab: Пройти ── -->
+    <div class="tab-panel" id="tab-play">
 
-    <div class="quiz-play" id="quiz-play">
-      <div class="quiz-counter" id="quiz-counter"></div>
-      <div class="quiz-progress-bar-wrap">
-        <div class="quiz-progress-bar" id="quiz-progress-bar"></div>
-      </div>
-      <div class="quiz-question-card">
-        <div class="quiz-q-text" id="quiz-q-text"></div>
-        <div class="quiz-options" id="quiz-options"></div>
-        <div class="quiz-open-input" id="quiz-open-input" style="display:none">
-          <input type="text" id="quiz-open-answer" placeholder="Введите ответ..." onkeydown="if(event.key==='Enter')checkOpenAnswer()">
-          <button class="btn-primary" onclick="checkOpenAnswer()">Проверить</button>
+      <!-- Setup (before quiz starts) -->
+      <div class="play-setup" id="play-setup">
+        <h3 id="play-setup-title">Готовы начать?</h3>
+        <div class="shuffle-row">
+          <div class="toggle-wrap" id="shuffle-toggle-wrap" onclick="toggleShuffle()">
+            <div class="toggle-knob" id="shuffle-knob"></div>
+          </div>
+          <span class="toggle-label" id="shuffle-label" onclick="toggleShuffle()">Перемешать карточки</span>
         </div>
-        <div class="quiz-feedback" id="quiz-feedback"></div>
-        <div class="quiz-next-btn" id="quiz-next-btn">
-          <button class="btn-primary" onclick="nextQuestion()">Следующий вопрос →</button>
+        <button class="btn-primary" style="font-size:1.05rem;padding:13px 32px" onclick="startQuizFromSet()">▶ Начать</button>
+      </div>
+
+      <!-- Flashcard play -->
+      <div class="quiz-running" id="fc-play">
+        <div class="quiz-counter">
+          <span id="fc-counter"></span>
+          <button class="btn-ghost" onclick="exitQuiz()">✕ Выйти</button>
+        </div>
+        <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="fc-progress-bar"></div></div>
+        <div class="flashcard-wrap" onclick="flipCurrentCard()">
+          <div class="flashcard" id="fc-card">
+            <div class="flashcard-face flashcard-front">
+              <div class="flashcard-label">Вопрос</div>
+              <div class="flashcard-text" id="fc-question"></div>
+              <div class="flashcard-hint">Нажмите, чтобы увидеть ответ</div>
+            </div>
+            <div class="flashcard-face flashcard-back">
+              <div class="flashcard-label">Ответ</div>
+              <div class="flashcard-text" id="fc-answer"></div>
+              <div class="flashcard-hint">Вы знали этот ответ?</div>
+            </div>
+          </div>
+        </div>
+        <div class="flashcard-actions flashcard-actions-hidden" id="fc-actions">
+          <button class="fc-btn-no" onclick="markCard(false)">✗ Не знал</button>
+          <button class="fc-btn-knew" onclick="markCard(true)">✓ Знал!</button>
         </div>
       </div>
-    </div>
 
-    <div class="quiz-results" id="quiz-results" style="display:none">
-      <div class="results-score" id="results-score"></div>
-      <div class="results-label">Правильных ответов</div>
-      <div class="results-detail">
-        <div class="results-stat"><div class="val" id="r-correct" style="color:var(--green)"></div><div class="lbl">Верно</div></div>
-        <div class="results-stat"><div class="val" id="r-wrong" style="color:var(--accent2)"></div><div class="lbl">Неверно</div></div>
-        <div class="results-stat"><div class="val" id="r-total"></div><div class="lbl">Всего</div></div>
+      <!-- Test play -->
+      <div class="quiz-running" id="quiz-play">
+        <div class="quiz-counter">
+          <span id="quiz-counter"></span>
+          <button class="btn-ghost" onclick="exitQuiz()">✕ Выйти</button>
+        </div>
+        <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="quiz-progress-bar"></div></div>
+        <div class="quiz-question-card">
+          <div class="quiz-q-text" id="quiz-q-text"></div>
+          <div class="quiz-options" id="quiz-options"></div>
+          <div class="quiz-open-input" id="quiz-open-input" style="display:none">
+            <input type="text" id="quiz-open-answer" placeholder="Введите ответ..." onkeydown="if(event.key==='Enter')checkOpenAnswer()">
+            <button class="btn-primary" onclick="checkOpenAnswer()">Проверить</button>
+          </div>
+          <div class="quiz-feedback" id="quiz-feedback"></div>
+          <div class="quiz-next-btn" id="quiz-next-btn">
+            <button class="btn-primary" onclick="nextQuestion()">Следующий вопрос →</button>
+          </div>
+        </div>
       </div>
-      <button class="btn-primary" onclick="retryQuiz()">Пройти снова</button>
-      <button class="btn-secondary" onclick="exitQuiz()" style="margin-left:10px">В меню</button>
-    </div>
-  </div>
+
+      <!-- Results (flashcards) -->
+      <div class="quiz-results" id="fc-results" style="display:none">
+        <div class="results-score" id="fc-score"></div>
+        <div class="results-label">Знал правильный ответ</div>
+        <div class="results-detail">
+          <div class="results-stat"><div class="val" id="fc-correct" style="color:var(--green)"></div><div class="lbl">Знал</div></div>
+          <div class="results-stat"><div class="val" id="fc-wrong" style="color:var(--accent2)"></div><div class="lbl">Не знал</div></div>
+          <div class="results-stat"><div class="val" id="fc-total"></div><div class="lbl">Всего</div></div>
+        </div>
+        <button class="btn-primary" onclick="startQuizFromSet()">Повторить снова</button>
+        <button class="btn-secondary" onclick="exitQuiz()" style="margin-left:10px">К настройкам</button>
+      </div>
+
+      <!-- Results (test) -->
+      <div class="quiz-results" id="quiz-results" style="display:none">
+        <div class="results-score" id="results-score"></div>
+        <div class="results-label">Правильных ответов</div>
+        <div class="results-detail">
+          <div class="results-stat"><div class="val" id="r-correct" style="color:var(--green)"></div><div class="lbl">Верно</div></div>
+          <div class="results-stat"><div class="val" id="r-wrong" style="color:var(--accent2)"></div><div class="lbl">Неверно</div></div>
+          <div class="results-stat"><div class="val" id="r-total"></div><div class="lbl">Всего</div></div>
+        </div>
+        <button class="btn-primary" onclick="startQuizFromSet()">Пройти снова</button>
+        <button class="btn-secondary" onclick="exitQuiz()" style="margin-left:10px">К настройкам</button>
+      </div>
+
+    </div><!-- /tab-play -->
+
+  </div><!-- /view-set -->
 
 </main>
 
-<!-- Modal confirm -->
+<!-- ═══ NEW SET MODAL ═══ -->
+<div class="modal-overlay" id="new-set-modal">
+  <div class="modal">
+    <h3>Новый набор</h3>
+    <div class="modal-sub">Выберите тип и задайте название</div>
+    <div class="form-row">
+      <label>Тип набора</label>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="new-mode-test" onclick="setNewMode('test')">🧠 Тест</button>
+        <button class="mode-btn" id="new-mode-flashcard" onclick="setNewMode('flashcard')">🃏 Карточки</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Название</label>
+      <input type="text" id="new-set-name" placeholder="Например: История России, Биология 8 кл." onkeydown="if(event.key==='Enter')createNewSet()">
+    </div>
+    <div class="form-row" style="margin-bottom:0">
+      <label>Описание (необязательно)</label>
+      <textarea id="new-set-desc" placeholder="О чём этот набор?" rows="2"></textarea>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-secondary" onclick="closeNewSetModal()">Отмена</button>
+      <button class="btn-primary" onclick="createNewSet()">Создать набор →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONFIRM MODAL ═══ -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <h3 id="modal-title">Подтверждение</h3>
-    <p id="modal-text"></p>
+    <p class="modal-sub" id="modal-text"></p>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal()">Отмена</button>
       <button class="btn-primary" id="modal-confirm-btn" style="background:var(--accent2)">Удалить</button>
@@ -629,18 +556,22 @@
 <div id="toast"></div>
 
 <script>
-// ─── STATE ───────────────────────────────────────────────────────────────────
+// ─── STATE ──────────────────────────────────────────────────────────────────
 let decks = JSON.parse(localStorage.getItem('qf_decks') || '[]');
 // deck: { id, name, desc, mode: 'test'|'flashcard', cards: [] }
 // test card:      { id, type: 'single'|'multi'|'open', question, options, answer }
 // flashcard card: { id, type: 'flashcard', question, answer }
 
-let editingDeckId = null;
+let currentSetId = null;       // currently open set
+let currentSetMode = 'test';   // mode of the currently open set
+let setCards = [];             // working copy of cards for current set
 let editingCardId = null;
-let currentViewDeckId = null;
 let quizState = null;
-let currentDeckMode = 'test';
+let fcState = null;
+let shouldShuffle = true;
+let newSetMode = 'test';
 
+// ─── PERSIST ────────────────────────────────────────────────────────────────
 function save() {
   localStorage.setItem('qf_decks', JSON.stringify(decks));
   const el = document.getElementById('autosave-indicator');
@@ -648,176 +579,160 @@ function save() {
 }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
-// ─── VIEWS ───────────────────────────────────────────────────────────────────
-function showView(name) {
-  // Auto-save any open draft before navigating away
-  if (name !== 'create' && editingDeckId) {
-    const d = decks.find(x => x.id === editingDeckId);
-    if (d) { d.cards = newDeckCards; save(); }
-  }
+// ─── NAVIGATION ─────────────────────────────────────────────────────────────
+function showPage(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  const tabs = { decks: 0, create: 1, quiz: 2 };
-  document.querySelectorAll('.nav-tab')[tabs[name]]?.classList.add('active');
-  if (name === 'decks') renderDecks();
-  if (name === 'quiz') renderQuizSetup();
+  document.getElementById('nav-home').classList.toggle('active', name === 'decks');
 }
 
-// ─── DECKS ────────────────────────────────────────────────────────────────────
+function goHome() {
+  showPage('decks');
+  renderDecks();
+}
+
+// ─── DECKS LIST ─────────────────────────────────────────────────────────────
 function renderDecks() {
   const grid = document.getElementById('decks-grid');
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
-      <p>Наборов пока нет. <strong>Создайте первый!</strong></p>
+      <p>Наборов пока нет. <strong>Нажмите «+ Новый набор»!</strong></p>
     </div>`;
     return;
   }
   grid.innerHTML = decks.map(d => {
     const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-    const modeBg = d.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+    const modeBg    = d.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
     const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
     return `
-    <div class="deck-card" onclick="openDeck('${d.id}')">
-      <div class="deck-actions">
-        <button onclick="event.stopPropagation();editDeck('${d.id}')">✏️</button>
-        <button class="del" onclick="event.stopPropagation();confirmDelete('deck','${d.id}')">🗑️</button>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        <div class="deck-badge">${d.cards.length} карт.</div>
-        <div class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</div>
+    <div class="deck-card" onclick="openSet('${d.id}','cards')">
+      <button class="btn-del-deck" onclick="event.stopPropagation();confirmDelete('deck','${d.id}')">✕</button>
+      <div class="deck-badges">
+        <span class="deck-badge">${d.cards.length} карт.</span>
+        <span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>
       </div>
       <div class="deck-name">${esc(d.name)}</div>
-      <div class="deck-meta">${esc(d.desc || 'Без описания')}</div>
+      <div class="deck-meta">${esc(d.desc || '')}</div>
+      <div class="deck-footer">
+        <button class="btn-start" onclick="event.stopPropagation();openSet('${d.id}','play')">▶ Начать</button>
+        <button class="btn-edit" onclick="event.stopPropagation();openSet('${d.id}','cards')">✏️ Карточки</button>
+      </div>
     </div>`;
   }).join('');
 }
 
-function openDeck(id) {
-  currentViewDeckId = id;
+// ─── SET PAGE ────────────────────────────────────────────────────────────────
+function openSet(id, tab = 'cards') {
   const d = decks.find(x => x.id === id);
-  document.getElementById('cards-deck-title').textContent = d.name;
-  document.getElementById('cards-deck-sub').textContent = d.desc || '';
-  renderCardsGrid();
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('view-cards').classList.add('active');
+  if (!d) return;
+  currentSetId = id;
+  currentSetMode = d.mode || 'test';
+  setCards = [...d.cards];
+
+  // render header
+  renderSetHeader(d);
+
+  // close edit panel
+  document.getElementById('set-edit-panel').classList.remove('open');
+
+  // reset card form
+  editingCardId = null;
+  closeCardForm();
+  renderSetCards();
+
+  // reset play tab
+  exitQuiz();
+
+  showPage('set');
+  setSetTab(tab);
 }
 
-function renderCardsGrid() {
-  const d = decks.find(x => x.id === currentViewDeckId);
-  const grid = document.getElementById('cards-grid');
-  if (!d.cards.length) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🃏</div><p>Карточек нет. Добавьте первую!</p></div>`;
-    return;
-  }
-  grid.innerHTML = d.cards.map(c => cardHTML(c, 'view')).join('');
+function renderSetHeader(d) {
+  const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+  const modeBg    = d.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+  const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('set-badges').innerHTML = `
+    <span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
+  document.getElementById('set-name').textContent = d.name;
+  document.getElementById('set-desc').textContent = d.desc || '';
+  document.getElementById('tab-cards-count').textContent = d.cards.length ? `(${d.cards.length})` : '';
+  // populate edit fields
+  document.getElementById('edit-name').value = d.name;
+  document.getElementById('edit-desc').value = d.desc || '';
+  setEditMode(d.mode || 'test');
+  // play tab title
+  document.getElementById('play-setup-title').textContent = `Готовы пройти «${d.name}»?`;
 }
 
-function cardHTML(c, mode) {
-  const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый', flashcard: 'Карточка' }[c.type] || c.type;
-  const answer = c.type === 'flashcard' || c.type === 'open'
-    ? c.answer
-    : c.options.filter(o => o.correct).map(o => o.text).join(', ');
-  const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
-  const idx = newDeckCards.findIndex(x => x.id === c.id);
-  const total = newDeckCards.length;
-
-  const actions = mode === 'view'
-    ? `<div class="qcard-acts">
-        <button onclick="editCardInView('${c.id}')">✏️</button>
-        <button class="del" onclick="confirmDelete('card','${c.id}')">🗑️</button>
-       </div>`
-    : `<div class="qcard-acts">
-        <button title="Вверх" onclick="moveCard('${c.id}',-1)" ${idx === 0 ? 'disabled style="opacity:.3"' : ''}>↑</button>
-        <button title="Вниз" onclick="moveCard('${c.id}',1)" ${idx === total-1 ? 'disabled style="opacity:.3"' : ''}>↓</button>
-        <button onclick="editCardInCreate('${c.id}')">✏️</button>
-        <button class="del" onclick="removeCardFromNew('${c.id}')">🗑️</button>
-       </div>`;
-  return `<div class="qcard" id="qcard-${c.id}">
-    <div class="qcard-top">
-      <div class="qcard-type">
-        <span class="type-badge ${badgeClass}">${typeLabel}</span>
-        ${mode === 'create' ? `<span style="font-size:0.72rem;color:var(--muted);margin-left:6px">#${idx+1}</span>` : ''}
-      </div>
-      <div class="qcard-q">${esc(c.question)}</div>
-    </div>
-    <div class="qcard-bottom">
-      <div class="qcard-answer">✓ ${esc(answer)}</div>
-      ${actions}
-    </div>
-  </div>`;
+function setSetTab(tab) {
+  document.querySelectorAll('.set-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-btn-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
 }
 
-// ─── CREATE DECK ──────────────────────────────────────────────────────────────
-let newDeckCards = [];
+// ─── SET SETTINGS EDIT ───────────────────────────────────────────────────────
+function toggleEditPanel() {
+  const panel = document.getElementById('set-edit-panel');
+  panel.classList.toggle('open');
+}
 
-function setDeckMode(mode) {
-  currentDeckMode = mode;
-  document.getElementById('deck-mode-test').classList.toggle('active', mode === 'test');
-  document.getElementById('deck-mode-flashcard').classList.toggle('active', mode === 'flashcard');
+function setEditMode(mode) {
+  currentSetMode = mode;
+  document.getElementById('edit-mode-test').classList.toggle('active', mode === 'test');
+  document.getElementById('edit-mode-flashcard').classList.toggle('active', mode === 'flashcard');
+  // also update card form
   renderQuestionType();
 }
 
-function resetCreateForm() {
-  editingDeckId = null;
-  newDeckCards = [];
-  currentDeckMode = 'test';
-  document.getElementById('deck-name-input').value = '';
-  document.getElementById('deck-desc-input').value = '';
-  document.getElementById('card-creator').style.display = 'none';
-  document.getElementById('create-title').textContent = 'Создать новый набор';
-  setDeckMode('test');
-  renderNewDeckCards();
+function saveSetSettings() {
+  const name = document.getElementById('edit-name').value.trim();
+  if (!name) { toast('Введите название'); return; }
+  const d = decks.find(x => x.id === currentSetId);
+  d.name = name;
+  d.desc = document.getElementById('edit-desc').value.trim();
+  d.mode = currentSetMode;
+  // if mode changed, warn about incompatible cards? For now just save
+  save();
+  renderSetHeader(d);
+  document.getElementById('set-edit-panel').classList.remove('open');
+  toast('Настройки сохранены');
 }
 
-function saveDeck() {
-  const name = document.getElementById('deck-name-input').value.trim();
-  if (!name) { toast('Введите название набора'); return; }
-  if (editingDeckId) {
-    const d = decks.find(x => x.id === editingDeckId);
-    d.name = name;
-    d.desc = document.getElementById('deck-desc-input').value.trim();
-    d.mode = currentDeckMode;
-    d.cards = newDeckCards;
-    save(); toast('Набор сохранён'); resetCreateForm(); showView('decks');
+// ─── CARD FORM ───────────────────────────────────────────────────────────────
+function toggleCardForm() {
+  const wrap = document.getElementById('card-form-wrap');
+  const isOpen = wrap.classList.contains('open');
+  if (isOpen) {
+    closeCardForm();
   } else {
-    const d = { id: uid(), name, desc: document.getElementById('deck-desc-input').value.trim(), mode: currentDeckMode, cards: [] };
-    decks.push(d);
-    editingDeckId = d.id;
-    newDeckCards = d.cards;
-    save();
-    document.getElementById('card-creator').style.display = 'block';
-    document.getElementById('card-creator-title').textContent = 'Добавить карточку';
-    renderQuestionType();
-    renderNewDeckCards();
-    toast('Набор создан! Добавляйте карточки');
+    openCardForm();
   }
 }
 
-function editDeck(id) {
-  const d = decks.find(x => x.id === id);
-  editingDeckId = id;
-  newDeckCards = [...d.cards];
-  currentDeckMode = d.mode || 'test';
-  document.getElementById('deck-name-input').value = d.name;
-  document.getElementById('deck-desc-input').value = d.desc || '';
-  document.getElementById('create-title').textContent = 'Редактировать набор';
-  document.getElementById('card-creator').style.display = 'block';
-  document.getElementById('card-creator-title').textContent = 'Добавить карточку';
-  setDeckMode(currentDeckMode);
-  showView('create');
-  renderNewDeckCards();
+function openCardForm(forEdit = false) {
+  const wrap = document.getElementById('card-form-wrap');
+  wrap.classList.add('open');
+  document.getElementById('add-card-toggle-btn').style.display = 'none';
+  document.getElementById('card-form-title').textContent = forEdit ? 'Редактировать карточку' : 'Новая карточка';
+  renderQuestionType();
 }
 
-// ─── CARD FORM ────────────────────────────────────────────────────────────────
+function closeCardForm() {
+  document.getElementById('card-form-wrap').classList.remove('open');
+  document.getElementById('add-card-toggle-btn').style.display = '';
+  document.getElementById('q-text').value = '';
+  optCount = 0;
+  editingCardId = null;
+}
+
 function renderQuestionType() {
   const block = document.getElementById('q-options-block');
   const typeRow = document.getElementById('q-type-row');
+  if (!block) return;
 
-  if (currentDeckMode === 'flashcard') {
-    // Flashcard: just question + answer, no type selector
+  if (currentSetMode === 'flashcard') {
     typeRow.style.display = 'none';
     block.innerHTML = `<div class="form-row"><label>Ответ</label>
       <input type="text" id="q-open-answer" placeholder="Введите ответ на карточке"></div>`;
@@ -825,12 +740,12 @@ function renderQuestionType() {
   }
 
   typeRow.style.display = '';
-  const type = document.getElementById('q-type').value;
+  const type = document.getElementById('q-type')?.value || 'single';
   if (type === 'open') {
     block.innerHTML = `<div class="form-row"><label>Правильный ответ</label>
       <input type="text" id="q-open-answer" placeholder="Введите правильный ответ"></div>`;
   } else {
-    block.innerHTML = `<div class="form-row options-section">
+    block.innerHTML = `<div class="form-row">
       <label>Варианты ответа</label>
       <div id="options-list"></div>
       <button class="btn-add-option" onclick="addOption()">+ Добавить вариант</button>
@@ -847,9 +762,8 @@ function addOption(text = '', correct = false) {
   if (!list) return;
   const id = 'opt-' + (++optCount);
   const row = document.createElement('div');
-  row.className = 'option-row';
-  row.id = 'row-' + id;
-  const type = document.getElementById('q-type').value;
+  row.className = 'option-row'; row.id = 'row-' + id;
+  const type = document.getElementById('q-type')?.value || 'single';
   row.innerHTML = `
     <input type="text" id="${id}" value="${esc(text)}" placeholder="Вариант ответа">
     <label class="option-correct">
@@ -864,7 +778,7 @@ function getCardFromForm(existing) {
   const question = document.getElementById('q-text').value.trim();
   if (!question) { toast('Введите вопрос'); return null; }
 
-  if (currentDeckMode === 'flashcard') {
+  if (currentSetMode === 'flashcard') {
     const ans = document.getElementById('q-open-answer').value.trim();
     if (!ans) { toast('Введите ответ'); return null; }
     return { id: existing?.id || uid(), type: 'flashcard', question, answer: ans, options: [] };
@@ -872,7 +786,6 @@ function getCardFromForm(existing) {
 
   const type = document.getElementById('q-type').value;
   let card = { id: existing?.id || uid(), type, question, options: [], answer: '' };
-
   if (type === 'open') {
     const ans = document.getElementById('q-open-answer').value.trim();
     if (!ans) { toast('Введите правильный ответ'); return null; }
@@ -900,39 +813,27 @@ function saveCard() {
   if (!card) return;
 
   if (editingCardId) {
-    const idx = newDeckCards.findIndex(c => c.id === editingCardId);
-    if (idx !== -1) newDeckCards[idx] = card;
-    editingCardId = null;
+    const idx = setCards.findIndex(c => c.id === editingCardId);
+    if (idx !== -1) setCards[idx] = card;
   } else {
-    newDeckCards.push(card);
+    setCards.push(card);
   }
 
-  // persist immediately if deck exists
-  if (editingDeckId) {
-    const d = decks.find(x => x.id === editingDeckId);
-    if (d) d.cards = newDeckCards;
-    save();
-  }
+  const d = decks.find(x => x.id === currentSetId);
+  if (d) { d.cards = setCards; save(); }
 
-  clearCardForm();
-  renderNewDeckCards();
+  closeCardForm();
+  renderSetCards();
   toast('Карточка сохранена ✓');
-  setTimeout(() => document.getElementById('cards-in-set-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
 
-function clearCardForm() {
-  document.getElementById('q-text').value = '';
-  optCount = 0;
-  renderQuestionType();
-  editingCardId = null;
-}
+function cancelEditCard() { closeCardForm(); }
 
-function cancelEditCard() { clearCardForm(); editingCardId = null; }
-
-function editCardInCreate(id) {
-  const card = newDeckCards.find(c => c.id === id);
+function editCard(id) {
+  const card = setCards.find(c => c.id === id);
   if (!card) return;
   editingCardId = id;
+  openCardForm(true);
   document.getElementById('q-text').value = card.question;
   if (card.type !== 'flashcard') document.getElementById('q-type').value = card.type;
   renderQuestionType();
@@ -941,102 +842,137 @@ function editCardInCreate(id) {
       document.getElementById('q-open-answer').value = card.answer;
     } else {
       const list = document.getElementById('options-list');
-      list.innerHTML = '';
-      optCount = 0;
+      list.innerHTML = ''; optCount = 0;
       card.options.forEach(o => addOption(o.text, o.correct));
     }
-    document.getElementById('card-form').scrollIntoView({ behavior: 'smooth' });
-  }, 50);
+    document.getElementById('card-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 40);
 }
 
-function removeCardFromNew(id) {
-  newDeckCards = newDeckCards.filter(c => c.id !== id);
-  if (editingDeckId) {
-    const d = decks.find(x => x.id === editingDeckId);
-    if (d) { d.cards = newDeckCards; save(); }
-  }
-  renderNewDeckCards();
+function removeCard(id) {
+  setCards = setCards.filter(c => c.id !== id);
+  const d = decks.find(x => x.id === currentSetId);
+  if (d) { d.cards = setCards; save(); }
+  renderSetCards();
 }
 
-function renderNewDeckCards() {
-  const grid = document.getElementById('new-deck-cards-grid');
-  const empty = document.getElementById('new-deck-empty');
-  const count = document.getElementById('cards-in-set-count');
-  if (newDeckCards.length) {
-    grid.innerHTML = newDeckCards.map(c => cardHTML(c, 'create')).join('');
-    if (empty) empty.style.display = 'none';
-    if (count) count.textContent = newDeckCards.length + ' шт.';
-  } else {
+function moveCard(id, dir) {
+  const idx = setCards.findIndex(c => c.id === id);
+  const ni = idx + dir;
+  if (ni < 0 || ni >= setCards.length) return;
+  [setCards[idx], setCards[ni]] = [setCards[ni], setCards[idx]];
+  const d = decks.find(x => x.id === currentSetId);
+  if (d) { d.cards = setCards; save(); }
+  renderSetCards();
+}
+
+function renderSetCards() {
+  const grid = document.getElementById('set-cards-grid');
+  const empty = document.getElementById('set-cards-empty');
+  const countEl = document.getElementById('tab-cards-count');
+  if (!setCards.length) {
     grid.innerHTML = '';
-    if (empty) empty.style.display = 'block';
-    if (count) count.textContent = '';
+    empty.style.display = 'block';
+    if (countEl) countEl.textContent = '';
+    return;
   }
+  empty.style.display = 'none';
+  if (countEl) countEl.textContent = `(${setCards.length})`;
+  grid.innerHTML = setCards.map((c, idx) => {
+    const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый', flashcard: 'Карточка' }[c.type] || c.type;
+    const answer = (c.type === 'flashcard' || c.type === 'open') ? c.answer : c.options.filter(o => o.correct).map(o => o.text).join(', ');
+    const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
+    const isFirst = idx === 0, isLast = idx === setCards.length - 1;
+    return `<div class="qcard" id="qcard-${c.id}">
+      <div class="qcard-top">
+        <div class="qcard-type">
+          <span class="type-badge ${badgeClass}">${typeLabel}</span>
+          <span style="font-size:0.68rem;color:var(--muted);margin-left:6px">#${idx+1}</span>
+        </div>
+        <div class="qcard-q">${esc(c.question)}</div>
+      </div>
+      <div class="qcard-bottom">
+        <div class="qcard-answer" title="${esc(answer)}">✓ ${esc(answer)}</div>
+        <div class="qcard-acts">
+          <button title="Вверх" onclick="moveCard('${c.id}',-1)" ${isFirst ? 'disabled' : ''}>↑</button>
+          <button title="Вниз" onclick="moveCard('${c.id}',1)" ${isLast ? 'disabled' : ''}>↓</button>
+          <button onclick="editCard('${c.id}')">✏️</button>
+          <button class="del" onclick="confirmDeleteCard('${c.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-// ─── VIEW DECK CARDS ──────────────────────────────────────────────────────────
-function openAddCard() {
-  newDeckCards = decks.find(x => x.id === currentViewDeckId)?.cards || [];
-  editingDeckId = currentViewDeckId;
-  editDeck(currentViewDeckId);
+// ─── NEW SET MODAL ───────────────────────────────────────────────────────────
+function showNewSetModal() {
+  document.getElementById('new-set-name').value = '';
+  document.getElementById('new-set-desc').value = '';
+  setNewMode('test');
+  document.getElementById('new-set-modal').classList.add('show');
+  setTimeout(() => document.getElementById('new-set-name').focus(), 100);
 }
 
-function editCardInView(id) {
-  openAddCard();
-  setTimeout(() => editCardInCreate(id), 100);
+function closeNewSetModal() {
+  document.getElementById('new-set-modal').classList.remove('show');
 }
 
-// ─── DELETE ───────────────────────────────────────────────────────────────────
+function setNewMode(mode) {
+  newSetMode = mode;
+  document.getElementById('new-mode-test').classList.toggle('active', mode === 'test');
+  document.getElementById('new-mode-flashcard').classList.toggle('active', mode === 'flashcard');
+}
+
+function createNewSet() {
+  const name = document.getElementById('new-set-name').value.trim();
+  if (!name) { toast('Введите название набора'); return; }
+  const d = { id: uid(), name, desc: document.getElementById('new-set-desc').value.trim(), mode: newSetMode, cards: [] };
+  decks.push(d);
+  save();
+  closeNewSetModal();
+  openSet(d.id, 'cards');
+  toast('Набор создан! Добавляйте карточки');
+}
+
+// ─── DELETE ──────────────────────────────────────────────────────────────────
 let pendingDelete = null;
+
 function confirmDelete(type, id) {
   pendingDelete = { type, id };
-  const d = type === 'deck' ? decks.find(x => x.id === id)?.name : null;
-  const c = type === 'card' ? findCard(id)?.question : null;
-  document.getElementById('modal-title').textContent = type === 'deck' ? 'Удалить набор?' : 'Удалить карточку?';
-  document.getElementById('modal-text').textContent = type === 'deck'
-    ? `Набор «${d}» и все его карточки будут удалены.`
-    : `Карточка «${c?.slice(0, 60)}...» будет удалена.`;
+  const name = type === 'deck' ? decks.find(x => x.id === id)?.name : null;
+  document.getElementById('modal-title').textContent = 'Удалить набор?';
+  document.getElementById('modal-text').textContent = `Набор «${name}» и все его карточки будут удалены безвозвратно.`;
   document.getElementById('modal-overlay').classList.add('show');
   document.getElementById('modal-confirm-btn').onclick = doDelete;
 }
+
+function confirmDeleteCard(id) {
+  pendingDelete = { type: 'card', id };
+  const c = setCards.find(x => x.id === id);
+  document.getElementById('modal-title').textContent = 'Удалить карточку?';
+  document.getElementById('modal-text').textContent = `«${c?.question?.slice(0,80)}»`;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('modal-confirm-btn').onclick = doDelete;
+}
+
 function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); pendingDelete = null; }
+
 function doDelete() {
   if (!pendingDelete) return;
   if (pendingDelete.type === 'deck') {
     decks = decks.filter(d => d.id !== pendingDelete.id);
-    save(); renderDecks(); showView('decks');
+    save();
+    closeModal();
+    toast('Набор удалён');
+    goHome();
   } else {
-    const d = decks.find(d => d.cards.some(c => c.id === pendingDelete.id));
-    if (d) { d.cards = d.cards.filter(c => c.id !== pendingDelete.id); save(); }
-    if (currentViewDeckId) renderCardsGrid();
-    newDeckCards = newDeckCards.filter(c => c.id !== pendingDelete.id);
-    renderNewDeckCards();
+    removeCard(pendingDelete.id);
+    closeModal();
+    toast('Карточка удалена');
   }
-  closeModal(); toast('Удалено');
-}
-
-function findCard(id) {
-  for (const d of decks) { const c = d.cards.find(c => c.id === id); if (c) return c; }
-  return null;
-}
-
-// ─── REORDER CARDS ────────────────────────────────────────────────────────────
-function moveCard(id, dir) {
-  const idx = newDeckCards.findIndex(c => c.id === id);
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= newDeckCards.length) return;
-  [newDeckCards[idx], newDeckCards[newIdx]] = [newDeckCards[newIdx], newDeckCards[idx]];
-  if (editingDeckId) {
-    const d = decks.find(x => x.id === editingDeckId);
-    if (d) { d.cards = newDeckCards; save(); }
-  }
-  renderNewDeckCards();
 }
 
 // ─── QUIZ ─────────────────────────────────────────────────────────────────────
-let selectedQuizDeckId = null;
-let fcState = null;
-let shouldShuffle = true;
-
 function toggleShuffle() {
   shouldShuffle = !shouldShuffle;
   const wrap = document.getElementById('shuffle-toggle-wrap');
@@ -1047,90 +983,56 @@ function toggleShuffle() {
   label.textContent = shouldShuffle ? 'Перемешать карточки' : 'По порядку';
 }
 
-function renderQuizSetup() {
-  document.getElementById('quiz-setup').style.display = 'block';
-  document.getElementById('quiz-play').classList.remove('active');
+function startQuizFromSet() {
+  const d = decks.find(x => x.id === currentSetId);
+  if (!d || !d.cards.length) { toast('Добавьте хотя бы одну карточку'); return; }
+
+  // hide setup and results
+  document.getElementById('play-setup').style.display = 'none';
+  document.getElementById('fc-results').style.display = 'none';
   document.getElementById('quiz-results').style.display = 'none';
   document.getElementById('fc-play').classList.remove('active');
-  document.getElementById('fc-results').style.display = 'none';
-  const list = document.getElementById('quiz-deck-list');
-  const valid = decks.filter(d => d.cards.length > 0);
-  if (!valid.length) {
-    list.innerHTML = `<div style="color:var(--muted);font-size:.9rem">Нет наборов с карточками.</div>`;
-    return;
-  }
-  list.innerHTML = valid.map(d => {
-    const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-    const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
-    return `
-    <div class="quiz-deck-pick ${selectedQuizDeckId === d.id ? 'selected' : ''}" onclick="selectQuizDeck('${d.id}')">
-      <div class="name">${esc(d.name)}</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-        <div class="cnt">${d.cards.length} карточек</div>
-        <span style="font-size:0.75rem;color:${modeColor};font-weight:700">${modeLabel}</span>
-      </div>
-    </div>`;
-  }).join('');
-}
+  document.getElementById('quiz-play').classList.remove('active');
 
-function selectQuizDeck(id) {
-  selectedQuizDeckId = id;
-  document.querySelectorAll('.quiz-deck-pick').forEach(el => el.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-}
-
-function startQuizByMode() {
-  if (!selectedQuizDeckId) { toast('Выберите колоду'); return; }
-  const d = decks.find(x => x.id === selectedQuizDeckId);
-  if ((d.mode || 'test') === 'flashcard') startFlashcards();
-  else startQuiz();
-}
-
-function startQuiz() {
-  const d = decks.find(x => x.id === selectedQuizDeckId);
   const cards = shouldShuffle ? shuffle([...d.cards]) : [...d.cards];
-  quizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
-  document.getElementById('quiz-setup').style.display = 'none';
-  document.getElementById('quiz-play').classList.add('active');
+
+  if ((d.mode || 'test') === 'flashcard') {
+    fcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
+    document.getElementById('fc-play').classList.add('active');
+    renderFlashcard();
+  } else {
+    quizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
+    document.getElementById('quiz-play').classList.add('active');
+    renderQuizQuestion();
+  }
+}
+
+function exitQuiz() {
+  document.getElementById('fc-play').classList.remove('active');
+  document.getElementById('quiz-play').classList.remove('active');
+  document.getElementById('fc-results').style.display = 'none';
   document.getElementById('quiz-results').style.display = 'none';
-  renderQuizQuestion();
+  document.getElementById('play-setup').style.display = 'block';
 }
 
 // ─── FLASHCARD MODE ───────────────────────────────────────────────────────────
-function startFlashcards() {
-  const d = decks.find(x => x.id === selectedQuizDeckId);
-  const cards = shouldShuffle ? shuffle([...d.cards]) : [...d.cards];
-  fcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
-  document.getElementById('quiz-setup').style.display = 'none';
-  document.getElementById('fc-play').classList.add('active');
-  document.getElementById('fc-results').style.display = 'none';
-  renderFlashcard();
-}
-
 function renderFlashcard() {
   const { cards, idx } = fcState;
   const card = cards[idx];
-  const total = cards.length;
-  document.getElementById('fc-counter').textContent = `Карточка ${idx + 1} из ${total}`;
-  document.getElementById('fc-progress-bar').style.width = (idx / total * 100) + '%';
+  document.getElementById('fc-counter').textContent = `Карточка ${idx + 1} из ${cards.length}`;
+  document.getElementById('fc-progress-bar').style.width = (idx / cards.length * 100) + '%';
   document.getElementById('fc-question').textContent = card.question;
-  const answer = (card.type === 'flashcard' || card.type === 'open')
-    ? card.answer
-    : card.options.filter(o => o.correct).map(o => o.text).join(', ');
+  const answer = (card.type === 'flashcard' || card.type === 'open') ? card.answer : card.options.filter(o => o.correct).map(o => o.text).join(', ');
   document.getElementById('fc-answer').textContent = answer || '—';
-  const fcCard = document.getElementById('fc-card');
-  fcCard.classList.remove('flipped');
+  document.getElementById('fc-card').classList.remove('flipped');
   fcState.flipped = false;
   document.getElementById('fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
 }
 
 function flipCurrentCard() {
-  const fcCard = document.getElementById('fc-card');
-  fcCard.classList.add('flipped');
+  document.getElementById('fc-card').classList.add('flipped');
   fcState.flipped = true;
-  setTimeout(() => {
-    document.getElementById('fc-actions').className = 'flashcard-actions';
-  }, 300);
+  setTimeout(() => { document.getElementById('fc-actions').className = 'flashcard-actions'; }, 300);
 }
 
 function markCard(knew) {
@@ -1138,30 +1040,25 @@ function markCard(knew) {
   if (knew) fcState.knew++; else fcState.didnt++;
   fcState.idx++;
   if (fcState.idx >= fcState.cards.length) {
-    showFlashcardResults(); return;
+    document.getElementById('fc-play').classList.remove('active');
+    document.getElementById('fc-results').style.display = 'block';
+    const pct = Math.round(fcState.knew / fcState.cards.length * 100);
+    document.getElementById('fc-score').textContent = pct + '%';
+    document.getElementById('fc-correct').textContent = fcState.knew;
+    document.getElementById('fc-wrong').textContent = fcState.didnt;
+    document.getElementById('fc-total').textContent = fcState.cards.length;
+    document.getElementById('fc-progress-bar').style.width = '100%';
+    return;
   }
   renderFlashcard();
 }
 
-function showFlashcardResults() {
-  document.getElementById('fc-play').classList.remove('active');
-  document.getElementById('fc-results').style.display = 'block';
-  const pct = Math.round(fcState.knew / fcState.cards.length * 100);
-  document.getElementById('fc-score').textContent = pct + '%';
-  document.getElementById('fc-correct').textContent = fcState.knew;
-  document.getElementById('fc-wrong').textContent = fcState.didnt;
-  document.getElementById('fc-total').textContent = fcState.cards.length;
-  document.getElementById('fc-progress-bar').style.width = '100%';
-}
-
-function retryFlashcards() { startFlashcards(); }
-
+// ─── TEST MODE ────────────────────────────────────────────────────────────────
 function renderQuizQuestion() {
   const { cards, idx } = quizState;
   const card = cards[idx];
-  const total = cards.length;
-  document.getElementById('quiz-counter').textContent = `Вопрос ${idx + 1} из ${total}`;
-  document.getElementById('quiz-progress-bar').style.width = ((idx) / total * 100) + '%';
+  document.getElementById('quiz-counter').textContent = `Вопрос ${idx + 1} из ${cards.length}`;
+  document.getElementById('quiz-progress-bar').style.width = (idx / cards.length * 100) + '%';
   document.getElementById('quiz-q-text').textContent = card.question;
   document.getElementById('quiz-feedback').className = 'quiz-feedback';
   document.getElementById('quiz-feedback').textContent = '';
@@ -1180,11 +1077,11 @@ function renderQuizQuestion() {
     optsCont.style.display = 'grid';
     openCont.style.display = 'none';
     const shuffled = shuffle([...card.options]);
-    optsCont.innerHTML = shuffled.map((o, i) => {
+    optsCont.innerHTML = shuffled.map(o => {
       if (card.type === 'multi') {
-        return `<button class="quiz-opt" onclick="toggleMulti(this,'${escAttr(o.text)}',${o.correct})" data-correct="${o.correct}">${esc(o.text)}</button>`;
+        return `<button class="quiz-opt" onclick="toggleMulti(this)" data-correct="${o.correct}">${esc(o.text)}</button>`;
       }
-      return `<button class="quiz-opt" onclick="checkSingle(this,${o.correct},'${escAttr(card.options.filter(x=>x.correct).map(x=>x.text).join(', '))}')">${esc(o.text)}</button>`;
+      return `<button class="quiz-opt" onclick="checkSingle(this,${o.correct},'${escAttr(card.options.filter(x=>x.correct).map(x=>x.text).join(', '))}')" data-correct="${o.correct}">${esc(o.text)}</button>`;
     }).join('');
     if (card.type === 'multi') {
       optsCont.innerHTML += `<button class="btn-primary" id="multi-submit" onclick="checkMulti()" style="margin-top:8px">Проверить</button>`;
@@ -1197,10 +1094,7 @@ function checkSingle(btn, correct, correctText) {
   quizState.answered = true;
   document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
   btn.classList.add(correct ? 'correct' : 'wrong');
-  if (!correct) {
-    document.querySelectorAll('.quiz-opt').forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
-  }
-  // Actually single: find which is correct by checking all options
+  if (!correct) document.querySelectorAll('.quiz-opt').forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
   showFeedback(correct, correctText);
 }
 
@@ -1216,7 +1110,6 @@ function checkMulti() {
   const card = quizState.cards[quizState.idx];
   const opts = document.querySelectorAll('.quiz-opt');
   opts.forEach(b => b.disabled = true);
-  const correctTexts = card.options.filter(o => o.correct).map(o => o.text);
   let allRight = true;
   opts.forEach(b => {
     const selected = b.classList.contains('selected-multi');
@@ -1227,16 +1120,14 @@ function checkMulti() {
     if (!selected && isCorrect) allRight = false;
   });
   document.getElementById('multi-submit')?.remove();
-  showFeedback(allRight, correctTexts.join(', '));
+  showFeedback(allRight, card.options.filter(o => o.correct).map(o => o.text).join(', '));
 }
 
 function checkOpenAnswer() {
   if (quizState.answered) return;
   const card = quizState.cards[quizState.idx];
   const input = document.getElementById('quiz-open-answer');
-  const userAns = input.value.trim().toLowerCase();
-  const correct = card.answer.toLowerCase();
-  const isCorrect = userAns === correct;
+  const isCorrect = input.value.trim().toLowerCase() === card.answer.toLowerCase();
   input.disabled = true;
   quizState.answered = true;
   showFeedback(isCorrect, card.answer);
@@ -1253,29 +1144,18 @@ function showFeedback(correct, correctText) {
 function nextQuestion() {
   quizState.idx++;
   if (quizState.idx >= quizState.cards.length) {
-    showResults(); return;
+    document.getElementById('quiz-play').classList.remove('active');
+    const r = document.getElementById('quiz-results');
+    r.style.display = 'block';
+    const pct = Math.round(quizState.correct / quizState.cards.length * 100);
+    document.getElementById('results-score').textContent = pct + '%';
+    document.getElementById('r-correct').textContent = quizState.correct;
+    document.getElementById('r-wrong').textContent = quizState.wrong;
+    document.getElementById('r-total').textContent = quizState.cards.length;
+    document.getElementById('quiz-progress-bar').style.width = '100%';
+    return;
   }
   renderQuizQuestion();
-}
-
-function showResults() {
-  document.getElementById('quiz-play').classList.remove('active');
-  const r = document.getElementById('quiz-results');
-  r.style.display = 'block';
-  const pct = Math.round(quizState.correct / quizState.cards.length * 100);
-  document.getElementById('results-score').textContent = pct + '%';
-  document.getElementById('r-correct').textContent = quizState.correct;
-  document.getElementById('r-wrong').textContent = quizState.wrong;
-  document.getElementById('r-total').textContent = quizState.cards.length;
-  document.getElementById('quiz-progress-bar').style.width = '100%';
-}
-
-function retryQuiz() { startQuiz(); }
-function exitQuiz() {
-  selectedQuizDeckId = null;
-  document.getElementById('fc-play').classList.remove('active');
-  document.getElementById('fc-results').style.display = 'none';
-  showView('quiz');
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
@@ -1290,7 +1170,8 @@ function toast(msg) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 renderDecks();
-renderQuestionType();
+// init shuffle toggle state
+document.getElementById('shuffle-knob').style.left = '21px';
 </script>
 </body>
 </html>
