@@ -531,6 +531,14 @@
     <div class="quiz-setup" id="quiz-setup">
       <label style="margin-bottom:12px; display:block">Выберите набор</label>
       <div class="quiz-deck-list" id="quiz-deck-list"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <label class="shuffle-toggle" style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+          <div class="toggle-wrap" id="shuffle-toggle-wrap" onclick="toggleShuffle()" style="width:40px;height:22px;background:var(--accent);border-radius:99px;position:relative;transition:background 0.2s;cursor:pointer">
+            <div id="shuffle-knob" style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:3px;left:21px;transition:left 0.2s"></div>
+          </div>
+          <span style="font-size:0.9rem;color:var(--text)" id="shuffle-label">Перемешать карточки</span>
+        </label>
+      </div>
       <button class="btn-primary" onclick="startQuizByMode()">Начать ▶</button>
     </div>
 
@@ -712,19 +720,27 @@ function cardHTML(c, mode) {
   const answer = c.type === 'flashcard' || c.type === 'open'
     ? c.answer
     : c.options.filter(o => o.correct).map(o => o.text).join(', ');
+  const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
+  const idx = newDeckCards.findIndex(x => x.id === c.id);
+  const total = newDeckCards.length;
+
   const actions = mode === 'view'
     ? `<div class="qcard-acts">
         <button onclick="editCardInView('${c.id}')">✏️</button>
         <button class="del" onclick="confirmDelete('card','${c.id}')">🗑️</button>
        </div>`
     : `<div class="qcard-acts">
+        <button title="Вверх" onclick="moveCard('${c.id}',-1)" ${idx === 0 ? 'disabled style="opacity:.3"' : ''}>↑</button>
+        <button title="Вниз" onclick="moveCard('${c.id}',1)" ${idx === total-1 ? 'disabled style="opacity:.3"' : ''}>↓</button>
         <button onclick="editCardInCreate('${c.id}')">✏️</button>
         <button class="del" onclick="removeCardFromNew('${c.id}')">🗑️</button>
        </div>`;
-  const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
   return `<div class="qcard" id="qcard-${c.id}">
     <div class="qcard-top">
-      <div class="qcard-type"><span class="type-badge ${badgeClass}">${typeLabel}</span></div>
+      <div class="qcard-type">
+        <span class="type-badge ${badgeClass}">${typeLabel}</span>
+        ${mode === 'create' ? `<span style="font-size:0.72rem;color:var(--muted);margin-left:6px">#${idx+1}</span>` : ''}
+      </div>
       <div class="qcard-q">${esc(c.question)}</div>
     </div>
     <div class="qcard-bottom">
@@ -1003,9 +1019,33 @@ function findCard(id) {
   return null;
 }
 
+// ─── REORDER CARDS ────────────────────────────────────────────────────────────
+function moveCard(id, dir) {
+  const idx = newDeckCards.findIndex(c => c.id === id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= newDeckCards.length) return;
+  [newDeckCards[idx], newDeckCards[newIdx]] = [newDeckCards[newIdx], newDeckCards[idx]];
+  if (editingDeckId) {
+    const d = decks.find(x => x.id === editingDeckId);
+    if (d) { d.cards = newDeckCards; save(); }
+  }
+  renderNewDeckCards();
+}
+
 // ─── QUIZ ─────────────────────────────────────────────────────────────────────
 let selectedQuizDeckId = null;
 let fcState = null;
+let shouldShuffle = true;
+
+function toggleShuffle() {
+  shouldShuffle = !shouldShuffle;
+  const wrap = document.getElementById('shuffle-toggle-wrap');
+  const knob = document.getElementById('shuffle-knob');
+  const label = document.getElementById('shuffle-label');
+  wrap.style.background = shouldShuffle ? 'var(--accent)' : 'var(--border)';
+  knob.style.left = shouldShuffle ? '21px' : '3px';
+  label.textContent = shouldShuffle ? 'Перемешать карточки' : 'По порядку';
+}
 
 function renderQuizSetup() {
   document.getElementById('quiz-setup').style.display = 'block';
@@ -1048,7 +1088,7 @@ function startQuizByMode() {
 
 function startQuiz() {
   const d = decks.find(x => x.id === selectedQuizDeckId);
-  const cards = shuffle([...d.cards]);
+  const cards = shouldShuffle ? shuffle([...d.cards]) : [...d.cards];
   quizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
   document.getElementById('quiz-setup').style.display = 'none';
   document.getElementById('quiz-play').classList.add('active');
@@ -1059,7 +1099,7 @@ function startQuiz() {
 // ─── FLASHCARD MODE ───────────────────────────────────────────────────────────
 function startFlashcards() {
   const d = decks.find(x => x.id === selectedQuizDeckId);
-  const cards = shuffle([...d.cards]);
+  const cards = shouldShuffle ? shuffle([...d.cards]) : [...d.cards];
   fcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
   document.getElementById('quiz-setup').style.display = 'none';
   document.getElementById('fc-play').classList.add('active');
@@ -1074,10 +1114,10 @@ function renderFlashcard() {
   document.getElementById('fc-counter').textContent = `Карточка ${idx + 1} из ${total}`;
   document.getElementById('fc-progress-bar').style.width = (idx / total * 100) + '%';
   document.getElementById('fc-question').textContent = card.question;
-  const answer = card.type === 'open'
+  const answer = (card.type === 'flashcard' || card.type === 'open')
     ? card.answer
     : card.options.filter(o => o.correct).map(o => o.text).join(', ');
-  document.getElementById('fc-answer').textContent = answer;
+  document.getElementById('fc-answer').textContent = answer || '—';
   const fcCard = document.getElementById('fc-card');
   fcCard.classList.remove('flipped');
   fcState.flipped = false;
