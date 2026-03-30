@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QuizForge — Карточки викторин</title>
+  <title>Создание опросов и карточек</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
@@ -308,6 +308,33 @@
     /* autosave */
     #autosave-indicator { font-size: 0.75rem; color: var(--green); font-weight: 600; }
 
+    /* ── IMAGE UPLOAD ── */
+    .img-upload-area {
+      border: 1.5px dashed var(--border); border-radius: 10px;
+      padding: 18px 16px; cursor: pointer; text-align: center;
+      transition: border-color 0.2s, background 0.2s; position: relative;
+      background: var(--card);
+    }
+    .img-upload-area:hover { border-color: var(--accent); background: rgba(99,91,255,0.04); }
+    .img-upload-area.has-image { border-style: solid; padding: 6px; }
+    .img-placeholder { font-size: 0.88rem; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 7px; }
+    .img-preview-img { max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; display: block; margin: 0 auto; }
+    .btn-remove-img {
+      display: block; margin-top: 8px; background: transparent;
+      border: none; color: var(--accent2); font-size: 0.8rem;
+      cursor: pointer; padding: 2px 0; font-weight: 600;
+    }
+    .btn-remove-img:hover { text-decoration: underline; }
+
+    /* image in quiz / flashcard */
+    .q-image-block { margin-bottom: 18px; text-align: center; }
+    .q-image-block img { max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); }
+    .fc-image-block { margin-bottom: 14px; }
+    .fc-image-block img { max-height: 110px; max-width: 100%; object-fit: contain; border-radius: 8px; }
+
+    /* image thumbnail in card list */
+    .qcard-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+
     /* ── STUDENT MODE ── */
     .student-header {
       background: var(--surface); border-bottom: 1px solid var(--border);
@@ -415,7 +442,7 @@
 <body>
 
 <header id="main-header">
-  <div class="logo" onclick="goHome()">Quiz<span>Forge</span></div>
+  <div class="logo" onclick="goHome()">Опросы<span> и карточки</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" id="nav-home" onclick="goHome()">Библиотека</button>
     <button class="nav-tab" id="nav-stats" onclick="showStatsPage()">📊 Статистика</button>
@@ -513,6 +540,15 @@
               <label>Вопрос</label>
               <textarea id="q-text" placeholder="Введите вопрос..."></textarea>
             </div>
+            <div class="form-row">
+              <label>Изображение <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.78rem">(необязательно)</span></label>
+              <div class="img-upload-area" id="img-upload-area" onclick="triggerImgUpload()">
+                <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+                <span class="img-placeholder" id="img-placeholder">📷 Нажмите для добавления фото</span>
+                <img id="img-preview" class="img-preview-img" style="display:none" alt="">
+              </div>
+              <button type="button" class="btn-remove-img" id="img-remove-btn" onclick="removeImage()" style="display:none">✕ Удалить изображение</button>
+            </div>
             <div id="q-options-block"></div>
             <div class="form-actions">
               <button class="btn-primary" onclick="saveCard()">Сохранить карточку</button>
@@ -556,6 +592,7 @@
           <div class="flashcard" id="fc-card">
             <div class="flashcard-face flashcard-front">
               <div class="flashcard-label">Вопрос</div>
+              <div class="fc-image-block" id="fc-img-wrap" style="display:none"><img id="fc-img" alt=""></div>
               <div class="flashcard-text" id="fc-question"></div>
               <div class="flashcard-hint">Нажмите, чтобы увидеть ответ</div>
             </div>
@@ -580,6 +617,7 @@
         </div>
         <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="quiz-progress-bar"></div></div>
         <div class="quiz-question-card">
+          <div class="q-image-block" id="quiz-q-image" style="display:none"><img id="quiz-q-img" alt=""></div>
           <div class="quiz-q-text" id="quiz-q-text"></div>
           <div class="quiz-options" id="quiz-options"></div>
           <div class="quiz-open-input" id="quiz-open-input" style="display:none">
@@ -648,7 +686,7 @@
 <!-- ═══ STUDENT MODE VIEW ═══ -->
 <div class="view" id="view-student">
   <div class="student-header">
-    <div class="logo">Quiz<span>Forge</span></div>
+    <div class="logo">Опросы<span> и карточки</span></div>
     <span class="student-badge">Режим ученика</span>
   </div>
 
@@ -689,6 +727,7 @@
         <div class="flashcard" id="st-fc-card">
           <div class="flashcard-face flashcard-front">
             <div class="flashcard-label">Вопрос</div>
+            <div class="fc-image-block" id="st-fc-img-wrap" style="display:none"><img id="st-fc-img" alt=""></div>
             <div class="flashcard-text" id="st-fc-question"></div>
             <div class="flashcard-hint">Нажмите, чтобы увидеть ответ</div>
           </div>
@@ -713,6 +752,7 @@
       </div>
       <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="st-quiz-bar"></div></div>
       <div class="quiz-question-card">
+        <div class="q-image-block" id="st-quiz-q-image" style="display:none"><img id="st-quiz-q-img" alt=""></div>
         <div class="quiz-q-text" id="st-quiz-q"></div>
         <div class="quiz-options" id="st-quiz-opts"></div>
         <div class="quiz-open-input" id="st-quiz-open" style="display:none">
