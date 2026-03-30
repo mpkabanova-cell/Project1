@@ -210,9 +210,18 @@
 
     /* ── CARDS GRID ── */
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-    .qcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s; }
+    .qcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, opacity 0.15s; }
     .qcard:hover { border-color: var(--accent); }
-    .qcard-top { padding: 14px 16px; }
+    .qcard.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99,91,255,0.25); }
+    .qcard.dragging  { opacity: 0.35; }
+    .qcard-drag-handle {
+      display: flex; align-items: center; padding: 0 6px 0 14px;
+      color: var(--muted); cursor: grab; font-size: 1.1rem; line-height: 1;
+      user-select: none; touch-action: none; flex-shrink: 0;
+    }
+    .qcard-drag-handle:active { cursor: grabbing; }
+    .qcard-top { padding: 14px 16px 14px 0; display: flex; align-items: flex-start; }
+    .qcard-top-inner { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: flex-start; }
     .qcard-type { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px; }
     .qcard-q { font-size: 0.93rem; font-weight: 600; line-height: 1.4; }
     .qcard-bottom { border-top: 1px solid var(--border); padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; }
@@ -359,23 +368,79 @@
     .auth-err.show { display: block; }
 
     /* ── STUDENT HOME ── */
-    .quiz-code-card {
+    /* ── STUDENT PROFILE ── */
+    .student-profile-header {
+      display: flex; align-items: center; gap: 18px;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 28px;
-      max-width: 440px; margin-bottom: 32px;
+      border-radius: var(--radius); padding: 20px 24px;
+      margin-bottom: 24px; box-shadow: var(--shadow);
+    }
+    .student-avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      color: #fff; font-size: 1.3rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; letter-spacing: -1px;
+    }
+    .student-profile-info { flex: 1; min-width: 0; }
+    .student-profile-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 2px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .student-profile-role { font-size: 0.8rem; color: var(--green); font-weight: 600; }
+    .student-profile-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
+    .student-stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 12px; text-align: center;
       box-shadow: var(--shadow);
     }
-    .quiz-code-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .student-stat-card .val { font-size: 1.7rem; font-weight: 800; line-height: 1; color: var(--accent); margin-bottom: 4px; }
+    .student-stat-card .val.green { color: var(--green); }
+    .student-stat-card .val.yellow { color: var(--yellow); }
+    .student-stat-card .lbl { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+
+    .quiz-code-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px;
+      margin-bottom: 28px; box-shadow: var(--shadow);
+    }
+    .quiz-code-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+
     .student-result-row {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 14px 18px; margin-bottom: 8px;
-      display: flex; align-items: center; gap: 14px;
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 8px;
+      display: grid;
+      grid-template-columns: 1fr auto auto auto auto;
+      align-items: center; gap: 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .srr-name { font-weight: 600; font-size: 0.92rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .srr-date { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
-    .srr-bar-wrap { width: 80px; background: var(--card); border-radius: 99px; height: 6px; }
-    .srr-bar { height: 6px; border-radius: 99px; }
-    .srr-score { font-weight: 700; font-size: 0.88rem; min-width: 42px; text-align: right; }
+    .student-result-row:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(99,91,255,0.08); }
+    .srr-name { font-weight: 600; font-size: 0.92rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .srr-mode { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+    .srr-mode.test { background: rgba(99,91,255,0.1); color: var(--accent); }
+    .srr-mode.fc   { background: rgba(16,185,129,0.12); color: var(--green); }
+    .srr-date { font-size: 0.76rem; color: var(--muted); white-space: nowrap; }
+    .srr-bar-wrap { width: 60px; background: var(--card); border-radius: 99px; height: 5px; flex-shrink: 0; }
+    .srr-bar { height: 5px; border-radius: 99px; }
+    .srr-score { font-weight: 700; font-size: 0.88rem; min-width: 40px; text-align: right; white-space: nowrap; }
+    .srr-repeat {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 7px; padding: 4px 10px; font-size: 0.76rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .srr-repeat:hover { border-color: var(--accent); color: var(--accent); background: rgba(99,91,255,0.06); }
+
+    @media (max-width: 600px) {
+      .student-profile-stats { grid-template-columns: repeat(2,1fr); }
+      .student-result-row {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto auto;
+        gap: 6px;
+      }
+      .srr-mode { grid-column: 2; grid-row: 1; }
+      .srr-date { grid-column: 1 / -1; font-size: 0.72rem; }
+      .srr-bar-wrap { display: none; }
+      .srr-score { grid-column: 1; grid-row: 3; }
+      .srr-repeat { grid-column: 2; grid-row: 3; }
+    }
 
     /* ── IMAGE UPLOAD ── */
     .img-upload-area {
@@ -1127,13 +1192,37 @@
 
 <!-- ═══ STUDENT HOME VIEW ═══ -->
 <div class="view" id="view-student-home">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-    <div>
-      <div class="page-title" id="student-home-title">Добро пожаловать!</div>
-      <div class="page-sub" style="margin-bottom:0">Введите код набора, чтобы начать</div>
+  <!-- Profile header -->
+  <div class="student-profile-header">
+    <div class="student-avatar" id="student-profile-avatar">?</div>
+    <div class="student-profile-info">
+      <div class="student-profile-name" id="student-profile-name">—</div>
+      <div class="student-profile-role">Ученик</div>
+    </div>
+    <button class="btn-signout" onclick="doSignOut()" title="Выйти">Выйти</button>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="student-profile-stats">
+    <div class="student-stat-card">
+      <div class="val" id="sstat-count">—</div>
+      <div class="lbl">Пройдено тестов</div>
+    </div>
+    <div class="student-stat-card">
+      <div class="val yellow" id="sstat-avg">—</div>
+      <div class="lbl">Средний балл</div>
+    </div>
+    <div class="student-stat-card">
+      <div class="val green" id="sstat-best">—</div>
+      <div class="lbl">Лучший результат</div>
+    </div>
+    <div class="student-stat-card">
+      <div class="val" id="sstat-week">—</div>
+      <div class="lbl">За последние 7 дней</div>
     </div>
   </div>
 
+  <!-- Enter code -->
   <div class="quiz-code-card">
     <h3>Пройти тест по коду</h3>
     <div style="display:flex;gap:10px">
@@ -1143,6 +1232,7 @@
     </div>
   </div>
 
+  <!-- History -->
   <div class="stats-history-title" style="margin-bottom:12px">
     <span>Мои результаты</span>
   </div>
@@ -1312,7 +1402,7 @@ function getFirstName(fullName) {
 
 function goStudentHome() {
   isStudentMode = false;
-  document.getElementById('main-header').style.display = '';
+  document.getElementById('main-header').style.display = 'none';
   _showStudentHome();
 }
 
@@ -1365,21 +1455,21 @@ if (_auth) {
 }
 
 function _applyUserUI() {
-  document.getElementById('main-header').style.display = '';
-  document.getElementById('header-user-info').style.display = 'flex';
-  document.getElementById('header-user-name').textContent = currentUserData?.name || '';
   const isTeacher = currentUserData?.role === 'teacher';
-  const roleLabel = isTeacher ? '👩‍🏫 Учитель' : '🎓 Ученик';
-  const roleBg    = isTeacher ? 'rgba(99,91,255,0.1)' : 'rgba(16,185,129,0.12)';
-  const roleColor = isTeacher ? 'var(--accent)' : 'var(--green)';
-  document.getElementById('header-user-role-badge').innerHTML =
-    `<span class="deck-badge" style="background:${roleBg};color:${roleColor}">${roleLabel}</span>`;
-  document.getElementById('teacher-nav').style.display    = isTeacher ? '' : 'none';
-  document.getElementById('btn-create-new').style.display = isTeacher ? '' : 'none';
-  document.getElementById('btn-signout').style.display    = '';
-  // Mobile: show inline buttons on deck page since header nav is hidden
-  const mba = document.getElementById('mobile-decks-actions');
-  if (mba && isTeacher) mba.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
+  // Students use their own inline header — hide the global header for them
+  document.getElementById('main-header').style.display = isTeacher ? '' : 'none';
+  if (isTeacher) {
+    document.getElementById('header-user-info').style.display = 'flex';
+    document.getElementById('header-user-name').textContent = currentUserData?.name || '';
+    const roleLabel = '👩‍🏫 Учитель';
+    document.getElementById('header-user-role-badge').innerHTML =
+      `<span class="deck-badge" style="background:rgba(99,91,255,0.1);color:var(--accent)">${roleLabel}</span>`;
+    document.getElementById('teacher-nav').style.display    = '';
+    document.getElementById('btn-create-new').style.display = '';
+    document.getElementById('btn-signout').style.display    = '';
+    const mba = document.getElementById('mobile-decks-actions');
+    if (mba) mba.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
+  }
 }
 
 async function _loadTeacherDecks() {
@@ -1405,33 +1495,93 @@ async function _loadTeacherDecks() {
 
 async function _showStudentHome() {
   showPage('student-home');
-  document.getElementById('student-home-title').textContent =
-    `Привет, ${getFirstName(currentUserData?.name)}!`;
+
+  // Fill profile header
+  const fullName = currentUserData?.name || '';
+  const firstName = getFirstName(fullName);
+  const initials = fullName.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+  document.getElementById('student-profile-avatar').textContent = initials;
+  document.getElementById('student-profile-name').textContent = fullName || firstName;
+
   // Load student's past results
   try {
     const snap = await _db.collection('results')
       .where('studentId', '==', currentUser.uid).get();
-    const results = snap.docs.map(d => d.data())
+    const results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => {
         const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
         const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
         return tb - ta;
-      }).slice(0, 30);
+      });
+
+    // Compute summary stats
+    const count = results.length;
+    const avg  = count ? Math.round(results.reduce((s, r) => s + (r.pct || 0), 0) / count) : 0;
+    const best = count ? Math.max(...results.map(r => r.pct || 0)) : 0;
+    const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+    const weekCount = results.filter(r => {
+      const t = r.date?.toDate ? r.date.toDate().getTime() : (r.date || 0);
+      return t >= weekAgo;
+    }).length;
+
+    document.getElementById('sstat-count').textContent = count || '0';
+    document.getElementById('sstat-avg').textContent   = count ? avg + '%' : '—';
+    document.getElementById('sstat-best').textContent  = count ? best + '%' : '—';
+    document.getElementById('sstat-week').textContent  = weekCount || '0';
+
     const el = document.getElementById('student-home-results');
     if (!results.length) return;
-    el.innerHTML = results.map(r => {
-      const dt   = r.date?.toDate ? r.date.toDate() : new Date(r.date);
-      const d    = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-      const t    = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      const c    = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+    el.innerHTML = results.slice(0, 30).map(r => {
+      const dt     = r.date?.toDate ? r.date.toDate() : new Date(r.date);
+      const d      = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      const t      = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const c      = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+      const isFC   = r.mode === 'flashcard';
+      const modeLbl = isFC ? '🃏 Карточки' : '🧠 Тест';
+      const modeCls = isFC ? 'fc' : 'test';
+      const correctTxt = (r.correct !== undefined && r.total) ? `${r.correct}/${r.total} · ` : '';
+      const repeatBtn = r.deckId
+        ? `<button class="srr-repeat" onclick="repeatQuiz('${r.deckId}')">Повторить</button>`
+        : '';
       return `<div class="student-result-row">
         <div class="srr-name">${esc(r.deckName || '—')}</div>
+        <span class="srr-mode ${modeCls}">${modeLbl}</span>
         <div class="srr-date">${d}, ${t}</div>
         <div class="srr-bar-wrap"><div class="srr-bar" style="width:${r.pct}%;background:${c}"></div></div>
-        <div class="srr-score" style="color:${c}">${r.pct}%</div>
+        <div class="srr-score" style="color:${c}">${correctTxt}${r.pct}%</div>
+        ${repeatBtn}
       </div>`;
     }).join('');
-  } catch(e) {}
+  } catch(e) { console.error('_showStudentHome error', e); }
+}
+
+async function repeatQuiz(deckId) {
+  if (!deckId || !_db) return;
+  showLoadingOverlay(true);
+  try {
+    const docSnap = await _db.collection('decks').doc(deckId).get();
+    if (!docSnap.exists) { toast('Набор не найден'); showLoadingOverlay(false); return; }
+    studentDeck = { id: docSnap.id, ...docSnap.data() };
+    isStudentMode = true;
+    document.getElementById('main-header').style.display = 'none';
+    showPage('student');
+    const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+    const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+    const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    document.getElementById('st-set-badge').innerHTML =
+      `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
+    document.getElementById('st-set-name').textContent = studentDeck.name;
+    document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
+    if (currentUserData?.name) {
+      studentName = currentUserData.name;
+      showLoadingOverlay(false);
+      startStudentQuiz();
+    } else {
+      document.getElementById('st-name-section').style.display = '';
+      document.getElementById('st-quiz-section').style.display = 'none';
+      showLoadingOverlay(false);
+    }
+  } catch(e) { toast('Ошибка загрузки набора'); showLoadingOverlay(false); }
 }
 
 async function openQuizByCode(code) {
@@ -1883,6 +2033,79 @@ function moveCard(id, dir) {
   renderSetCards();
 }
 
+function _initCardDrag(grid) {
+  let dragId = null;
+  let dragOverId = null;
+
+  function applyReorder() {
+    if (dragId && dragOverId && dragId !== dragOverId) {
+      const from = setCards.findIndex(c => c.id === dragId);
+      const to   = setCards.findIndex(c => c.id === dragOverId);
+      if (from !== -1 && to !== -1) {
+        const [moved] = setCards.splice(from, 1);
+        setCards.splice(to, 0, moved);
+        const d = decks.find(x => x.id === currentSetId);
+        if (d) { d.cards = setCards; save(); }
+        renderSetCards();
+      }
+    }
+    dragId = null; dragOverId = null;
+  }
+
+  function cardFromPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el ? el.closest('.qcard') : null;
+  }
+
+  grid.querySelectorAll('.qcard').forEach(card => {
+    const handle = card.querySelector('.qcard-drag-handle');
+
+    // ── Mouse / desktop drag ──────────────────────────────────────
+    card.addEventListener('dragstart', e => {
+      dragId = card.dataset.id;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      grid.querySelectorAll('.qcard').forEach(c => c.classList.remove('drag-over'));
+      applyReorder();
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (card.dataset.id !== dragId) {
+        grid.querySelectorAll('.qcard').forEach(c => c.classList.remove('drag-over'));
+        card.classList.add('drag-over');
+        dragOverId = card.dataset.id;
+      }
+    });
+
+    // ── Touch / mobile drag ───────────────────────────────────────
+    handle.addEventListener('touchstart', e => {
+      dragId = card.dataset.id;
+      card.classList.add('dragging');
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const target = cardFromPoint(touch.clientX, touch.clientY);
+      grid.querySelectorAll('.qcard').forEach(c => c.classList.remove('drag-over'));
+      if (target && target.dataset.id !== dragId) {
+        target.classList.add('drag-over');
+        dragOverId = target.dataset.id;
+      }
+    }, { passive: false });
+
+    handle.addEventListener('touchend', () => {
+      card.classList.remove('dragging');
+      grid.querySelectorAll('.qcard').forEach(c => c.classList.remove('drag-over'));
+      applyReorder();
+    });
+  });
+}
+
 function renderSetCards() {
   const grid = document.getElementById('set-cards-grid');
   const empty = document.getElementById('set-cards-empty');
@@ -1899,30 +2122,31 @@ function renderSetCards() {
     const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый', flashcard: 'Карточка' }[c.type] || c.type;
     const answer = (c.type === 'flashcard' || c.type === 'open') ? c.answer : c.options.filter(o => o.correct).map(o => o.text).join(', ');
     const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
-    const isFirst = idx === 0, isLast = idx === setCards.length - 1;
     const thumbHtml = c.image ? `<img src="${c.image}" class="qcard-thumb" alt="">` : '';
-    return `<div class="qcard" id="qcard-${c.id}">
-      <div class="qcard-top" style="display:flex;gap:10px;align-items:flex-start">
-        ${thumbHtml}
-        <div style="flex:1;min-width:0">
-        <div class="qcard-type">
-          <span class="type-badge ${badgeClass}">${typeLabel}</span>
-          <span style="font-size:0.68rem;color:var(--muted);margin-left:6px">#${idx+1}</span>
-        </div>
-        <div class="qcard-q">${esc(c.question)}</div>
+    return `<div class="qcard" id="qcard-${c.id}" draggable="true" data-id="${c.id}">
+      <div class="qcard-top">
+        <div class="qcard-drag-handle" title="Перетащить">⠿</div>
+        <div class="qcard-top-inner">
+          ${thumbHtml}
+          <div style="flex:1;min-width:0">
+            <div class="qcard-type">
+              <span class="type-badge ${badgeClass}">${typeLabel}</span>
+              <span style="font-size:0.68rem;color:var(--muted);margin-left:6px">#${idx+1}</span>
+            </div>
+            <div class="qcard-q">${esc(c.question)}</div>
+          </div>
         </div>
       </div>
       <div class="qcard-bottom">
         <div class="qcard-answer" title="${esc(answer)}">✓ ${esc(answer)}</div>
         <div class="qcard-acts">
-          <button title="Вверх" onclick="moveCard('${c.id}',-1)" ${isFirst ? 'disabled' : ''}>↑</button>
-          <button title="Вниз" onclick="moveCard('${c.id}',1)" ${isLast ? 'disabled' : ''}>↓</button>
           <button onclick="editCard('${c.id}')">✏️</button>
           <button class="del" onclick="confirmDeleteCard('${c.id}')">🗑️</button>
         </div>
       </div>
     </div>`;
   }).join('');
+  _initCardDrag(grid);
 }
 
 // ─── NEW SET MODAL ───────────────────────────────────────────────────────────
