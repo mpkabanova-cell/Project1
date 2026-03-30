@@ -1719,7 +1719,7 @@ async function createNewSet() {
       const d = { id: ref.id, ...data, createdAt: new Date() };
       decks.unshift(d);
       openSet(ref.id, 'cards');
-    } catch(e) { toast('Ошибка создания набора'); return; }
+    } catch(e) { console.error('createNewSet error:', e); toast('Ошибка: ' + (e.message || e.code || 'неизвестная')); return; }
   } else {
     const d = { id: uid(), ...data };
     decks.unshift(d);
