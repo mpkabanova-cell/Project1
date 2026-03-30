@@ -318,6 +318,80 @@
     .type-badge.multi { background: rgba(255,209,102,0.2); color: var(--yellow); }
     .type-badge.open { background: rgba(67,217,162,0.2); color: var(--green); }
 
+    /* ───── MODE TOGGLE ───── */
+    .mode-toggle { display: flex; gap: 0; margin-bottom: 24px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); width: fit-content; }
+    .mode-btn {
+      padding: 10px 24px; border: none; background: transparent;
+      color: var(--muted); font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .mode-btn:hover { color: var(--text); }
+    .mode-btn.active { background: var(--accent); color: #fff; }
+
+    /* ───── FLIP CARD ───── */
+    .flashcard-wrap {
+      perspective: 1200px;
+      margin-bottom: 24px;
+      cursor: pointer;
+    }
+    .flashcard {
+      width: 100%; height: 280px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(.4,0,.2,1);
+      border-radius: var(--radius);
+    }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .flashcard-face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 36px 32px; text-align: center;
+      border: 1px solid var(--border);
+    }
+    .flashcard-front { background: var(--surface); }
+    .flashcard-back {
+      background: var(--card);
+      transform: rotateY(180deg);
+      border-color: var(--accent);
+    }
+    .flashcard-label {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--muted); margin-bottom: 20px;
+    }
+    .flashcard-back .flashcard-label { color: var(--accent); }
+    .flashcard-text {
+      font-size: 1.4rem; font-weight: 700; line-height: 1.5; color: var(--text);
+    }
+    .flashcard-back .flashcard-text { color: var(--green); font-size: 1.3rem; }
+    .flashcard-hint {
+      margin-top: 20px; font-size: 0.82rem; color: var(--muted);
+    }
+    .flashcard-actions {
+      display: flex; gap: 16px; justify-content: center;
+      margin-top: 8px;
+    }
+    .fc-btn-knew {
+      flex: 1; max-width: 180px;
+      padding: 14px 20px; border-radius: 10px; border: 2px solid var(--green);
+      background: rgba(67,217,162,0.1); color: var(--green);
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .fc-btn-knew:hover { background: rgba(67,217,162,0.2); transform: translateY(-2px); }
+    .fc-btn-no {
+      flex: 1; max-width: 180px;
+      padding: 14px 20px; border-radius: 10px; border: 2px solid var(--accent2);
+      background: rgba(255,101,132,0.1); color: var(--accent2);
+      font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .fc-btn-no:hover { background: rgba(255,101,132,0.2); transform: translateY(-2px); }
+    .flashcard-actions-hidden { display: none; }
+
     /* Toast */
     #toast {
       position: fixed; bottom: 28px; right: 28px;
@@ -435,9 +509,52 @@
     <div class="page-sub">Выберите колоду и проверьте знания</div>
 
     <div class="quiz-setup" id="quiz-setup">
+      <label style="margin-bottom:12px; display:block">Режим</label>
+      <div class="mode-toggle" style="margin-bottom:24px">
+        <button class="mode-btn active" id="mode-btn-test" onclick="setQuizMode('test')">🧠 Тест</button>
+        <button class="mode-btn" id="mode-btn-flashcard" onclick="setQuizMode('flashcard')">🃏 Карточки</button>
+      </div>
       <label style="margin-bottom:12px; display:block">Выберите колоду</label>
       <div class="quiz-deck-list" id="quiz-deck-list"></div>
-      <button class="btn-primary" onclick="startQuiz()">Начать тест ▶</button>
+      <button class="btn-primary" onclick="startQuizByMode()">Начать ▶</button>
+    </div>
+
+    <!-- Flashcard play -->
+    <div class="quiz-play" id="fc-play">
+      <div class="quiz-counter" id="fc-counter"></div>
+      <div class="quiz-progress-bar-wrap">
+        <div class="quiz-progress-bar" id="fc-progress-bar"></div>
+      </div>
+      <div class="flashcard-wrap" onclick="flipCurrentCard()">
+        <div class="flashcard" id="fc-card">
+          <div class="flashcard-face flashcard-front">
+            <div class="flashcard-label">Вопрос</div>
+            <div class="flashcard-text" id="fc-question"></div>
+            <div class="flashcard-hint">Нажмите, чтобы увидеть ответ</div>
+          </div>
+          <div class="flashcard-face flashcard-back">
+            <div class="flashcard-label">Ответ</div>
+            <div class="flashcard-text" id="fc-answer"></div>
+            <div class="flashcard-hint">Вы знали этот ответ?</div>
+          </div>
+        </div>
+      </div>
+      <div class="flashcard-actions flashcard-actions-hidden" id="fc-actions">
+        <button class="fc-btn-no" onclick="markCard(false)">✗ Не знал</button>
+        <button class="fc-btn-knew" onclick="markCard(true)">✓ Знал!</button>
+      </div>
+    </div>
+
+    <div class="quiz-results" id="fc-results" style="display:none">
+      <div class="results-score" id="fc-score"></div>
+      <div class="results-label">Знал правильный ответ</div>
+      <div class="results-detail">
+        <div class="results-stat"><div class="val" id="fc-correct" style="color:var(--green)"></div><div class="lbl">Знал</div></div>
+        <div class="results-stat"><div class="val" id="fc-wrong" style="color:var(--accent2)"></div><div class="lbl">Не знал</div></div>
+        <div class="results-stat"><div class="val" id="fc-total"></div><div class="lbl">Всего</div></div>
+      </div>
+      <button class="btn-primary" onclick="retryFlashcards()">Повторить снова</button>
+      <button class="btn-secondary" onclick="exitQuiz()" style="margin-left:10px">В меню</button>
     </div>
 
     <div class="quiz-play" id="quiz-play">
@@ -816,11 +933,21 @@ function findCard(id) {
 
 // ─── QUIZ ─────────────────────────────────────────────────────────────────────
 let selectedQuizDeckId = null;
+let quizMode = 'test'; // 'test' | 'flashcard'
+let fcState = null;
+
+function setQuizMode(mode) {
+  quizMode = mode;
+  document.getElementById('mode-btn-test').classList.toggle('active', mode === 'test');
+  document.getElementById('mode-btn-flashcard').classList.toggle('active', mode === 'flashcard');
+}
 
 function renderQuizSetup() {
   document.getElementById('quiz-setup').style.display = 'block';
   document.getElementById('quiz-play').classList.remove('active');
   document.getElementById('quiz-results').style.display = 'none';
+  document.getElementById('fc-play').classList.remove('active');
+  document.getElementById('fc-results').style.display = 'none';
   const list = document.getElementById('quiz-deck-list');
   const valid = decks.filter(d => d.cards.length > 0);
   if (!valid.length) {
@@ -841,6 +968,11 @@ function selectQuizDeck(id) {
   event.currentTarget.classList.add('selected');
 }
 
+function startQuizByMode() {
+  if (quizMode === 'flashcard') startFlashcards();
+  else startQuiz();
+}
+
 function startQuiz() {
   if (!selectedQuizDeckId) { toast('Выберите колоду'); return; }
   const d = decks.find(x => x.id === selectedQuizDeckId);
@@ -851,6 +983,67 @@ function startQuiz() {
   document.getElementById('quiz-results').style.display = 'none';
   renderQuizQuestion();
 }
+
+// ─── FLASHCARD MODE ───────────────────────────────────────────────────────────
+function startFlashcards() {
+  if (!selectedQuizDeckId) { toast('Выберите колоду'); return; }
+  const d = decks.find(x => x.id === selectedQuizDeckId);
+  const cards = shuffle([...d.cards]);
+  fcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
+  document.getElementById('quiz-setup').style.display = 'none';
+  document.getElementById('fc-play').classList.add('active');
+  document.getElementById('fc-results').style.display = 'none';
+  renderFlashcard();
+}
+
+function renderFlashcard() {
+  const { cards, idx } = fcState;
+  const card = cards[idx];
+  const total = cards.length;
+  document.getElementById('fc-counter').textContent = `Карточка ${idx + 1} из ${total}`;
+  document.getElementById('fc-progress-bar').style.width = (idx / total * 100) + '%';
+  document.getElementById('fc-question').textContent = card.question;
+  const answer = card.type === 'open'
+    ? card.answer
+    : card.options.filter(o => o.correct).map(o => o.text).join(', ');
+  document.getElementById('fc-answer').textContent = answer;
+  const fcCard = document.getElementById('fc-card');
+  fcCard.classList.remove('flipped');
+  fcState.flipped = false;
+  document.getElementById('fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
+}
+
+function flipCurrentCard() {
+  const fcCard = document.getElementById('fc-card');
+  fcCard.classList.add('flipped');
+  fcState.flipped = true;
+  setTimeout(() => {
+    document.getElementById('fc-actions').className = 'flashcard-actions';
+  }, 300);
+}
+
+function markCard(knew) {
+  if (!fcState.flipped) return;
+  if (knew) fcState.knew++; else fcState.didnt++;
+  fcState.idx++;
+  if (fcState.idx >= fcState.cards.length) {
+    showFlashcardResults(); return;
+  }
+  renderFlashcard();
+}
+
+function showFlashcardResults() {
+  document.getElementById('fc-play').classList.remove('active');
+  document.getElementById('fc-results').style.display = 'block';
+  const pct = Math.round(fcState.knew / fcState.cards.length * 100);
+  document.getElementById('fc-score').textContent = pct + '%';
+  document.getElementById('fc-correct').textContent = fcState.knew;
+  document.getElementById('fc-wrong').textContent = fcState.didnt;
+  document.getElementById('fc-total').textContent = fcState.cards.length;
+  document.getElementById('fc-progress-bar').style.width = '100%';
+}
+
+function retryFlashcards() { startFlashcards(); }
 
 function renderQuizQuestion() {
   const { cards, idx } = quizState;
@@ -967,7 +1160,12 @@ function showResults() {
 }
 
 function retryQuiz() { startQuiz(); }
-function exitQuiz() { selectedQuizDeckId = null; showView('quiz'); }
+function exitQuiz() {
+  selectedQuizDeckId = null;
+  document.getElementById('fc-play').classList.remove('active');
+  document.getElementById('fc-results').style.display = 'none';
+  showView('quiz');
+}
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
