@@ -462,6 +462,13 @@
 
     <div class="form-card">
       <div class="form-row">
+        <label>Тип колоды</label>
+        <div class="mode-toggle" id="deck-mode-toggle">
+          <button class="mode-btn active" id="deck-mode-test" onclick="setDeckMode('test')">🧠 Тест</button>
+          <button class="mode-btn" id="deck-mode-flashcard" onclick="setDeckMode('flashcard')">🃏 Карточки</button>
+        </div>
+      </div>
+      <div class="form-row">
         <label>Название колоды</label>
         <input type="text" id="deck-name-input" placeholder="Например: История России, Биология 8 кл.">
       </div>
@@ -479,7 +486,8 @@
     <div id="card-creator" style="display:none; margin-top:28px">
       <div class="page-title" style="font-size:1.2rem; margin-bottom:16px" id="card-creator-title">Добавить карточку</div>
       <div class="form-card" id="card-form">
-        <div class="form-row">
+        <!-- Test mode fields -->
+        <div id="q-type-row" class="form-row">
           <label>Тип вопроса</label>
           <select id="q-type" onchange="renderQuestionType()">
             <option value="single">Один верный ответ</option>
@@ -509,11 +517,6 @@
     <div class="page-sub">Выберите колоду и проверьте знания</div>
 
     <div class="quiz-setup" id="quiz-setup">
-      <label style="margin-bottom:12px; display:block">Режим</label>
-      <div class="mode-toggle" style="margin-bottom:24px">
-        <button class="mode-btn active" id="mode-btn-test" onclick="setQuizMode('test')">🧠 Тест</button>
-        <button class="mode-btn" id="mode-btn-flashcard" onclick="setQuizMode('flashcard')">🃏 Карточки</button>
-      </div>
       <label style="margin-bottom:12px; display:block">Выберите колоду</label>
       <div class="quiz-deck-list" id="quiz-deck-list"></div>
       <button class="btn-primary" onclick="startQuizByMode()">Начать ▶</button>
@@ -608,13 +611,15 @@
 <script>
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let decks = JSON.parse(localStorage.getItem('qf_decks') || '[]');
-// deck: { id, name, desc, cards: [] }
-// card: { id, type, question, options: [{text, correct}], answer }
+// deck: { id, name, desc, mode: 'test'|'flashcard', cards: [] }
+// test card:      { id, type: 'single'|'multi'|'open', question, options, answer }
+// flashcard card: { id, type: 'flashcard', question, answer }
 
-let editingDeckId = null;   // null = new deck
+let editingDeckId = null;
 let editingCardId = null;
 let currentViewDeckId = null;
 let quizState = null;
+let currentDeckMode = 'test';
 
 function save() { localStorage.setItem('qf_decks', JSON.stringify(decks)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -640,17 +645,24 @@ function renderDecks() {
     </div>`;
     return;
   }
-  grid.innerHTML = decks.map(d => `
+  grid.innerHTML = decks.map(d => {
+    const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+    const modeBg = d.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+    const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    return `
     <div class="deck-card" onclick="openDeck('${d.id}')">
       <div class="deck-actions">
         <button onclick="event.stopPropagation();editDeck('${d.id}')">✏️</button>
         <button class="del" onclick="event.stopPropagation();confirmDelete('deck','${d.id}')">🗑️</button>
       </div>
-      <div class="deck-badge">${d.cards.length} карт.</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <div class="deck-badge">${d.cards.length} карт.</div>
+        <div class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</div>
+      </div>
       <div class="deck-name">${esc(d.name)}</div>
       <div class="deck-meta">${esc(d.desc || 'Без описания')}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function openDeck(id) {
@@ -675,8 +687,8 @@ function renderCardsGrid() {
 }
 
 function cardHTML(c, mode) {
-  const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый' }[c.type];
-  const answer = c.type === 'open'
+  const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый', flashcard: 'Карточка' }[c.type] || c.type;
+  const answer = c.type === 'flashcard' || c.type === 'open'
     ? c.answer
     : c.options.filter(o => o.correct).map(o => o.text).join(', ');
   const actions = mode === 'view'
@@ -688,9 +700,10 @@ function cardHTML(c, mode) {
         <button onclick="editCardInCreate('${c.id}')">✏️</button>
         <button class="del" onclick="removeCardFromNew('${c.id}')">🗑️</button>
        </div>`;
+  const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
   return `<div class="qcard" id="qcard-${c.id}">
     <div class="qcard-top">
-      <div class="qcard-type"><span class="type-badge ${c.type}">${typeLabel}</span></div>
+      <div class="qcard-type"><span class="type-badge ${badgeClass}">${typeLabel}</span></div>
       <div class="qcard-q">${esc(c.question)}</div>
     </div>
     <div class="qcard-bottom">
@@ -703,13 +716,22 @@ function cardHTML(c, mode) {
 // ─── CREATE DECK ──────────────────────────────────────────────────────────────
 let newDeckCards = [];
 
+function setDeckMode(mode) {
+  currentDeckMode = mode;
+  document.getElementById('deck-mode-test').classList.toggle('active', mode === 'test');
+  document.getElementById('deck-mode-flashcard').classList.toggle('active', mode === 'flashcard');
+  renderQuestionType();
+}
+
 function resetCreateForm() {
   editingDeckId = null;
   newDeckCards = [];
+  currentDeckMode = 'test';
   document.getElementById('deck-name-input').value = '';
   document.getElementById('deck-desc-input').value = '';
   document.getElementById('card-creator').style.display = 'none';
   document.getElementById('create-title').textContent = 'Создать новую колоду';
+  setDeckMode('test');
   renderNewDeckCards();
 }
 
@@ -720,10 +742,11 @@ function saveDeck() {
     const d = decks.find(x => x.id === editingDeckId);
     d.name = name;
     d.desc = document.getElementById('deck-desc-input').value.trim();
+    d.mode = currentDeckMode;
     if (newDeckCards.length) d.cards = newDeckCards;
     save(); toast('Колода обновлена'); resetCreateForm(); showView('decks');
   } else {
-    const d = { id: uid(), name, desc: document.getElementById('deck-desc-input').value.trim(), cards: [] };
+    const d = { id: uid(), name, desc: document.getElementById('deck-desc-input').value.trim(), mode: currentDeckMode, cards: [] };
     decks.push(d);
     editingDeckId = d.id;
     newDeckCards = d.cards;
@@ -739,20 +762,32 @@ function editDeck(id) {
   const d = decks.find(x => x.id === id);
   editingDeckId = id;
   newDeckCards = [...d.cards];
+  currentDeckMode = d.mode || 'test';
   document.getElementById('deck-name-input').value = d.name;
   document.getElementById('deck-desc-input').value = d.desc || '';
   document.getElementById('create-title').textContent = 'Редактировать колоду';
   document.getElementById('card-creator').style.display = 'block';
   document.getElementById('card-creator-title').textContent = 'Карточки колоды «' + d.name + '»';
-  renderQuestionType();
+  setDeckMode(currentDeckMode);
   renderNewDeckCards();
   showView('create');
 }
 
 // ─── CARD FORM ────────────────────────────────────────────────────────────────
 function renderQuestionType() {
-  const type = document.getElementById('q-type').value;
   const block = document.getElementById('q-options-block');
+  const typeRow = document.getElementById('q-type-row');
+
+  if (currentDeckMode === 'flashcard') {
+    // Flashcard: just question + answer, no type selector
+    typeRow.style.display = 'none';
+    block.innerHTML = `<div class="form-row"><label>Ответ</label>
+      <input type="text" id="q-open-answer" placeholder="Введите ответ на карточке"></div>`;
+    return;
+  }
+
+  typeRow.style.display = '';
+  const type = document.getElementById('q-type').value;
   if (type === 'open') {
     block.innerHTML = `<div class="form-row"><label>Правильный ответ</label>
       <input type="text" id="q-open-answer" placeholder="Введите правильный ответ"></div>`;
@@ -762,7 +797,6 @@ function renderQuestionType() {
       <div id="options-list"></div>
       <button class="btn-add-option" onclick="addOption()">+ Добавить вариант</button>
     </div>`;
-    // Default 3 options
     if (!document.getElementById('options-list')?.children.length) {
       addOption(); addOption(); addOption();
     }
@@ -789,9 +823,16 @@ function addOption(text = '', correct = false) {
 }
 
 function getCardFromForm(existing) {
-  const type = document.getElementById('q-type').value;
   const question = document.getElementById('q-text').value.trim();
   if (!question) { toast('Введите вопрос'); return null; }
+
+  if (currentDeckMode === 'flashcard') {
+    const ans = document.getElementById('q-open-answer').value.trim();
+    if (!ans) { toast('Введите ответ'); return null; }
+    return { id: existing?.id || uid(), type: 'flashcard', question, answer: ans, options: [] };
+  }
+
+  const type = document.getElementById('q-type').value;
   let card = { id: existing?.id || uid(), type, question, options: [], answer: '' };
 
   if (type === 'open') {
@@ -853,11 +894,11 @@ function editCardInCreate(id) {
   const card = newDeckCards.find(c => c.id === id);
   if (!card) return;
   editingCardId = id;
-  document.getElementById('q-type').value = card.type;
   document.getElementById('q-text').value = card.question;
+  if (card.type !== 'flashcard') document.getElementById('q-type').value = card.type;
   renderQuestionType();
   setTimeout(() => {
-    if (card.type === 'open') {
+    if (card.type === 'flashcard' || card.type === 'open') {
       document.getElementById('q-open-answer').value = card.answer;
     } else {
       const list = document.getElementById('options-list');
@@ -933,14 +974,7 @@ function findCard(id) {
 
 // ─── QUIZ ─────────────────────────────────────────────────────────────────────
 let selectedQuizDeckId = null;
-let quizMode = 'test'; // 'test' | 'flashcard'
 let fcState = null;
-
-function setQuizMode(mode) {
-  quizMode = mode;
-  document.getElementById('mode-btn-test').classList.toggle('active', mode === 'test');
-  document.getElementById('mode-btn-flashcard').classList.toggle('active', mode === 'flashcard');
-}
 
 function renderQuizSetup() {
   document.getElementById('quiz-setup').style.display = 'block';
@@ -954,12 +988,18 @@ function renderQuizSetup() {
     list.innerHTML = `<div style="color:var(--muted);font-size:.9rem">Нет колод с карточками.</div>`;
     return;
   }
-  list.innerHTML = valid.map(d => `
+  list.innerHTML = valid.map(d => {
+    const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+    const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    return `
     <div class="quiz-deck-pick ${selectedQuizDeckId === d.id ? 'selected' : ''}" onclick="selectQuizDeck('${d.id}')">
       <div class="name">${esc(d.name)}</div>
-      <div class="cnt">${d.cards.length} карточек</div>
-    </div>
-  `).join('');
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <div class="cnt">${d.cards.length} карточек</div>
+        <span style="font-size:0.75rem;color:${modeColor};font-weight:700">${modeLabel}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function selectQuizDeck(id) {
@@ -969,12 +1009,13 @@ function selectQuizDeck(id) {
 }
 
 function startQuizByMode() {
-  if (quizMode === 'flashcard') startFlashcards();
+  if (!selectedQuizDeckId) { toast('Выберите колоду'); return; }
+  const d = decks.find(x => x.id === selectedQuizDeckId);
+  if ((d.mode || 'test') === 'flashcard') startFlashcards();
   else startQuiz();
 }
 
 function startQuiz() {
-  if (!selectedQuizDeckId) { toast('Выберите колоду'); return; }
   const d = decks.find(x => x.id === selectedQuizDeckId);
   const cards = shuffle([...d.cards]);
   quizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
@@ -986,7 +1027,6 @@ function startQuiz() {
 
 // ─── FLASHCARD MODE ───────────────────────────────────────────────────────────
 function startFlashcards() {
-  if (!selectedQuizDeckId) { toast('Выберите колоду'); return; }
   const d = decks.find(x => x.id === selectedQuizDeckId);
   const cards = shuffle([...d.cards]);
   fcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
