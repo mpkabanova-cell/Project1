@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QuizForge — Карточки викторин</title>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1379,6 +1380,34 @@ function recordResult(mode, correct, total) {
   save();
 }
 
+// ─── URL ENCODE / DECODE ──────────────────────────────────────────────────────
+// Compact deck: only the fields needed for quiz (strip history, keep minimal keys)
+function packDeck(d) {
+  return {
+    i: d.id, n: d.name, d: d.desc || '', m: d.mode,
+    c: d.cards.map(c => {
+      const p = { q: c.question, a: c.answer || '', t: c.type };
+      if (c.options && c.options.length) p.o = c.options.map(o => ({ t: o.text, c: o.correct }));
+      return p;
+    })
+  };
+}
+function unpackDeck(p) {
+  return {
+    id: p.i, name: p.n, desc: p.d || '', mode: p.m,
+    cards: (p.c || []).map((c, i) => ({
+      id: 'c' + i, type: c.t, question: c.q, answer: c.a || '',
+      options: (c.o || []).map(o => ({ text: o.t, correct: o.c }))
+    }))
+  };
+}
+function urlEncode(obj) {
+  return LZString.compressToEncodedURIComponent(JSON.stringify(obj));
+}
+function urlDecode(str) {
+  return JSON.parse(LZString.decompressFromEncodedURIComponent(str));
+}
+
 // ─── STUDENT STATE ────────────────────────────────────────────────────────────
 let isStudentMode = false;
 let studentDeck = null;
@@ -1392,7 +1421,7 @@ function initApp() {
   const hash = location.hash;
   if (hash.startsWith('#quiz=')) {
     try {
-      studentDeck = JSON.parse(atob(decodeURIComponent(hash.slice(6))));
+      studentDeck = unpackDeck(urlDecode(hash.slice(6)));
       isStudentMode = true;
       document.getElementById('main-header').style.display = 'none';
       showPage('student');
@@ -1410,7 +1439,7 @@ function initApp() {
     }
   } else if (hash.startsWith('#result=')) {
     try {
-      const result = JSON.parse(atob(decodeURIComponent(hash.slice(8))));
+      const result = urlDecode(hash.slice(8));
       receiveStudentResult(result);
     } catch(e) {}
     history.replaceState(null, '', location.pathname);
@@ -1597,7 +1626,7 @@ function stFinish(mode, correct, total) {
 
 function copyStudentResult() {
   if (!stResultData) return;
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(stResultData))));
+  const encoded = urlEncode(stResultData);
   const url = location.href.split('#')[0] + '#result=' + encoded;
   navigator.clipboard.writeText(url).then(() => {
     document.getElementById('st-copy-btn').textContent = '✓ Скопировано! Отправьте учителю';
@@ -1617,7 +1646,7 @@ function generateShareLink() {
   const d = decks.find(x => x.id === currentSetId);
   if (!d) return;
   if (!d.cards.length) { toast('Добавьте карточки перед отправкой'); return; }
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
+  const encoded = urlEncode(packDeck(d));
   const url = location.href.split('#')[0] + '#quiz=' + encoded;
   navigator.clipboard.writeText(url).then(() => {
     toast('🔗 Ссылка для учеников скопирована!');
