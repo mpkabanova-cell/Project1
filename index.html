@@ -1016,6 +1016,30 @@
   </div>
 </div>
 
+<!-- ═══ ROLE SETUP MODAL ═══ -->
+<div class="modal-overlay" id="role-setup-modal">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <h3>Кто вы?</h3>
+    <div class="modal-sub" style="margin-bottom:24px">Выберите роль — это сохранится в вашем аккаунте</div>
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <button onclick="saveUserRole('teacher')" style="flex:1;padding:20px 12px;border:2px solid rgba(99,91,255,0.3);background:rgba(99,91,255,0.06);color:var(--accent);border-radius:14px;cursor:pointer;font-size:1rem;font-weight:700;transition:all 0.2s"
+        onmouseover="this.style.background='rgba(99,91,255,0.14)'" onmouseout="this.style.background='rgba(99,91,255,0.06)'">
+        👩‍🏫<br><span style="font-size:0.85rem;margin-top:6px;display:block">Учитель</span>
+      </button>
+      <button onclick="saveUserRole('student')" style="flex:1;padding:20px 12px;border:2px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.06);color:var(--green);border-radius:14px;cursor:pointer;font-size:1rem;font-weight:700;transition:all 0.2s"
+        onmouseover="this.style.background='rgba(16,185,129,0.14)'" onmouseout="this.style.background='rgba(16,185,129,0.06)'">
+        🎓<br><span style="font-size:0.85rem;margin-top:6px;display:block">Ученик</span>
+      </button>
+    </div>
+    <div id="role-setup-name-row" style="margin-bottom:16px">
+      <label style="text-align:left;display:block">Ваше имя</label>
+      <input type="text" id="role-setup-name" placeholder="Иванова Мария" style="margin-top:6px">
+    </div>
+    <button class="btn-primary" style="width:100%" onclick="confirmRoleSetup()">Сохранить →</button>
+    <div id="role-setup-err" class="auth-err"></div>
+  </div>
+</div>
+
 <!-- ═══ FIREBASE HELP MODAL ═══ -->
 <div class="modal-overlay" id="firebase-help-modal">
   <div class="modal" style="max-width:560px">
@@ -1150,7 +1174,14 @@ if (_auth) {
       currentUser = user;
       try {
         const doc = await _db.collection('users').doc(user.uid).get();
-        currentUserData = doc.exists ? doc.data() : { name: user.email, role: 'teacher' };
+        if (doc.exists) {
+          currentUserData = doc.data();
+        } else {
+          // User document missing — ask for role
+          showLoadingOverlay(false);
+          _showRoleSetup(user);
+          return;
+        }
       } catch(e) { currentUserData = { name: user.email, role: 'teacher' }; }
       _applyUserUI();
       const code = pendingQuizCode || (location.hash.startsWith('#q=') ? location.hash.slice(3) : null);
@@ -2588,6 +2619,63 @@ function toast(msg) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('shuffle-knob').style.left = '21px';
+// ─── ROLE SETUP (when user doc missing) ──────────────────────────────────────
+let _roleSetupUser = null;
+let _pendingRole = 'teacher';
+
+function _showRoleSetup(user) {
+  _roleSetupUser = user;
+  _pendingRole = 'teacher';
+  document.getElementById('role-setup-name').value = user.displayName || '';
+  document.getElementById('role-setup-err').classList.remove('show');
+  // highlight default role button
+  _updateRoleButtons('teacher');
+  document.getElementById('role-setup-modal').classList.add('show');
+}
+
+function saveUserRole(role) {
+  _pendingRole = role;
+  _updateRoleButtons(role);
+}
+
+function _updateRoleButtons(role) {
+  const btns = document.querySelectorAll('#role-setup-modal button[onclick^="saveUserRole"]');
+  btns.forEach(b => {
+    const isActive = b.getAttribute('onclick').includes(role);
+    b.style.borderWidth = isActive ? '2.5px' : '2px';
+    b.style.boxShadow = isActive ? '0 0 0 3px rgba(99,91,255,0.15)' : 'none';
+  });
+}
+
+async function confirmRoleSetup() {
+  const name = document.getElementById('role-setup-name').value.trim();
+  if (!name) {
+    const el = document.getElementById('role-setup-err');
+    el.textContent = 'Введите имя'; el.classList.add('show'); return;
+  }
+  if (!_roleSetupUser || !_db) return;
+  try {
+    await _db.collection('users').doc(_roleSetupUser.uid).set({
+      name, email: _roleSetupUser.email, role: _pendingRole,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('role-setup-modal').classList.remove('show');
+    currentUserData = { name, email: _roleSetupUser.email, role: _pendingRole };
+    showLoadingOverlay(true);
+    _applyUserUI();
+    if (_pendingRole === 'teacher') {
+      await _loadTeacherDecks();
+    } else {
+      await _showStudentHome();
+    }
+    showLoadingOverlay(false);
+  } catch(e) {
+    const el = document.getElementById('role-setup-err');
+    el.textContent = 'Ошибка сохранения: ' + (e.message || e.code);
+    el.classList.add('show');
+  }
+}
+
 // ─── DEMO ACCOUNTS ───────────────────────────────────────────────────────────
 const DEMO_TEACHER = { email: 'teacher@demo.test', password: 'demo123456', name: 'Иванова Анна (учитель)', role: 'teacher' };
 const DEMO_STUDENT = { email: 'student@demo.test', password: 'demo123456', name: 'Петров Иван (ученик)', role: 'student' };
@@ -2610,38 +2698,51 @@ async function createDemoAccounts() {
   if (!_auth || !_db) {
     const el = document.getElementById('demo-msg');
     el.textContent = '⚠️ Сначала настройте Firebase (замените REPLACE_* в коде)';
-    el.style.color = 'var(--accent2)';
-    el.style.display = 'block';
-    return;
+    el.style.color = 'var(--accent2)'; el.style.display = 'block'; return;
   }
   const btn = document.getElementById('btn-create-demo');
   btn.textContent = 'Создаю…'; btn.disabled = true;
   const msg = document.getElementById('demo-msg');
-  msg.style.display = 'block';
+  msg.style.display = 'block'; msg.style.color = 'var(--muted)'; msg.textContent = 'Создаю аккаунты…';
 
   const accounts = [DEMO_TEACHER, DEMO_STUDENT];
-  let created = 0, skipped = 0;
+  let created = 0, updated = 0, errors = [];
 
   for (const acc of accounts) {
     try {
-      const cred = await _auth.createUserWithEmailAndPassword(acc.email, acc.password);
-      await _db.collection('users').doc(cred.user.uid).set({
+      let uid;
+      try {
+        const cred = await _auth.createUserWithEmailAndPassword(acc.email, acc.password);
+        uid = cred.user.uid;
+        created++;
+      } catch(e) {
+        if (e.code === 'auth/email-already-in-use') {
+          // Sign in to get UID and update/create user doc
+          const cred = await _auth.signInWithEmailAndPassword(acc.email, acc.password);
+          uid = cred.user.uid;
+          updated++;
+        } else { errors.push(e.message); continue; }
+      }
+      // Always (re)write the user document to ensure role is correct
+      await _db.collection('users').doc(uid).set({
         name: acc.name, email: acc.email, role: acc.role,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      }, { merge: false });
       await _auth.signOut();
-      created++;
     } catch(e) {
-      if (e.code === 'auth/email-already-in-use') skipped++;
-      else { msg.textContent = '❌ Ошибка: ' + e.message; msg.style.color = 'var(--accent2)'; btn.textContent = 'Создать демо-аккаунты автоматически'; btn.disabled = false; return; }
+      errors.push(acc.role + ': ' + (e.message || e.code));
     }
   }
 
-  msg.style.color = 'var(--green)';
-  msg.textContent = created > 0
-    ? `✓ Создано ${created} аккаунт(а)${skipped ? `, ${skipped} уже существовал(и)` : ''}. Нажмите кнопку учителя или ученика выше для входа.`
-    : `✓ Аккаунты уже существуют. Нажмите кнопку выше для входа.`;
-  btn.textContent = '✓ Готово';
+  if (errors.length) {
+    msg.style.color = 'var(--accent2)';
+    msg.textContent = '❌ ' + errors.join('; ');
+    btn.textContent = 'Попробовать снова'; btn.disabled = false;
+  } else {
+    msg.style.color = 'var(--green)';
+    msg.textContent = `✓ Готово! Аккаунты созданы (${created} новых, ${updated} обновлено). Нажмите «Учитель» или «Ученик» для входа.`;
+    btn.textContent = '✓ Готово';
+  }
 }
 
 initApp();
