@@ -462,19 +462,19 @@
 
     <div class="form-card">
       <div class="form-row">
-        <label>Тип колоды</label>
+        <label>Тип набора</label>
         <div class="mode-toggle" id="deck-mode-toggle">
           <button class="mode-btn active" id="deck-mode-test" onclick="setDeckMode('test')">🧠 Тест</button>
           <button class="mode-btn" id="deck-mode-flashcard" onclick="setDeckMode('flashcard')">🃏 Карточки</button>
         </div>
       </div>
       <div class="form-row">
-        <label>Название колоды</label>
+        <label>Название набора</label>
         <input type="text" id="deck-name-input" placeholder="Например: История России, Математика 8 кл.">
       </div>
       <div class="form-row">
         <label>Описание (необязательно)</label>
-        <textarea id="deck-desc-input" placeholder="О чём эта колода?" rows="2"></textarea>
+        <textarea id="deck-desc-input" placeholder="О чём этот набор?" rows="2"></textarea>
       </div>
       <div class="form-actions">
         <button class="btn-primary" onclick="saveDeck()">Сохранить набор</button>
@@ -510,7 +510,16 @@
       </div>
 
       <!-- Cards list below -->
-      <div class="cards-grid" id="new-deck-cards-grid" style="margin-top:20px"></div>
+      <div id="cards-in-set-section" style="margin-top:28px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:1rem;font-weight:700">Карточки в наборе</div>
+          <span id="cards-in-set-count" style="font-size:0.82rem;color:var(--muted)"></span>
+        </div>
+        <div class="cards-grid" id="new-deck-cards-grid"></div>
+        <div id="new-deck-empty" style="text-align:center;padding:28px 0;color:var(--muted);font-size:0.9rem;display:none">
+          Карточек пока нет — добавьте первую выше ↑
+        </div>
+      </div>
     </div>
   </div>
 
@@ -764,8 +773,9 @@ function saveDeck() {
     newDeckCards = d.cards;
     save();
     document.getElementById('card-creator').style.display = 'block';
-    document.getElementById('card-creator-title').textContent = 'Добавить карточки в «' + name + '»';
+    document.getElementById('card-creator-title').textContent = 'Добавить карточку';
     renderQuestionType();
+    renderNewDeckCards();
     toast('Набор создан! Добавляйте карточки');
   }
 }
@@ -779,10 +789,10 @@ function editDeck(id) {
   document.getElementById('deck-desc-input').value = d.desc || '';
   document.getElementById('create-title').textContent = 'Редактировать набор';
   document.getElementById('card-creator').style.display = 'block';
-  document.getElementById('card-creator-title').textContent = 'Карточки набора «' + d.name + '»';
+  document.getElementById('card-creator-title').textContent = 'Добавить карточку';
   setDeckMode(currentDeckMode);
-  renderNewDeckCards();
   showView('create');
+  renderNewDeckCards();
 }
 
 // ─── CARD FORM ────────────────────────────────────────────────────────────────
@@ -891,6 +901,7 @@ function saveCard() {
   clearCardForm();
   renderNewDeckCards();
   toast('Карточка сохранена ✓');
+  setTimeout(() => document.getElementById('cards-in-set-section')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
 }
 
 function clearCardForm() {
@@ -933,9 +944,17 @@ function removeCardFromNew(id) {
 
 function renderNewDeckCards() {
   const grid = document.getElementById('new-deck-cards-grid');
-  grid.innerHTML = newDeckCards.length
-    ? newDeckCards.map(c => cardHTML(c, 'create')).join('')
-    : '';
+  const empty = document.getElementById('new-deck-empty');
+  const count = document.getElementById('cards-in-set-count');
+  if (newDeckCards.length) {
+    grid.innerHTML = newDeckCards.map(c => cardHTML(c, 'create')).join('');
+    if (empty) empty.style.display = 'none';
+    if (count) count.textContent = newDeckCards.length + ' шт.';
+  } else {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (count) count.textContent = '';
+  }
 }
 
 // ─── VIEW DECK CARDS ──────────────────────────────────────────────────────────
