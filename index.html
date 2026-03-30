@@ -303,6 +303,45 @@
     /* autosave */
     #autosave-indicator { font-size: 0.75rem; color: var(--green); font-weight: 600; }
 
+    /* ── STUDENT MODE ── */
+    .student-header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 28px; display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 32px;
+    }
+    .student-badge {
+      background: rgba(67,217,162,0.15); color: var(--green);
+      font-size: 0.75rem; font-weight: 700; padding: 5px 12px;
+      border-radius: 99px; letter-spacing: .4px;
+    }
+    .student-set-info { text-align: center; margin-bottom: 32px; padding: 0 8px; }
+    .student-name-form {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+      max-width: 420px; margin: 0 auto;
+    }
+    .student-name-form h3 { font-size: 1.1rem; margin-bottom: 20px; }
+
+    /* ── TEACHER RESULTS TABLE ── */
+    .results-row {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .results-row-name { font-weight: 600; font-size: 0.92rem; flex: 1; min-width: 100px; }
+    .results-row-date { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+    .results-row-bar-wrap { flex: 1; background: var(--card); border-radius: 99px; height: 6px; max-width: 100px; }
+    .results-row-bar { height: 6px; border-radius: 99px; }
+    .results-row-score { font-weight: 700; font-size: 0.88rem; white-space: nowrap; min-width: 72px; text-align: right; }
+
+    /* ── SHARE BTN ── */
+    .btn-share {
+      background: transparent; border: 1.5px solid var(--accent);
+      color: var(--accent); border-radius: 8px; padding: 7px 14px;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-share:hover { background: rgba(108,99,255,0.12); }
+
     /* ── STATS TAB ── */
     .stats-summary {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px;
@@ -346,10 +385,11 @@
 </head>
 <body>
 
-<header>
+<header id="main-header">
   <div class="logo" onclick="goHome()">Quiz<span>Forge</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" id="nav-home" onclick="goHome()">Мои наборы</button>
+    <button class="nav-tab" id="nav-stats" onclick="showStatsPage()">📊 Статистика</button>
   </div>
   <button class="btn-new-set" onclick="showNewSetModal()">+ Новый набор</button>
 </header>
@@ -381,6 +421,7 @@
           <div class="set-desc" id="set-desc"></div>
         </div>
         <div class="set-header-actions">
+          <button class="btn-share" onclick="generateShareLink()">🔗 Поделиться</button>
           <button class="btn-icon" onclick="toggleEditPanel()" id="btn-edit-settings">✏️ Изменить</button>
           <button class="btn-icon danger" onclick="confirmDelete('deck', currentSetId)">🗑️</button>
         </div>
@@ -414,7 +455,7 @@
     <div class="set-tabs">
       <button class="set-tab active" id="tab-btn-cards" onclick="setSetTab('cards')">Карточки <span id="tab-cards-count" style="color:var(--muted);font-weight:400;font-size:0.82rem"></span></button>
       <button class="set-tab" id="tab-btn-play" onclick="setSetTab('play')">▶ Пройти</button>
-      <button class="set-tab" id="tab-btn-stats" onclick="setSetTab('stats')">📊 Статистика</button>
+      <button class="set-tab" id="tab-btn-results" onclick="setSetTab('results')">👥 Результаты</button>
     </div>
 
     <!-- ── Tab: Карточки ── -->
@@ -551,19 +592,133 @@
 
     </div><!-- /tab-play -->
 
-    <!-- ── Tab: Статистика ── -->
-    <div class="tab-panel" id="tab-stats">
-      <div class="stats-summary" id="stats-summary"></div>
-      <div class="stats-history-title">
-        <span>История прохождений</span>
-        <button class="btn-clear-stats" onclick="clearStats()">Очистить</button>
-      </div>
-      <div id="stats-history"></div>
+    <!-- ── Tab: Результаты учеников ── -->
+    <div class="tab-panel" id="tab-results">
+      <div id="teacher-results-container"></div>
     </div>
 
   </div><!-- /view-set -->
 
 </main>
+
+<!-- ═══ GLOBAL STATS VIEW ═══ -->
+<div class="view" id="view-stats">
+  <button class="back-btn" onclick="goHome()">← Все наборы</button>
+  <div class="page-title" style="margin-bottom:4px">Статистика профиля</div>
+  <div class="page-sub" style="margin-bottom:28px">Ваш прогресс и результаты учеников</div>
+  <div class="stats-summary" id="global-summary"></div>
+  <div class="stats-history-title" style="margin-top:28px;margin-bottom:12px"><span>По наборам</span></div>
+  <div id="global-sets"></div>
+  <div class="stats-history-title" style="margin-top:28px;margin-bottom:12px">
+    <span>Последние попытки</span>
+    <button class="btn-clear-stats" onclick="clearAllHistory()">Очистить историю</button>
+  </div>
+  <div id="global-history"></div>
+</div>
+
+<!-- ═══ STUDENT MODE VIEW ═══ -->
+<div class="view" id="view-student">
+  <div class="student-header">
+    <div class="logo">Quiz<span>Forge</span></div>
+    <span class="student-badge">Режим ученика</span>
+  </div>
+
+  <!-- Step 1: Name input -->
+  <div id="student-step-name">
+    <div class="student-set-info">
+      <div id="st-set-badge" style="margin-bottom:12px"></div>
+      <div class="set-name" id="st-set-name" style="text-align:center;margin-bottom:8px"></div>
+      <div class="set-desc" id="st-set-desc" style="text-align:center;margin-bottom:0"></div>
+    </div>
+    <div class="student-name-form">
+      <h3>Введите ваши данные</h3>
+      <div class="form-row">
+        <label>Фамилия</label>
+        <input type="text" id="st-lastname" placeholder="Иванов" autocomplete="family-name">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>Имя</label>
+        <input type="text" id="st-firstname" placeholder="Иван" autocomplete="given-name"
+               onkeydown="if(event.key==='Enter')startStudentQuiz()">
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:18px;font-size:1rem;padding:14px"
+              onclick="startStudentQuiz()">Начать →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Quiz area -->
+  <div id="student-step-quiz" style="display:none">
+
+    <!-- Flashcard quiz -->
+    <div class="quiz-running" id="st-fc-play">
+      <div class="quiz-counter">
+        <span id="st-fc-counter"></span>
+        <span style="font-size:0.82rem;color:var(--muted)" id="st-name-label"></span>
+      </div>
+      <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="st-fc-bar"></div></div>
+      <div class="flashcard-wrap" onclick="stFlipCard()">
+        <div class="flashcard" id="st-fc-card">
+          <div class="flashcard-face flashcard-front">
+            <div class="flashcard-label">Вопрос</div>
+            <div class="flashcard-text" id="st-fc-question"></div>
+            <div class="flashcard-hint">Нажмите, чтобы увидеть ответ</div>
+          </div>
+          <div class="flashcard-face flashcard-back">
+            <div class="flashcard-label">Ответ</div>
+            <div class="flashcard-text" id="st-fc-answer"></div>
+            <div class="flashcard-hint">Вы знали этот ответ?</div>
+          </div>
+        </div>
+      </div>
+      <div class="flashcard-actions flashcard-actions-hidden" id="st-fc-actions">
+        <button class="fc-btn-no" onclick="stMarkCard(false)">✗ Не знал</button>
+        <button class="fc-btn-knew" onclick="stMarkCard(true)">✓ Знал!</button>
+      </div>
+    </div>
+
+    <!-- Test quiz -->
+    <div class="quiz-running" id="st-quiz-play">
+      <div class="quiz-counter">
+        <span id="st-quiz-counter"></span>
+        <span style="font-size:0.82rem;color:var(--muted)" id="st-name-label2"></span>
+      </div>
+      <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" id="st-quiz-bar"></div></div>
+      <div class="quiz-question-card">
+        <div class="quiz-q-text" id="st-quiz-q"></div>
+        <div class="quiz-options" id="st-quiz-opts"></div>
+        <div class="quiz-open-input" id="st-quiz-open" style="display:none">
+          <input type="text" id="st-open-ans" placeholder="Введите ответ..."
+                 onkeydown="if(event.key==='Enter')stCheckOpen()">
+          <button class="btn-primary" onclick="stCheckOpen()">Проверить</button>
+        </div>
+        <div class="quiz-feedback" id="st-feedback"></div>
+        <div class="quiz-next-btn" id="st-next-btn">
+          <button class="btn-primary" onclick="stNextQ()">Следующий вопрос →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Results -->
+  <div id="student-step-results" style="display:none">
+    <div class="quiz-results" style="max-width:480px;margin:0 auto">
+      <div class="results-score" id="st-score"></div>
+      <div class="results-label" id="st-score-label"></div>
+      <div class="results-detail">
+        <div class="results-stat"><div class="val" id="st-r-correct" style="color:var(--green)"></div><div class="lbl">Верно</div></div>
+        <div class="results-stat"><div class="val" id="st-r-wrong" style="color:var(--accent2)"></div><div class="lbl">Неверно</div></div>
+        <div class="results-stat"><div class="val" id="st-r-total"></div><div class="lbl">Всего</div></div>
+      </div>
+      <div style="margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <button class="btn-primary" id="st-copy-btn" onclick="copyStudentResult()"
+                style="font-size:1rem;padding:13px 24px;width:100%;max-width:320px">
+          📋 Скопировать результат для учителя
+        </button>
+        <button class="btn-secondary" onclick="stRetry()">Пройти снова</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ NEW SET MODAL ═══ -->
 <div class="modal-overlay" id="new-set-modal">
@@ -635,6 +790,8 @@ function showPage(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   document.getElementById('nav-home').classList.toggle('active', name === 'decks');
+  const ns = document.getElementById('nav-stats');
+  if (ns) ns.classList.toggle('active', name === 'stats');
 }
 
 function goHome() {
@@ -721,7 +878,7 @@ function setSetTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-btn-' + tab).classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'stats') renderStats();
+  if (tab === 'results') renderTeacherResults();
 }
 
 // ─── SET SETTINGS EDIT ───────────────────────────────────────────────────────
@@ -1212,57 +1369,381 @@ function nextQuestion() {
   renderQuizQuestion();
 }
 
-// ─── STATS ────────────────────────────────────────────────────────────────────
+// ─── RECORD TEACHER RESULT ────────────────────────────────────────────────────
 function recordResult(mode, correct, total) {
-  const decks = loadDecks();
   const d = decks.find(x => x.id === currentSetId);
   if (!d) return;
   if (!d.history) d.history = [];
   d.history.unshift({ date: Date.now(), mode, correct, total, pct: Math.round(correct / total * 100) });
   if (d.history.length > 50) d.history.length = 50;
-  saveDecks(decks);
+  save();
 }
 
-function renderStats() {
-  const decks = loadDecks();
+// ─── STUDENT STATE ────────────────────────────────────────────────────────────
+let isStudentMode = false;
+let studentDeck = null;
+let studentName = '';
+let stFcState = null;
+let stQuizState = null;
+let stResultData = null;
+
+// ─── INIT (replaces bare renderDecks() call) ──────────────────────────────────
+function initApp() {
+  const hash = location.hash;
+  if (hash.startsWith('#quiz=')) {
+    try {
+      studentDeck = JSON.parse(atob(decodeURIComponent(hash.slice(6))));
+      isStudentMode = true;
+      document.getElementById('main-header').style.display = 'none';
+      showPage('student');
+      const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
+      const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+      const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+      document.getElementById('st-set-badge').innerHTML =
+        `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
+      document.getElementById('st-set-name').textContent = studentDeck.name;
+      document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
+    } catch(e) {
+      history.replaceState(null, '', location.pathname);
+      renderDecks();
+      setTimeout(() => toast('Неверная ссылка на набор'), 200);
+    }
+  } else if (hash.startsWith('#result=')) {
+    try {
+      const result = JSON.parse(atob(decodeURIComponent(hash.slice(8))));
+      receiveStudentResult(result);
+    } catch(e) {}
+    history.replaceState(null, '', location.pathname);
+    renderDecks();
+  } else {
+    renderDecks();
+  }
+}
+
+// ─── RECEIVE RESULT FROM STUDENT URL ─────────────────────────────────────────
+function receiveStudentResult(result) {
+  const key = 'qf_results_' + result.setId;
+  const existing = JSON.parse(localStorage.getItem(key) || '[]');
+  existing.unshift(result);
+  localStorage.setItem(key, JSON.stringify(existing));
+  setTimeout(() => toast(`✓ Результат от «${result.name}» сохранён!`), 300);
+}
+
+// ─── STUDENT QUIZ ─────────────────────────────────────────────────────────────
+function startStudentQuiz() {
+  const last  = document.getElementById('st-lastname').value.trim();
+  const first = document.getElementById('st-firstname').value.trim();
+  if (!last || !first) { toast('Введите фамилию и имя'); return; }
+  studentName = last + ' ' + first;
+  document.getElementById('st-name-label').textContent  = studentName;
+  document.getElementById('st-name-label2').textContent = studentName;
+  document.getElementById('student-step-name').style.display = 'none';
+  document.getElementById('student-step-quiz').style.display = 'block';
+  const cards = shuffle([...studentDeck.cards]);
+  if (studentDeck.mode === 'flashcard') {
+    stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
+    document.getElementById('st-fc-play').classList.add('active');
+    stRenderFlashcard();
+  } else {
+    stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
+    document.getElementById('st-quiz-play').classList.add('active');
+    stRenderQuestion();
+  }
+}
+
+function stRenderFlashcard() {
+  const { cards, idx } = stFcState;
+  const card = cards[idx];
+  stFcState.flipped = false;
+  document.getElementById('st-fc-counter').textContent = `Карточка ${idx + 1} из ${cards.length}`;
+  document.getElementById('st-fc-bar').style.width = (idx / cards.length * 100) + '%';
+  document.getElementById('st-fc-question').textContent = card.question;
+  const ans = (card.type === 'flashcard' || card.type === 'open')
+    ? card.answer
+    : (card.options || []).filter(o => o.correct).map(o => o.text).join(', ');
+  document.getElementById('st-fc-answer').textContent = ans;
+  document.getElementById('st-fc-card').classList.remove('flipped');
+  document.getElementById('st-fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
+}
+
+function stFlipCard() {
+  if (stFcState.flipped) return;
+  document.getElementById('st-fc-card').classList.add('flipped');
+  stFcState.flipped = true;
+  setTimeout(() => { document.getElementById('st-fc-actions').className = 'flashcard-actions'; }, 300);
+}
+
+function stMarkCard(knew) {
+  if (!stFcState.flipped) return;
+  if (knew) stFcState.knew++; else stFcState.didnt++;
+  stFcState.idx++;
+  if (stFcState.idx >= stFcState.cards.length) {
+    stFinish('flashcard', stFcState.knew, stFcState.cards.length); return;
+  }
+  stRenderFlashcard();
+}
+
+function stRenderQuestion() {
+  const { cards, idx } = stQuizState;
+  const card = cards[idx];
+  document.getElementById('st-quiz-counter').textContent = `Вопрос ${idx + 1} из ${cards.length}`;
+  document.getElementById('st-quiz-bar').style.width = (idx / cards.length * 100) + '%';
+  document.getElementById('st-quiz-q').textContent = card.question;
+  document.getElementById('st-feedback').className = 'quiz-feedback';
+  document.getElementById('st-next-btn').className = 'quiz-next-btn';
+  stQuizState.answered = false;
+  const opts = document.getElementById('st-quiz-opts');
+  const open = document.getElementById('st-quiz-open');
+  if (card.type === 'open') {
+    opts.style.display = 'none'; open.style.display = 'block';
+    const inp = document.getElementById('st-open-ans');
+    inp.value = ''; inp.disabled = false;
+    setTimeout(() => inp.focus(), 50);
+  } else {
+    open.style.display = 'none'; opts.style.display = 'grid';
+    if (card.type === 'multi') {
+      opts.innerHTML = card.options.map((o, i) =>
+        `<button class="quiz-opt" onclick="stToggleMulti(this,${i})">${esc(o.text)}</button>`
+      ).join('') + `<button class="btn-primary" onclick="stCheckMulti()" style="margin-top:8px">Проверить</button>`;
+    } else {
+      opts.innerHTML = card.options.map((o, i) =>
+        `<button class="quiz-opt" onclick="stCheckSingle(this,${i})">${esc(o.text)}</button>`
+      ).join('');
+    }
+  }
+}
+
+function stToggleMulti(btn) {
+  if (stQuizState.answered) return;
+  btn.classList.toggle('selected');
+  btn.style.borderColor = btn.classList.contains('selected') ? 'var(--accent)' : '';
+  btn.style.background  = btn.classList.contains('selected') ? 'rgba(108,99,255,0.1)' : '';
+}
+
+function stCheckSingle(btn, idx) {
+  if (stQuizState.answered) return;
+  stQuizState.answered = true;
+  const card = stQuizState.cards[stQuizState.idx];
+  const correct = card.options[idx].correct;
+  if (correct) stQuizState.correct++; else stQuizState.wrong++;
+  document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
+    b.disabled = true;
+    if (card.options[i].correct) b.classList.add('correct');
+    else if (i === idx && !correct) b.classList.add('wrong');
+  });
+  stFeedback(correct, card.options.filter(o => o.correct).map(o => o.text).join(', '));
+}
+
+function stCheckMulti() {
+  if (stQuizState.answered) return;
+  stQuizState.answered = true;
+  const card = stQuizState.cards[stQuizState.idx];
+  const selected = [...document.querySelectorAll('#st-quiz-opts .quiz-opt.selected')].map(b => b.textContent);
+  const correctOpts = card.options.filter(o => o.correct).map(o => o.text);
+  const correct = selected.length === correctOpts.length && correctOpts.every(c => selected.includes(c));
+  if (correct) stQuizState.correct++; else stQuizState.wrong++;
+  document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
+    b.disabled = true;
+    if (card.options[i].correct) b.classList.add('correct');
+    else if (b.classList.contains('selected') && !card.options[i].correct) b.classList.add('wrong');
+  });
+  stFeedback(correct, correctOpts.join(', '));
+}
+
+function stCheckOpen() {
+  if (stQuizState.answered) return;
+  const card = stQuizState.cards[stQuizState.idx];
+  const inp = document.getElementById('st-open-ans');
+  const val = inp.value.trim();
+  if (!val) return;
+  stQuizState.answered = true;
+  inp.disabled = true;
+  const correct = val.toLowerCase() === card.answer.toLowerCase();
+  if (correct) stQuizState.correct++; else stQuizState.wrong++;
+  stFeedback(correct, card.answer);
+}
+
+function stFeedback(correct, correctText) {
+  const fb = document.getElementById('st-feedback');
+  fb.textContent = correct ? '✓ Правильно!' : `✗ Неверно. Правильный ответ: ${correctText}`;
+  fb.className = 'quiz-feedback show ' + (correct ? 'correct' : 'wrong');
+  document.getElementById('st-next-btn').className = 'quiz-next-btn show';
+}
+
+function stNextQ() {
+  stQuizState.idx++;
+  if (stQuizState.idx >= stQuizState.cards.length) {
+    stFinish('test', stQuizState.correct, stQuizState.cards.length); return;
+  }
+  stRenderQuestion();
+}
+
+function stFinish(mode, correct, total) {
+  document.getElementById('st-fc-play').classList.remove('active');
+  document.getElementById('st-quiz-play').classList.remove('active');
+  const pct = Math.round(correct / total * 100);
+  stResultData = { setId: studentDeck.id, setName: studentDeck.name, name: studentName,
+    mode, correct, total, pct, date: Date.now() };
+  document.getElementById('student-step-quiz').style.display = 'none';
+  document.getElementById('student-step-results').style.display = 'block';
+  document.getElementById('st-score').textContent = pct + '%';
+  document.getElementById('st-score-label').textContent =
+    mode === 'flashcard' ? 'Знал правильный ответ' : 'Правильных ответов';
+  document.getElementById('st-r-correct').textContent = correct;
+  document.getElementById('st-r-wrong').textContent   = total - correct;
+  document.getElementById('st-r-total').textContent   = total;
+  document.getElementById('st-copy-btn').textContent  = '📋 Скопировать результат для учителя';
+}
+
+function copyStudentResult() {
+  if (!stResultData) return;
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(stResultData))));
+  const url = location.href.split('#')[0] + '#result=' + encoded;
+  navigator.clipboard.writeText(url).then(() => {
+    document.getElementById('st-copy-btn').textContent = '✓ Скопировано! Отправьте учителю';
+    toast('Ссылка скопирована!');
+  }).catch(() => { prompt('Скопируйте и отправьте учителю:', url); });
+}
+
+function stRetry() {
+  document.getElementById('student-step-results').style.display = 'none';
+  document.getElementById('student-step-quiz').style.display = 'none';
+  document.getElementById('student-step-name').style.display = 'block';
+  stResultData = null;
+}
+
+// ─── SHARE LINK (Teacher) ─────────────────────────────────────────────────────
+function generateShareLink() {
   const d = decks.find(x => x.id === currentSetId);
-  const history = (d && d.history) ? d.history : [];
-  const summary = document.getElementById('stats-summary');
-  const histEl = document.getElementById('stats-history');
-  if (history.length === 0) {
-    summary.innerHTML = '';
-    histEl.innerHTML = '<div class="stats-empty">Вы ещё не проходили этот набор.<br>Нажмите ▶ Пройти, чтобы начать!</div>';
+  if (!d) return;
+  if (!d.cards.length) { toast('Добавьте карточки перед отправкой'); return; }
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(d))));
+  const url = location.href.split('#')[0] + '#quiz=' + encoded;
+  navigator.clipboard.writeText(url).then(() => {
+    toast('🔗 Ссылка для учеников скопирована!');
+  }).catch(() => { prompt('Ссылка для учеников:', url); });
+}
+
+// ─── TEACHER RESULTS ─────────────────────────────────────────────────────────
+function renderTeacherResults() {
+  const key = 'qf_results_' + currentSetId;
+  const results = JSON.parse(localStorage.getItem(key) || '[]');
+  const container = document.getElementById('teacher-results-container');
+  if (!results.length) {
+    container.innerHTML = `<div class="stats-empty">
+      Результатов пока нет.<br>
+      Нажмите <strong>🔗 Поделиться</strong> и отправьте ссылку ученикам.
+    </div>`;
     return;
   }
-  const best = Math.max(...history.map(h => h.pct));
-  const avg = Math.round(history.reduce((s, h) => s + h.pct, 0) / history.length);
-  summary.innerHTML = `
-    <div class="stat-card"><div class="val">${history.length}</div><div class="lbl">Попыток</div></div>
-    <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
-    <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний результат</div></div>
+  const best = Math.max(...results.map(r => r.pct));
+  const avg  = Math.round(results.reduce((s, r) => s + r.pct, 0) / results.length);
+  container.innerHTML = `
+    <div class="stats-summary" style="margin-bottom:20px">
+      <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Учеников</div></div>
+      <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
+      <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
+    </div>
+    <div class="stats-history-title">
+      <span>Список учеников</span>
+      <button class="btn-clear-stats" onclick="clearTeacherResults()">Очистить</button>
+    </div>
+    ${results.map(r => {
+      const dt = new Date(r.date);
+      const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+      return `<div class="stat-row">
+        <div class="results-row-name">${esc(r.name)}</div>
+        <div class="results-row-date">${d}, ${t}</div>
+        <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
+        <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+      </div>`;
+    }).join('')}
   `;
-  histEl.innerHTML = history.map(h => {
-    const dt = new Date(h.date);
-    const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-    const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    const modeLabel = h.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-    const modeClass = h.mode === 'flashcard' ? 'flashcard' : 'test';
-    const barColor = h.pct >= 80 ? 'var(--green)' : h.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
-    return `<div class="stat-row">
-      <div class="stat-row-date">${dateStr}, ${timeStr}</div>
-      <div class="stat-row-mode ${modeClass}">${modeLabel}</div>
-      <div class="stat-row-bar-wrap"><div class="stat-row-bar" style="width:${h.pct}%;background:${barColor}"></div></div>
-      <div class="stat-row-score" style="color:${barColor}">${h.pct}%</div>
-    </div>`;
-  }).join('');
 }
 
-function clearStats() {
-  if (!confirm('Очистить всю историю прохождений этого набора?')) return;
-  const decks = loadDecks();
-  const d = decks.find(x => x.id === currentSetId);
-  if (d) { d.history = []; saveDecks(decks); }
-  renderStats();
+function clearTeacherResults() {
+  if (!confirm('Очистить все результаты учеников для этого набора?')) return;
+  localStorage.removeItem('qf_results_' + currentSetId);
+  renderTeacherResults();
+}
+
+// ─── GLOBAL STATS PAGE ────────────────────────────────────────────────────────
+function showStatsPage() {
+  showPage('stats');
+  document.getElementById('nav-home').classList.remove('active');
+  document.getElementById('nav-stats').classList.add('active');
+  renderGlobalStats();
+}
+
+function renderGlobalStats() {
+  const allHistory = [];
+  let totalStudents = 0;
+  decks.forEach(d => {
+    (d.history || []).forEach(h => allHistory.push({ ...h, setName: d.name, setId: d.id }));
+    totalStudents += JSON.parse(localStorage.getItem('qf_results_' + d.id) || '[]').length;
+  });
+  allHistory.sort((a, b) => b.date - a.date);
+
+  const sumEl  = document.getElementById('global-summary');
+  const setsEl = document.getElementById('global-sets');
+  const histEl = document.getElementById('global-history');
+
+  const best = allHistory.length ? Math.max(...allHistory.map(h => h.pct)) : null;
+  const avg  = allHistory.length ? Math.round(allHistory.reduce((s, h) => s + h.pct, 0) / allHistory.length) : null;
+
+  sumEl.innerHTML = `
+    <div class="stat-card"><div class="val">${allHistory.length}</div><div class="lbl">Моих попыток</div></div>
+    <div class="stat-card best"><div class="val">${best !== null ? best + '%' : '—'}</div><div class="lbl">Лучший результат</div></div>
+    <div class="stat-card avg"><div class="val">${avg !== null ? avg + '%' : '—'}</div><div class="lbl">Средний результат</div></div>
+    <div class="stat-card" style="border-color:rgba(108,99,255,0.3)"><div class="val" style="color:var(--accent)">${totalStudents}</div><div class="lbl">Работ учеников</div></div>
+  `;
+
+  if (!decks.length) {
+    setsEl.innerHTML = '<div class="stats-empty" style="padding:20px 0">Нет наборов</div>';
+  } else {
+    setsEl.innerHTML = decks.map(d => {
+      const h  = d.history || [];
+      const sr = JSON.parse(localStorage.getItem('qf_results_' + d.id) || '[]');
+      const bp = h.length ? Math.max(...h.map(x => x.pct)) : null;
+      const c  = bp !== null ? (bp >= 80 ? 'var(--green)' : bp >= 50 ? 'var(--yellow)' : 'var(--accent2)') : 'var(--muted)';
+      const ml = d.mode === 'flashcard' ? '🃏' : '🧠';
+      return `<div class="stat-row" onclick="openSet('${d.id}','play')" style="cursor:pointer">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px">${esc(d.name)}</div>
+          <div style="font-size:0.78rem;color:var(--muted)">${ml} · ${d.cards.length} карт. · ${h.length} попыток · ${sr.length} учеников</div>
+        </div>
+        <div style="font-size:1.2rem;font-weight:800;color:${c}">${bp !== null ? bp + '%' : '—'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  if (!allHistory.length) {
+    histEl.innerHTML = '<div class="stats-empty">История пуста — пройдите хотя бы один набор</div>';
+  } else {
+    histEl.innerHTML = allHistory.slice(0, 20).map(h => {
+      const dt = new Date(h.date);
+      const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const ml = h.mode === 'flashcard' ? '🃏' : '🧠';
+      const mc = h.mode === 'flashcard' ? 'flashcard' : 'test';
+      const c  = h.pct >= 80 ? 'var(--green)' : h.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+      return `<div class="stat-row">
+        <div class="stat-row-date">${d}, ${t}</div>
+        <div class="stat-row-mode ${mc}">${ml} ${esc(h.setName)}</div>
+        <div class="stat-row-bar-wrap"><div class="stat-row-bar" style="width:${h.pct}%;background:${c}"></div></div>
+        <div class="stat-row-score" style="color:${c}">${h.pct}%</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function clearAllHistory() {
+  if (!confirm('Очистить всю историю ваших попыток?')) return;
+  decks.forEach(d => { d.history = []; });
+  save();
+  renderGlobalStats();
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
@@ -1276,9 +1757,8 @@ function toast(msg) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-renderDecks();
-// init shuffle toggle state
 document.getElementById('shuffle-knob').style.left = '21px';
+initApp();
 </script>
 </body>
 </html>
