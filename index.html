@@ -389,10 +389,10 @@
 <header id="main-header">
   <div class="logo" onclick="goHome()">Quiz<span>Forge</span></div>
   <div class="nav-tabs">
-    <button class="nav-tab active" id="nav-home" onclick="goHome()">Мои наборы</button>
+    <button class="nav-tab active" id="nav-home" onclick="goHome()">Библиотека</button>
     <button class="nav-tab" id="nav-stats" onclick="showStatsPage()">📊 Статистика</button>
   </div>
-  <button class="btn-new-set" onclick="showNewSetModal()">+ Новый набор</button>
+  <button class="btn-new-set" onclick="showNewSetModal()">+ Создать</button>
 </header>
 
 <main>
@@ -401,7 +401,7 @@
   <div class="view active" id="view-decks">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
       <div>
-        <div class="page-title">Мои наборы</div>
+        <div class="page-title">Библиотека</div>
         <div class="page-sub" style="margin-bottom:0">Все наборы карточек-викторин</div>
       </div>
     </div>
@@ -724,7 +724,7 @@
 <!-- ═══ NEW SET MODAL ═══ -->
 <div class="modal-overlay" id="new-set-modal">
   <div class="modal">
-    <h3>Новый набор</h3>
+    <h3>Создать набор</h3>
     <div class="modal-sub">Выберите тип и задайте название</div>
     <div class="form-row">
       <label>Тип набора</label>
@@ -806,7 +806,7 @@ function renderDecks() {
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
-      <p>Наборов пока нет. <strong>Нажмите «+ Новый набор»!</strong></p>
+      <p>Наборов пока нет. <strong>Нажмите «+ Создать»!</strong></p>
     </div>`;
     return;
   }
