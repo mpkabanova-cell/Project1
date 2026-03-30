@@ -609,9 +609,6 @@
           <div id="demo-msg" style="font-size:0.78rem;margin-top:6px;text-align:center;display:none"></div>
         </div>
 
-        <div style="text-align:center;margin-top:12px;font-size:0.78rem;color:var(--muted)">
-          <a href="#" style="color:var(--accent)" onclick="showFirebaseHelp();return false">Как подключить Firebase?</a>
-        </div>
       </div>
     </div>
   </div>
@@ -1343,6 +1340,16 @@ async function doRegister() {
 async function doSignOut() {
   if (_auth) await _auth.signOut();
   decks = []; currentUser = null; currentUserData = null; isStudentMode = false;
+  // Reset auth form
+  const btnLogin = document.getElementById('btn-login');
+  const btnReg   = document.getElementById('btn-register');
+  if (btnLogin) { btnLogin.textContent = 'Войти';           btnLogin.disabled = false; }
+  if (btnReg)   { btnReg.textContent   = 'Создать аккаунт'; btnReg.disabled   = false; }
+  document.getElementById('login-err').classList.remove('show');
+  document.getElementById('reg-err').classList.remove('show');
+  document.getElementById('login-email').value    = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('demo-creds').style.display = 'none';
 }
 
 function setRegRole(r) {
