@@ -171,7 +171,13 @@
     .cfc-all { background: linear-gradient(135deg, #e9edf6, #dfe5f1); }
     .cfc-archive { background: linear-gradient(135deg, #e4e6eb, #d8dce5); }
     .library-hub { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:16px; align-items:start; }
-    .library-left { min-width:0; }
+    .library-left {
+      min-width:0;
+      max-height: calc(100vh - 190px);
+      overflow: auto;
+      padding-right: 6px;
+      scrollbar-gutter: stable;
+    }
     .library-right {
       background: var(--surface); border:1px solid var(--border); border-radius: 14px;
       padding:14px; position: sticky; top: 16px;
@@ -185,6 +191,23 @@
     }
     .library-search-row input { flex:1; min-width:200px; }
     .library-search-row select { width: 200px; }
+    .btn-scroll-top {
+      position: sticky;
+      left: calc(100% - 100px);
+      bottom: 12px;
+      z-index: 5;
+      display: none;
+      border: 1px solid #d5d9e8;
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(71,88,150,.14);
+    }
+    .btn-scroll-top.show { display: inline-flex; }
     .deck-card.active { border-color: #cbcfe0; box-shadow: 0 0 0 2px rgba(123,120,167,.12); }
     .side-head { font-size:1.05rem; font-weight:800; margin-bottom:4px; }
     .side-sub { color:var(--muted); font-size:.82rem; margin-bottom:10px; }
@@ -879,6 +902,8 @@
       main { padding: 24px 16px; }
       .library-hub { grid-template-columns: 1fr; }
       .library-right { position: static; }
+      .library-left { max-height: none; overflow: visible; padding-right: 0; }
+      .btn-scroll-top { position: fixed; right: 12px; bottom: 12px; left: auto; }
       .decks-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
       .set-tabs { gap: 2px; }
       .set-tab { padding: 8px 12px; font-size: 0.82rem; }
@@ -1140,6 +1165,7 @@
           </select>
         </div>
         <div class="decks-grid" id="decks-grid"></div>
+        <button id="btn-library-top" class="btn-scroll-top" onclick="scrollLibraryTop()">↑ Наверх</button>
       </div>
       <div class="library-right" id="library-side-panel"></div>
     </div>
@@ -2421,6 +2447,7 @@ async function createNewSetInline() {
 }
 
 function renderDecks() {
+  _bindLibraryScrollTop();
   if (!libraryFolders.length && localStorage.getItem(_foldersKey())) _loadFolders();
   const qa = document.getElementById('library-quick-actions');
   if (qa) {
@@ -2505,6 +2532,22 @@ function renderDecks() {
 function toggleDeckMenu(id) {
   openDeckMenuId = (openDeckMenuId === id) ? null : id;
   renderDecks();
+}
+
+function scrollLibraryTop() {
+  const left = document.querySelector('.library-left');
+  if (!left) return;
+  left.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function _bindLibraryScrollTop() {
+  const left = document.querySelector('.library-left');
+  const btn = document.getElementById('btn-library-top');
+  if (!left || !btn || left.dataset.scrollBound) return;
+  left.dataset.scrollBound = '1';
+  left.addEventListener('scroll', () => {
+    btn.classList.toggle('show', left.scrollTop > 220);
+  });
 }
 
 document.addEventListener('click', () => {
