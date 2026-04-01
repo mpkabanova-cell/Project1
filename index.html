@@ -2462,18 +2462,20 @@ function renderDecks() {
   const q = (document.getElementById('library-search')?.value || '').trim().toLowerCase();
   const activePool = decks.filter(d => !!d.archived === showArchiveOnly);
   const filteredBySearch = q ? activePool.filter(d => (d.name || '').toLowerCase().includes(q) || (d.desc || '').toLowerCase().includes(q)) : activePool;
+  const poolByFolder = filteredBySearch.filter(d => {
+    if (selectedFolder === 'all') return true;
+    return (d.folder || 'Общая') === selectedFolder;
+  });
   const subjSel = document.getElementById('library-subject-filter');
   if (subjSel) {
     const prev = subjSel.value || 'all';
-    const subjects = [...new Set(activePool.map(d => _guessSubjectLabel(d.name)))].sort();
+    const subjects = [...new Set(poolByFolder.map(d => _guessSubjectLabel(d.name)))].sort();
     subjSel.innerHTML = `<option value="all">Все предметы</option>${subjects.map(s=>`<option value="${esc(s)}"${prev===s?' selected':''}>${esc(s)}</option>`).join('')}`;
+    if (prev !== 'all' && !subjects.includes(prev)) subjSel.value = 'all';
   }
   const subjectVal = document.getElementById('library-subject-filter')?.value || 'all';
   renderFoldersBar(decks, filteredBySearch);
-  const visibleDecks = filteredBySearch.filter(d => {
-    if (selectedFolder === 'all') return true;
-    return (d.folder || 'Общая') === selectedFolder;
-  }).filter(d => subjectVal === 'all' ? true : _guessSubjectLabel(d.name) === subjectVal);
+  const visibleDecks = poolByFolder.filter(d => subjectVal === 'all' ? true : _guessSubjectLabel(d.name) === subjectVal);
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
