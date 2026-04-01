@@ -1783,7 +1783,7 @@ async function _loadTeacherDecks() {
     });
     // Auto-seed demo decks for demo account when library has no demo sets
     if (currentUser?.email === DEMO_TEACHER.email) {
-      const DEMO_DATA_VERSION = 'v2';
+      const DEMO_DATA_VERSION = 'v3';
       const markerKey = `demo_data_version_${currentUser.uid}`;
       const needRefresh = localStorage.getItem(markerKey) !== DEMO_DATA_VERSION;
       if (needRefresh) {
@@ -4232,8 +4232,8 @@ async function _seedDataForTeacher(tid) {
       { sid:'s-kuznets-a', sname:'Кузнецова Анна',  grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:4,total:5,pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}],  ago:2 },
       { sid:'s-smirnov-p', sname:'Смирнов Павел',   grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:2,total:5,pct:40,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}], ago:3 },
       { sid:'s-popova-el', sname:'Попова Елена',    grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:1,total:5,pct:20,  answers:[{idx:0,correct:false},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:false}], ago:3 },
-      { sid:'s-novikov-s', sname:'Новиков Сергей',  grp:'8А', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:5,total:5,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}],   ago:0 },
-      { sid:'s-kozlova-d', sname:'Козлова Дарья',   grp:'8А', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:3,total:5,pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}],  ago:0 },
+      { sid:'s-novikov-s', sname:'Новиков Сергей',  grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:5,total:5,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}],   ago:0 },
+      { sid:'s-kozlova-d', sname:'Козлова Дарья',   grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:3,total:5,pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}],  ago:0 },
       // История 8 — 6 students
       { sid:'s-ivanov-al', sname:'Иванов Алексей',   grp:'7А', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:3,total:4,pct:75,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true}],  ago:7 },
       { sid:'s-petrova-m', sname:'Петрова Мария',    grp:'7А', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:4,total:4,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true}],   ago:7 },
