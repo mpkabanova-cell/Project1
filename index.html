@@ -177,10 +177,13 @@
       box-shadow: var(--shadow);
     }
     .library-search-row { margin-bottom:10px; }
-    .library-search-row input {
+    .library-search-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .library-search-row input, .library-search-row select {
       width:100%; border:1px solid var(--border); border-radius:10px;
       padding:10px 12px; font-size:0.9rem; background: var(--surface);
     }
+    .library-search-row input { flex:1; min-width:200px; }
+    .library-search-row select { width: 200px; }
     .deck-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,99,255,.15); }
     .side-head { font-size:1.05rem; font-weight:800; margin-bottom:4px; }
     .side-sub { color:var(--muted); font-size:.82rem; margin-bottom:10px; }
@@ -1139,6 +1142,9 @@
       <div class="library-left">
         <div class="library-search-row">
           <input id="library-search" placeholder="Поиск по названию задания..." oninput="renderDecks()">
+          <select id="library-subject-filter" onchange="renderDecks()">
+            <option value="all">Все предметы</option>
+          </select>
         </div>
         <div class="decks-grid" id="decks-grid"></div>
       </div>
@@ -2173,6 +2179,7 @@ let libraryPanelMode = 'details';
 let libraryFolders = [];
 let selectedFolder = 'all';
 let openDeckMenuId = null;
+let showArchiveOnly = false;
 
 function _foldersKey() { return `qf_folders_${currentUser?.uid || 'local'}`; }
 function _loadFolders() {
@@ -2210,8 +2217,8 @@ function renderFoldersBar(visibleDecksAll) {
     if (!subjects[f]) subjects[f] = {};
     subjects[f][subj] = (subjects[f][subj] || 0) + 1;
   });
-  const allFolders = [...new Set(['7 класс','8 класс','9 класс','Общий класс', ...libraryFolders, ...visibleDecksAll.map(d => (d.folder || '').trim()).filter(Boolean)])].sort((a,b)=>{
-    const order = {'7 класс':1,'8 класс':2,'9 класс':3,'Общий класс':4};
+  const allFolders = ['7 класс','8 класс','9 класс','Общая'].sort((a,b)=>{
+    const order = {'7 класс':1,'8 класс':2,'9 класс':3,'Общая':4};
     return (order[a]||9) - (order[b]||9);
   });
   function topSubjects(folder) {
@@ -2231,8 +2238,7 @@ function renderFoldersBar(visibleDecksAll) {
     </div>`);
   const pills = [
     `<button class="folder-pill ${selectedFolder==='all'?'active':''}" onclick="selectedFolder='all';renderDecks()">Все задания</button>`,
-    `<button class="folder-pill ${selectedFolder==='__none'?'active':''}" onclick="selectedFolder='__none';renderDecks()">Без папки (${counts['Без папки']||0})</button>`,
-    `<button class="folder-pill" onclick="createFolder()">+ Новая папка</button>`,
+    `<button class="folder-pill ${showArchiveOnly?'active':''}" onclick="showArchiveOnly=!showArchiveOnly;renderDecks()">${showArchiveOnly?'Архив: вкл':'Архив'}</button>`,
   ];
   wrap.innerHTML = cards.join('') + pills.join('');
 }
@@ -2242,7 +2248,7 @@ function _guessSubjectFolder(name = '') {
   if (/\b7\b|7\s*[-–]|\b7\s*класс|\b7\s*кл/.test(s)) return '7 класс';
   if (/\b8\b|8\s*[-–]|\b8\s*класс|\b8\s*кл/.test(s)) return '8 класс';
   if (/\b9\b|9\s*[-–]|\b9\s*класс|\b9\s*кл/.test(s)) return '9 класс';
-  return 'Общий класс';
+  return 'Общая';
 }
 
 function _guessSubjectLabel(name = '') {
@@ -2258,13 +2264,22 @@ function _guessSubjectLabel(name = '') {
   return 'Разное';
 }
 
+function toggleArchiveDeck(id) {
+  const d = decks.find(x => x.id === id);
+  if (!d) return;
+  d.archived = !d.archived;
+  save(id);
+  toast(d.archived ? 'Перемещено в архив' : 'Возвращено из архива');
+  renderDecks();
+}
+
 async function _autoOrganizeFolders() {
   if (!decks.length) return;
   const marker = `qf_folders_autofill_${currentUser?.uid || 'local'}_v2`;
   const hasSubjectFolders = (libraryFolders || []).length > 0;
   if (localStorage.getItem(marker) === '1' && hasSubjectFolders) return;
 
-  const needed = new Set(['7 класс', '8 класс', '9 класс', 'Общий класс', ...libraryFolders, ...decks.map(d => _guessSubjectFolder(d.name))]);
+  const needed = new Set(['7 класс', '8 класс', '9 класс', 'Общая']);
   libraryFolders = [...needed].filter(Boolean).sort();
   _saveFolders();
 
@@ -2354,8 +2369,7 @@ function renderLibrarySidePanel() {
     <div class="form-row" style="margin-bottom:8px">
       <label>Папка</label>
       <select id="side-folder-select" onchange="assignDeckFolder('${d.id}', this.value)">
-        <option value="">Без папки</option>
-        ${libraryFolders.map(f => `<option value="${esc(f)}"${d.folder===f?' selected':''}>${esc(f)}</option>`).join('')}
+        ${['7 класс','8 класс','9 класс','Общая'].map(f => `<option value="${esc(f)}"${(d.folder||'Общая')===f?' selected':''}>${esc(f)}</option>`).join('')}
       </select>
     </div>
     <div id="side-share-inline" style="display:none"></div>
@@ -2365,7 +2379,7 @@ function renderLibrarySidePanel() {
 function assignDeckFolder(deckId, folder) {
   const d = decks.find(x => x.id === deckId);
   if (!d) return;
-  d.folder = folder || '';
+  d.folder = folder || 'Общая';
   save(deckId);
   renderDecks();
 }
@@ -2420,13 +2434,20 @@ function renderDecks() {
   }
   const grid = document.getElementById('decks-grid');
   const q = (document.getElementById('library-search')?.value || '').trim().toLowerCase();
-  const filteredBySearch = q ? decks.filter(d => (d.name || '').toLowerCase().includes(q) || (d.desc || '').toLowerCase().includes(q)) : decks;
+  const activePool = decks.filter(d => !!d.archived === showArchiveOnly);
+  const filteredBySearch = q ? activePool.filter(d => (d.name || '').toLowerCase().includes(q) || (d.desc || '').toLowerCase().includes(q)) : activePool;
+  const subjSel = document.getElementById('library-subject-filter');
+  if (subjSel) {
+    const prev = subjSel.value || 'all';
+    const subjects = [...new Set(activePool.map(d => _guessSubjectLabel(d.name)))].sort();
+    subjSel.innerHTML = `<option value="all">Все предметы</option>${subjects.map(s=>`<option value="${esc(s)}"${prev===s?' selected':''}>${esc(s)}</option>`).join('')}`;
+  }
+  const subjectVal = document.getElementById('library-subject-filter')?.value || 'all';
   renderFoldersBar(filteredBySearch);
   const visibleDecks = filteredBySearch.filter(d => {
     if (selectedFolder === 'all') return true;
-    if (selectedFolder === '__none') return !d.folder;
-    return (d.folder || '') === selectedFolder;
-  });
+    return (d.folder || 'Общая') === selectedFolder;
+  }).filter(d => subjectVal === 'all' ? true : _guessSubjectLabel(d.name) === subjectVal);
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
@@ -2460,6 +2481,7 @@ function renderDecks() {
             <button onclick="openSet('${d.id}','results')">Результаты</button>
             <button onclick="_openShareInline('${d.id}')">Выдать ученикам</button>
             <button onclick="duplicateDeck('${d.id}')">Дублировать</button>
+            <button onclick="toggleArchiveDeck('${d.id}')">${d.archived ? 'Вернуть из архива' : 'В архив'}</button>
             <button class="danger" onclick="confirmDelete('deck','${d.id}')">Удалить</button>
           </div>
         </div>
@@ -2469,7 +2491,7 @@ function renderDecks() {
         <span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>
       </div>
       <div class="deck-meta">${esc(d.desc || '')}</div>
-      ${d.folder ? `<div style="font-size:.73rem;color:var(--muted)">📁 ${esc(d.folder)}</div>` : ''}
+      <div style="font-size:.73rem;color:var(--muted)">📁 ${esc(d.folder || 'Общая')}</div>
       <div class="deck-footer">
         <button class="btn-start" onclick="event.stopPropagation();openSet('${d.id}','play')">▶ Начать</button>
         <button class="btn-edit" onclick="event.stopPropagation();openSet('${d.id}','cards')">✏️ Открыть</button>
