@@ -749,11 +749,17 @@
       font-size: 0.73rem;
       font-weight: 800;
       color: var(--accent);
-      margin-bottom: 4px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(var(--p, 0%) + 6px);
+      white-space: nowrap;
     }
     .class-col-bar-wrap {
       width: 46px; height: 124px;
       display: flex; align-items: flex-end;
+      position: relative;
+      overflow: visible;
     }
     .class-col-bar {
       width: 100%;
@@ -761,6 +767,7 @@
       border-radius: 7px 7px 0 0;
       background: linear-gradient(180deg, rgba(108,99,255,0.95), rgba(108,99,255,0.65));
       box-shadow: 0 2px 8px rgba(108,99,255,0.22);
+      height: var(--p, 0%);
     }
     .class-col-name { margin-top: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text); text-align:center; }
     .class-col-meta { display:none; }
@@ -2551,9 +2558,9 @@ function _renderClassChart(groupsForChart, chartId) {
           ${yTicks.map(v => `<div class="class-grid-line" style="bottom:${v}%"></div>`).join('')}
           <div class="class-bars-row">
             ${groupsForChart.map(g => `<div class="class-col">
-              <div class="class-col-pct">${g.avg}%</div>
-              <div class="class-col-bar-wrap">
-                <div class="class-col-bar" style="height:${Math.max(4, g.avg)}%" title="${esc(g.name)}: ${g.avg}% · ${g.count} работ"></div>
+              <div class="class-col-bar-wrap" style="--p:${Math.max(4, g.avg)}%">
+                <div class="class-col-pct">${g.avg}%</div>
+                <div class="class-col-bar" title="${esc(g.name)}: ${g.avg}% · ${g.count} работ"></div>
               </div>
             </div>`).join('')}
           </div>
