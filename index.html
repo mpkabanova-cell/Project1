@@ -579,6 +579,11 @@
       border-bottom: 1px solid var(--border);
     }
     .rd-q:last-child { border-bottom: none; }
+    .rd-q-body { flex: 1; min-width: 0; }
+    .rd-given, .rd-expected {
+      font-size: 0.78rem; margin-top: 4px; color: var(--muted); line-height: 1.35;
+    }
+    .rd-given strong, .rd-expected strong { color: var(--text); font-weight: 600; }
     .rd-icon { font-weight: 700; flex-shrink: 0; min-width: 16px; font-size: 0.9rem; margin-top: 1px; }
     .stat-row-date { font-size: 0.78rem; color: var(--muted); white-space: nowrap; min-width: 90px; }
     .stat-row-mode {
@@ -2961,7 +2966,7 @@ function stFlipCard() {
 
 function stMarkCard(knew) {
   if (!stFcState.flipped) return;
-  stFcState.answers.push({ idx: stFcState.idx, correct: knew });
+  stFcState.answers.push({ idx: stFcState.idx, correct: knew, given: knew ? 'Знал' : 'Не знал' });
   if (knew) stFcState.knew++; else stFcState.didnt++;
   stFcState.idx++;
   if (stFcState.idx >= stFcState.cards.length) {
@@ -3015,7 +3020,7 @@ function stCheckSingle(btn, idx) {
   stQuizState.answered = true;
   const card = stQuizState.cards[stQuizState.idx];
   const correct = card.options[idx].correct;
-  stQuizState.answers.push({ idx: stQuizState.idx, correct });
+  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: card.options[idx].text });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
@@ -3032,7 +3037,7 @@ function stCheckMulti() {
   const selected = [...document.querySelectorAll('#st-quiz-opts .quiz-opt.selected')].map(b => b.textContent);
   const correctOpts = card.options.filter(o => o.correct).map(o => o.text);
   const correct = selected.length === correctOpts.length && correctOpts.every(c => selected.includes(c));
-  stQuizState.answers.push({ idx: stQuizState.idx, correct });
+  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: selected.length ? selected.join(', ') : '(ничего не выбрано)' });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
@@ -3051,7 +3056,7 @@ function stCheckOpen() {
   stQuizState.answered = true;
   inp.disabled = true;
   const correct = val.toLowerCase() === card.answer.toLowerCase();
-  stQuizState.answers.push({ idx: stQuizState.idx, correct });
+  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: val });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   stFeedback(correct, card.answer);
 }
@@ -3963,6 +3968,13 @@ async function _loadDeckCards(deckId) {
   return _deckCache[deckId];
 }
 
+function _expectedAnswerForCard(card) {
+  if (!card) return '';
+  if (card.type === 'open' || card.type === 'flashcard') return (card.answer || '').trim();
+  const opts = card.options || [];
+  return opts.filter(o => o.correct).map(o => o.text).join(', ');
+}
+
 async function _toggleResultDetail(header, rid) {
   const detail = header.nextElementSibling;
   if (!detail || !detail.classList.contains('result-detail')) return;
@@ -3991,9 +4003,19 @@ async function _toggleResultDetail(header, rid) {
     const card = cards?.[idx];
     const qText = card?.question || `Вопрос ${idx + 1}`;
     const color = a.correct ? 'var(--green)' : 'var(--accent2)';
+    const given = (a.given != null && String(a.given).trim() !== '') ? String(a.given).trim() : '';
+    const exp = _expectedAnswerForCard(card);
+    let extra = '';
+    if (!a.correct) {
+      if (given) extra += `<div class="rd-given"><strong>Ответ ученика:</strong> ${esc(given)}</div>`;
+      if (exp) extra += `<div class="rd-expected"><strong>Верный ответ:</strong> ${esc(exp)}</div>`;
+    }
     return `<div class="rd-q">
       <span class="rd-icon" style="color:${color}">${a.correct ? '✓' : '✗'}</span>
-      <span>${esc(qText)}</span>
+      <div class="rd-q-body">
+        <div>${esc(qText)}</div>
+        ${extra}
+      </div>
     </div>`;
   }).join('');
   detail.innerHTML = `<div class="rd-inner">${rows}</div>`;
