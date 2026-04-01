@@ -4018,7 +4018,13 @@ function _fallbackGivenForAnswer(card, answerObj) {
     if (lower.includes('александр ii')) return 'Александр I';
     if (lower.includes('рибосома')) return 'лизосома';
     if (lower.includes('яблоко')) return 'груша';
-    return s.length > 4 ? s.slice(0, -1) : `не ${s}`;
+    if (lower.includes('v = s / t')) return 'v = t / s';
+    if (lower.includes('f = m · a') || lower.includes('f = m * a')) return 'F = m / a';
+    if (lower.includes('ek = m·v² / 2') || lower.includes('ek = m*v² / 2')) return 'Ek = 2m / v²';
+    if (lower.includes('ep = m·g·h') || lower.includes('ep = m*g*h')) return 'Ep = m / (g · h)';
+    if (lower.includes('i = u / r')) return 'I = R / U';
+    if (lower.includes('p = a / t')) return 'P = t / A';
+    return s.length > 4 ? `не ${s}` : `не ${s}`;
   }
 
   if (card.type === 'single') {
