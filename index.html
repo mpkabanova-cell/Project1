@@ -1865,6 +1865,7 @@ async function _loadTeacherDecks() {
         } catch(se) { console.error('[auto-seed]', se.code, se.message); }
       }
     }
+    await _autoOrganizeFolders();
   } catch(e) {
     console.error('[decks] load error:', e.code, e.message);
     decks = [];
@@ -2166,6 +2167,42 @@ function renderFoldersBar(visibleDecksAll) {
     `<button class="folder-pill" onclick="createFolder()">+ Новая папка</button>`
   ];
   wrap.innerHTML = pills.join('');
+}
+
+function _guessSubjectFolder(name = '') {
+  const s = String(name).toLowerCase();
+  if (s.includes('биолог')) return 'Биология';
+  if (s.includes('истор')) return 'История';
+  if (s.includes('хими')) return 'Химия';
+  if (s.includes('физик')) return 'Физика';
+  if (s.includes('англий') || s.includes('english')) return 'Английский';
+  if (s.includes('математ')) return 'Математика';
+  if (s.includes('литерат') || s.includes('русск')) return 'Литература';
+  if (s.includes('географ')) return 'География';
+  return 'Без предмета';
+}
+
+async function _autoOrganizeFolders() {
+  if (!decks.length) return;
+  const marker = `qf_folders_autofill_${currentUser?.uid || 'local'}_v1`;
+  if (localStorage.getItem(marker) === '1') return;
+
+  const needed = new Set([...libraryFolders, ...decks.map(d => _guessSubjectFolder(d.name))]);
+  libraryFolders = [...needed].filter(x => x && x !== 'Без предмета').sort();
+  _saveFolders();
+
+  const updates = [];
+  decks.forEach(d => {
+    const folder = _guessSubjectFolder(d.name);
+    if ((d.folder || '') !== folder) {
+      d.folder = folder;
+      if (_db && currentUser && d.id) updates.push(persistDeck(d.id));
+    }
+  });
+  if (updates.length) {
+    try { await Promise.all(updates); } catch(e) { console.error('auto folder persist', e); }
+  }
+  localStorage.setItem(marker, '1');
 }
 
 function _copyTextSafe(text, okMsg) {
