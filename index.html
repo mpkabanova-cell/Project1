@@ -240,7 +240,7 @@
     .type-badge.open { background: rgba(16,185,129,0.12); color: var(--green); }
 
     /* ── ADD CARD FORM (inline) ── */
-    .add-card-bar { margin-bottom: 20px; }
+    .add-card-bar { margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
     .add-card-toggle {
       display: flex; align-items: center; gap: 8px;
       background: var(--surface); border: 1.5px dashed var(--border);
@@ -565,6 +565,16 @@
     .stat-row-bar-wrap { flex: 1; background: var(--card); border-radius: 99px; height: 6px; }
     .stat-row-bar { height: 6px; border-radius: 99px; transition: width 0.6s; }
     .stat-row-score { font-size: 0.9rem; font-weight: 700; white-space: nowrap; min-width: 48px; text-align: right; }
+
+    /* ── QUESTION BREAKDOWN ── */
+    .breakdown-section { margin-top: 28px; }
+    .breakdown-section h4 { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 12px; }
+    .breakdown-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .breakdown-num { font-size: 0.72rem; color: var(--muted); font-weight: 700; min-width: 22px; text-align: right; flex-shrink: 0; }
+    .breakdown-q { font-size: 0.83rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .breakdown-bar-wrap { width: 90px; background: var(--card); border-radius: 99px; height: 7px; flex-shrink: 0; }
+    .breakdown-bar { height: 7px; border-radius: 99px; transition: width 0.5s; }
+    .breakdown-pct { font-size: 0.8rem; font-weight: 700; min-width: 38px; text-align: right; flex-shrink: 0; }
     .stats-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.92rem; }
     .btn-clear-stats {
       background: transparent; border: none; color: var(--muted);
@@ -887,6 +897,7 @@
         <button class="add-card-toggle" id="add-card-toggle-btn" onclick="toggleCardForm()">
           <span class="plus">＋</span> Добавить карточку
         </button>
+        <button class="btn-secondary" onclick="showImportModal()" style="padding:8px 14px;font-size:0.85rem;flex-shrink:0">⬆ Импорт</button>
         <div class="card-form-wrap" id="card-form-wrap">
           <div class="form-card" style="margin-top:10px" id="card-form">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -1041,7 +1052,10 @@
       <div class="page-title" style="margin-bottom:4px">Результаты учеников</div>
       <div class="page-sub" style="margin-bottom:0">Все прохождения по всем наборам</div>
     </div>
-    <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="renderGlobalStats()">🔄 Обновить</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="downloadGlobalCSV()">⬇ CSV</button>
+      <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="renderGlobalStats()">🔄 Обновить</button>
+    </div>
   </div>
   <div class="stats-summary" id="global-summary"></div>
   <div class="stats-history-title" style="margin-top:28px;margin-bottom:12px">
@@ -1074,9 +1088,13 @@
         <label>Фамилия</label>
         <input type="text" id="st-lastname" placeholder="Иванов" autocomplete="family-name">
       </div>
-      <div class="form-row" style="margin-bottom:0">
+      <div class="form-row">
         <label>Имя</label>
-        <input type="text" id="st-firstname" placeholder="Иван" autocomplete="given-name"
+        <input type="text" id="st-firstname" placeholder="Иван" autocomplete="given-name">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>Класс / группа <span style="font-weight:400;font-size:0.78rem">(необязательно)</span></label>
+        <input type="text" id="st-group" placeholder="Например: 7А" autocomplete="off"
                onkeydown="if(event.key==='Enter')startStudentQuiz()">
       </div>
       <button class="btn-primary" style="width:100%;margin-top:18px;font-size:1rem;padding:14px"
@@ -1086,6 +1104,15 @@
 
   <!-- Step 2: Quiz area -->
   <div id="student-step-quiz" style="display:none">
+
+    <!-- Timer (shown only if timeLimit set) -->
+    <div id="st-timer-bar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 16px;margin-bottom:14px;align-items:center;gap:12px">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--muted)">⏱ Оставшееся время:</span>
+      <span id="st-timer-display" style="font-size:1rem;font-weight:800;min-width:50px;color:var(--text)">—</span>
+      <div style="flex:1;background:var(--card);border-radius:99px;height:5px">
+        <div id="st-timer-fill" style="height:5px;border-radius:99px;background:var(--green);transition:width 1s linear;width:100%"></div>
+      </div>
+    </div>
 
     <!-- Flashcard quiz -->
     <div class="quiz-running" id="st-fc-play">
@@ -1244,6 +1271,26 @@
   </div>
 </div>
 
+<!-- ═══ IMPORT MODAL ═══ -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal" style="max-width:560px">
+    <h3>Быстрый импорт карточек</h3>
+    <div class="modal-sub" style="margin-bottom:16px">Вставьте список — каждая пара строк это карточка</div>
+    <div style="background:var(--card);border-radius:10px;padding:12px 14px;font-size:0.8rem;line-height:1.7;color:var(--muted);margin-bottom:14px">
+      <strong style="color:var(--text)">Формат карточек (Вопрос / Ответ):</strong><br>
+      Столица России<br>Москва<br><br>
+      <strong style="color:var(--text)">Формат теста (варианты через <code>;</code>, * перед правильным):</strong><br>
+      Столица Франции; *Париж; Лондон; Берлин
+    </div>
+    <textarea id="import-textarea" rows="10" placeholder="Вставьте текст здесь..." style="width:100%;resize:vertical;font-family:inherit"></textarea>
+    <div id="import-preview" style="font-size:0.8rem;color:var(--muted);margin-top:8px"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-secondary" onclick="closeImportModal()">Отмена</button>
+      <button class="btn-primary" onclick="doImportCards()">Добавить карточки →</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ ROLE SETUP MODAL ═══ -->
 <div class="modal-overlay" id="role-setup-modal">
   <div class="modal" style="max-width:400px;text-align:center">
@@ -1302,9 +1349,13 @@
       <label>Название</label>
       <input type="text" id="new-set-name" placeholder="Например: История России, Биология 8 кл." onkeydown="if(event.key==='Enter')createNewSet()">
     </div>
-    <div class="form-row" style="margin-bottom:0">
+    <div class="form-row">
       <label>Описание (необязательно)</label>
       <textarea id="new-set-desc" placeholder="О чём этот набор?" rows="2"></textarea>
+    </div>
+    <div class="form-row" style="margin-bottom:0">
+      <label>Лимит времени (минут, необязательно)</label>
+      <input type="number" id="new-set-timelimit" placeholder="Без ограничений" min="1" max="180" style="max-width:180px">
     </div>
     <div class="modal-actions" style="margin-top:20px">
       <button class="btn-secondary" onclick="closeNewSetModal()">Отмена</button>
@@ -1624,11 +1675,11 @@ async function openQuizByCode(code) {
       document.getElementById('student-step-quiz').style.display = 'block';
       const cards = shouldShuffle ? shuffle([...studentDeck.cards]) : [...studentDeck.cards];
       if (studentDeck.mode === 'flashcard') {
-        stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
+        stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false, answers: [] };
         document.getElementById('st-fc-play').classList.add('active');
         stRenderFlashcard();
       } else {
-        stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
+        stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false, answers: [] };
         document.getElementById('st-quiz-play').classList.add('active');
         stRenderQuestion();
       }
@@ -1772,6 +1823,7 @@ function renderDecks() {
       <div class="deck-footer">
         <button class="btn-start" onclick="event.stopPropagation();openSet('${d.id}','play')">▶ Начать</button>
         <button class="btn-edit" onclick="event.stopPropagation();openSet('${d.id}','cards')">✏️ Карточки</button>
+        <button class="btn-edit" title="Дублировать набор" onclick="event.stopPropagation();duplicateDeck('${d.id}')">⧉</button>
       </div>
     </div>`;
   }).join('');
@@ -2149,10 +2201,123 @@ function renderSetCards() {
   _initCardDrag(grid);
 }
 
+// ─── CSV EXPORT ──────────────────────────────────────────────────────────────
+function _downloadCSV(rows, filename) {
+  const BOM = '\uFEFF'; // UTF-8 BOM for Excel
+  const csv = BOM + rows.map(r => r.map(cell => {
+    const s = String(cell ?? '').replace(/"/g, '""');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function downloadResultsCSV() {
+  if (!_db || !currentSetId) return;
+  try {
+    const snap = await _db.collection('results').where('deckId', '==', currentSetId).get();
+    const results = snap.docs.map(d => d.data());
+    const header  = ['Ученик', 'Класс', 'Набор', 'Дата', 'Правильно', 'Всего', '%'];
+    const rows    = results.map(r => {
+      const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
+      return [r.studentName || '', r.group || '', r.deckName || '', dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
+    });
+    const deck = decks.find(x => x.id === currentSetId);
+    _downloadCSV([header, ...rows], `результаты_${(deck?.name||'набор').replace(/\s+/g,'_')}.csv`);
+  } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
+}
+
+async function downloadGlobalCSV() {
+  if (!_db || !currentUser) return;
+  try {
+    const snap = await _db.collection('results').where('teacherId', '==', currentUser.uid).get();
+    const results = snap.docs.map(d => d.data());
+    const header  = ['Ученик', 'Класс', 'Набор', 'Режим', 'Дата', 'Правильно', 'Всего', '%'];
+    const rows    = results.map(r => {
+      const dt  = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
+      const mode = r.mode === 'flashcard' ? 'Карточки' : 'Тест';
+      return [r.studentName || '', r.group || '', r.deckName || '', mode, dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
+    });
+    _downloadCSV([header, ...rows], 'все_результаты.csv');
+  } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
+}
+
+function _filterResultsGroup() {
+  const val = document.getElementById('results-group-filter')?.value || '';
+  document.querySelectorAll('#results-rows-wrap .stat-row').forEach(row => {
+    row.style.display = (!val || row.dataset.group === val) ? '' : 'none';
+  });
+}
+
+// ─── IMPORT CARDS ────────────────────────────────────────────────────────────
+function showImportModal() {
+  document.getElementById('import-textarea').value = '';
+  document.getElementById('import-preview').textContent = '';
+  document.getElementById('import-modal').classList.add('show');
+  setTimeout(() => document.getElementById('import-textarea').focus(), 100);
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').classList.remove('show');
+}
+
+function _parseImportText(text, deckMode) {
+  const cards = [];
+  const blocks = text.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+
+  for (const block of blocks) {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) continue;
+
+    // Test format: single line with semicolons → "Question; *Correct; Wrong; ..."
+    if (lines.length === 1 && lines[0].includes(';')) {
+      const parts = lines[0].split(';').map(p => p.trim());
+      const question = parts[0];
+      const options  = parts.slice(1).map(p => ({
+        text: p.startsWith('*') ? p.slice(1).trim() : p,
+        correct: p.startsWith('*')
+      })).filter(o => o.text);
+      if (question && options.length >= 2) {
+        const hasCorrect = options.some(o => o.correct);
+        if (!hasCorrect) options[0].correct = true;
+        cards.push({ id: uid(), type: 'single', question, answer: '', options, image: null });
+        continue;
+      }
+    }
+
+    // Flashcard / open: first line = question, rest = answer
+    if (lines.length >= 2) {
+      const question = lines[0];
+      const answer   = lines.slice(1).join('\n');
+      const type     = deckMode === 'flashcard' ? 'flashcard' : 'open';
+      cards.push({ id: uid(), type, question, answer, options: [], image: null });
+    }
+  }
+  return cards;
+}
+
+function doImportCards() {
+  const text = document.getElementById('import-textarea').value;
+  if (!text.trim()) { toast('Вставьте текст для импорта'); return; }
+  const deck = decks.find(x => x.id === currentSetId);
+  const deckMode = deck?.mode || currentSetMode || 'test';
+  const newCards = _parseImportText(text, deckMode);
+  if (!newCards.length) { toast('Не удалось распознать карточки. Проверьте формат.'); return; }
+  setCards = [...setCards, ...newCards];
+  if (deck) { deck.cards = setCards; save(); }
+  renderSetCards();
+  closeImportModal();
+  toast(`Добавлено карточек: ${newCards.length}`);
+}
+
 // ─── NEW SET MODAL ───────────────────────────────────────────────────────────
 function showNewSetModal() {
   document.getElementById('new-set-name').value = '';
   document.getElementById('new-set-desc').value = '';
+  document.getElementById('new-set-timelimit').value = '';
   setNewMode('test');
   document.getElementById('new-set-modal').classList.add('show');
   setTimeout(() => document.getElementById('new-set-name').focus(), 100);
@@ -2173,10 +2338,13 @@ async function createNewSet() {
   if (!name) { toast('Введите название набора'); return; }
   const btn = document.querySelector('#new-set-modal .btn-primary');
   if (btn) { btn.textContent = 'Создаю…'; btn.disabled = true; }
+  const tlRaw = parseInt(document.getElementById('new-set-timelimit').value, 10);
+  const timeLimit = (!isNaN(tlRaw) && tlRaw > 0) ? tlRaw : null;
   const data = {
     teacherId: currentUser?.uid || 'local',
     name, desc: document.getElementById('new-set-desc').value.trim(),
     mode: newSetMode, cards: [], history: [],
+    timeLimit: timeLimit || null,
     shortCode: generateShortCode(),
     createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
   };
@@ -2242,6 +2410,36 @@ async function doDelete() {
     removeCard(pendingDelete.id);
     closeModal();
     toast('Карточка удалена');
+  }
+}
+
+// ─── DUPLICATE DECK ──────────────────────────────────────────────────────────
+async function duplicateDeck(id) {
+  const src = decks.find(x => x.id === id);
+  if (!src) return;
+  const data = {
+    teacherId: currentUser?.uid || 'local',
+    name: 'Копия — ' + src.name,
+    desc: src.desc || '',
+    mode: src.mode,
+    cards: src.cards.map(c => ({ ...c, id: uid() })),
+    history: [],
+    shortCode: generateShortCode(),
+    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+  };
+  if (_db && currentUser) {
+    try {
+      const ref = await _db.collection('decks').add(data);
+      const d = { id: ref.id, ...data, createdAt: new Date() };
+      decks.unshift(d);
+      renderDecks();
+      toast('Набор скопирован: «' + data.name + '»');
+    } catch(e) { toast('Ошибка дублирования: ' + (e.message || e.code)); }
+  } else {
+    const d = { id: uid(), ...data };
+    decks.unshift(d);
+    renderDecks();
+    toast('Набор скопирован (локально)');
   }
 }
 
@@ -2449,15 +2647,18 @@ function recordResult(mode, correct, total) {
   save();
 }
 
-async function saveStudentResult(deckId, deckName, teacherId, studentName, correct, total) {
+async function saveStudentResult(deckId, deckName, teacherId, studentName, correct, total, answers, group) {
   if (!_db || !currentUser) return;
   const pct = Math.round(correct / total * 100);
-  await _db.collection('results').add({
+  const doc = {
     deckId, deckName: deckName || '', teacherId: teacherId || '',
     studentId: currentUser.uid, studentName,
     correct, total, pct, mode: studentDeck?.mode || 'test',
+    answers: answers || [],
     date: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  };
+  if (group) doc.group = group;
+  await _db.collection('results').add(doc);
 }
 
 // ─── URL ENCODE / DECODE ──────────────────────────────────────────────────────
@@ -2492,6 +2693,7 @@ function urlDecode(str) {
 let isStudentMode = false;
 let studentDeck = null;
 let studentName = '';
+let studentGroup = '';
 let stFcState = null;
 let stQuizState = null;
 let stResultData = null;
@@ -2543,25 +2745,66 @@ function receiveStudentResult(result) {
 }
 
 // ─── STUDENT QUIZ ─────────────────────────────────────────────────────────────
+let _timerInterval = null;
+
+function _startTimer(totalSec) {
+  const bar  = document.getElementById('st-timer-bar');
+  const disp = document.getElementById('st-timer-display');
+  const fill = document.getElementById('st-timer-fill');
+  bar.style.display = 'flex';
+  let remaining = totalSec;
+
+  function tick() {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    disp.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    fill.style.width = (remaining / totalSec * 100) + '%';
+    const ratio = remaining / totalSec;
+    fill.style.background = ratio > 0.5 ? 'var(--green)' : ratio > 0.2 ? 'var(--yellow)' : 'var(--accent2)';
+    if (remaining <= 0) {
+      clearInterval(_timerInterval); _timerInterval = null;
+      disp.textContent = '0:00';
+      fill.style.width = '0%';
+      toast('Время вышло! Результат сохраняется…', 3000);
+      // Auto-finish
+      if (stQuizState) stFinish('test', stQuizState.correct, stQuizState.cards.length, stQuizState.answers);
+      else if (stFcState) stFinish('flashcard', stFcState.knew, stFcState.cards.length, stFcState.answers);
+      return;
+    }
+    remaining--;
+  }
+  tick();
+  _timerInterval = setInterval(tick, 1000);
+}
+
+function _stopTimer() {
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+  const bar = document.getElementById('st-timer-bar');
+  if (bar) bar.style.display = 'none';
+}
+
 function startStudentQuiz() {
   const last  = document.getElementById('st-lastname').value.trim();
   const first = document.getElementById('st-firstname').value.trim();
   if (!last || !first) { toast('Введите фамилию и имя'); return; }
-  studentName = last + ' ' + first;
+  studentName  = last + ' ' + first;
+  studentGroup = document.getElementById('st-group').value.trim();
   document.getElementById('st-name-label').textContent  = studentName;
   document.getElementById('st-name-label2').textContent = studentName;
   document.getElementById('student-step-name').style.display = 'none';
   document.getElementById('student-step-quiz').style.display = 'block';
   const cards = shuffle([...studentDeck.cards]);
   if (studentDeck.mode === 'flashcard') {
-    stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
+    stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false, answers: [] };
     document.getElementById('st-fc-play').classList.add('active');
     stRenderFlashcard();
   } else {
-    stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
+    stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false, answers: [] };
     document.getElementById('st-quiz-play').classList.add('active');
     stRenderQuestion();
   }
+  _stopTimer();
+  if (studentDeck.timeLimit) _startTimer(studentDeck.timeLimit * 60);
 }
 
 function stRenderFlashcard() {
@@ -2591,10 +2834,11 @@ function stFlipCard() {
 
 function stMarkCard(knew) {
   if (!stFcState.flipped) return;
+  stFcState.answers.push({ idx: stFcState.idx, correct: knew });
   if (knew) stFcState.knew++; else stFcState.didnt++;
   stFcState.idx++;
   if (stFcState.idx >= stFcState.cards.length) {
-    stFinish('flashcard', stFcState.knew, stFcState.cards.length); return;
+    stFinish('flashcard', stFcState.knew, stFcState.cards.length, stFcState.answers); return;
   }
   stRenderFlashcard();
 }
@@ -2644,6 +2888,7 @@ function stCheckSingle(btn, idx) {
   stQuizState.answered = true;
   const card = stQuizState.cards[stQuizState.idx];
   const correct = card.options[idx].correct;
+  stQuizState.answers.push({ idx: stQuizState.idx, correct });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
@@ -2660,6 +2905,7 @@ function stCheckMulti() {
   const selected = [...document.querySelectorAll('#st-quiz-opts .quiz-opt.selected')].map(b => b.textContent);
   const correctOpts = card.options.filter(o => o.correct).map(o => o.text);
   const correct = selected.length === correctOpts.length && correctOpts.every(c => selected.includes(c));
+  stQuizState.answers.push({ idx: stQuizState.idx, correct });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
@@ -2678,6 +2924,7 @@ function stCheckOpen() {
   stQuizState.answered = true;
   inp.disabled = true;
   const correct = val.toLowerCase() === card.answer.toLowerCase();
+  stQuizState.answers.push({ idx: stQuizState.idx, correct });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   stFeedback(correct, card.answer);
 }
@@ -2692,12 +2939,13 @@ function stFeedback(correct, correctText) {
 function stNextQ() {
   stQuizState.idx++;
   if (stQuizState.idx >= stQuizState.cards.length) {
-    stFinish('test', stQuizState.correct, stQuizState.cards.length); return;
+    stFinish('test', stQuizState.correct, stQuizState.cards.length, stQuizState.answers); return;
   }
   stRenderQuestion();
 }
 
-async function stFinish(mode, correct, total) {
+async function stFinish(mode, correct, total, answers) {
+  _stopTimer();
   document.getElementById('st-fc-play').classList.remove('active');
   document.getElementById('st-quiz-play').classList.remove('active');
   const pct = Math.round(correct / total * 100);
@@ -2711,7 +2959,8 @@ async function stFinish(mode, correct, total) {
     try {
       await saveStudentResult(
         studentDeck.id, studentDeck.name, studentDeck.teacherId || '',
-        currentUserData?.name || studentName, correct, total
+        currentUserData?.name || studentName, correct, total, answers || [],
+        studentGroup || (currentUserData?.group || '')
       );
       copyBtn.textContent = '✓ Результат отправлен учителю автоматически';
       copyBtn.style.display = '';
@@ -2748,6 +2997,7 @@ function copyStudentResult() {
 }
 
 function stRetry() {
+  _stopTimer();
   document.getElementById('student-step-results').style.display = 'none';
   document.getElementById('student-step-quiz').style.display = 'none';
   document.getElementById('student-step-name').style.display = 'block';
@@ -2847,31 +3097,78 @@ async function _loadAndRenderResults(container) {
 
     const best = Math.max(...results.map(r => r.pct));
     const avg  = Math.round(results.reduce((s, r) => s + r.pct, 0) / results.length);
+
+    // Build per-question breakdown from results that have answers[]
+    const deck = decks.find(x => x.id === currentSetId);
+    const deckCards = deck?.cards || [];
+    let breakdownHtml = '';
+    if (deckCards.length) {
+      const tally = deckCards.map(() => ({ correct: 0, total: 0 }));
+      results.forEach(r => {
+        (r.answers || []).forEach(a => {
+          if (a.idx < tally.length) {
+            tally[a.idx].total++;
+            if (a.correct) tally[a.idx].correct++;
+          }
+        });
+      });
+      const rows = tally.map((t, i) => {
+        if (!t.total) return '';
+        const pct = Math.round(t.correct / t.total * 100);
+        const c   = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+        return `<div class="breakdown-row">
+          <div class="breakdown-num">#${i+1}</div>
+          <div class="breakdown-q" title="${esc(deckCards[i].question)}">${esc(deckCards[i].question)}</div>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${pct}%;background:${c}"></div></div>
+          <div class="breakdown-pct" style="color:${c}">${pct}%</div>
+        </div>`;
+      }).join('');
+      if (rows.trim()) {
+        breakdownHtml = `<div class="breakdown-section">
+          <h4>Разбор по вопросам</h4>${rows}</div>`;
+      }
+    }
+
+    // Group filter
+    const groups = [...new Set(results.map(r => r.group).filter(Boolean))].sort();
+    const groupFilter = groups.length > 1
+      ? `<select id="results-group-filter" onchange="_filterResultsGroup()" style="font-size:0.8rem;padding:4px 8px;border:1px solid var(--border);border-radius:7px;background:var(--surface)">
+           <option value="">Все классы</option>
+           ${groups.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('')}
+         </select>`
+      : '';
+
     container.innerHTML = `
       <div class="stats-summary" style="margin-bottom:20px">
-        <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Учеников</div></div>
+        <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Работ сдано</div></div>
         <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
         <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
       </div>
       <div class="stats-history-title">
         <span>Список учеников</span>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${groupFilter}
+          <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="downloadResultsCSV()">⬇ CSV</button>
           <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="renderTeacherResults()">🔄 Обновить</button>
           <button class="btn-clear-stats" onclick="clearTeacherResults()">Очистить</button>
         </div>
       </div>
+      <div id="results-rows-wrap">
       ${results.map(r => {
-        const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || Date.now());
-        const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-        const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
-        return `<div class="stat-row">
-          <div class="results-row-name">${esc(r.studentName || r.name || '—')}</div>
+        const dt  = r.date?.toDate ? r.date.toDate() : new Date(r.date || Date.now());
+        const d   = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        const t   = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        const c   = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+        const grp = r.group ? `<span style="font-size:0.72rem;background:rgba(99,91,255,0.1);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px">${esc(r.group)}</span>` : '';
+        return `<div class="stat-row" data-group="${esc(r.group||'')}">
+          <div class="results-row-name">${esc(r.studentName || r.name || '—')}${grp}</div>
           <div class="results-row-date">${d}, ${t}</div>
           <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
           <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
         </div>`;
       }).join('')}
+      </div>
+      ${breakdownHtml}
     `;
   } catch(e) {
     console.error('loadResults error:', e.code, e.message);
