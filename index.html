@@ -141,9 +141,12 @@
 
     /* ── DECKS LIST ── */
     .library-quick-actions {
-      display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;
+      display:grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px; margin-bottom:14px;
       background: var(--surface); border:1px solid var(--border); border-radius: 14px; padding: 10px;
     }
+    .library-quick-actions .btn-primary,
+    .library-quick-actions .btn-secondary { width:100%; text-align:center; }
     .library-folders { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
     .folder-pill {
       border:1px solid var(--border); background:var(--surface); color:var(--muted);
@@ -900,6 +903,7 @@
     /* ── Планшет (≤ 860px) ── */
     @media (max-width: 860px) {
       main { padding: 24px 16px; }
+      .library-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .library-hub { grid-template-columns: 1fr; }
       .library-right { position: static; }
       .library-left { max-height: none; overflow: visible; padding-right: 0; }
@@ -913,6 +917,7 @@
 
     /* ── Телефон (≤ 600px) ── */
     @media (max-width: 600px) {
+      .library-quick-actions { grid-template-columns: 1fr; gap:8px; padding:8px; }
 
       /* Шапка */
       header { padding: 10px 14px; gap: 8px; }
@@ -2455,7 +2460,6 @@ function renderDecks() {
       <button class="btn-primary" onclick="libraryPanelMode='create';renderLibrarySidePanel()">+ Создать задание</button>
       <button class="btn-secondary" onclick="showImportModal()" ${!currentSetId ? 'disabled' : ''}>⬆ Импортировать</button>
       <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : `toast('Сначала выберите задание')`}">🔗 Выдать</button>
-      <button class="btn-secondary" onclick="${selectedDeckId ? `openSet('${selectedDeckId}','results')` : `toast('Сначала выберите задание')`}">📊 Результаты</button>
     `;
   }
   const grid = document.getElementById('decks-grid');
