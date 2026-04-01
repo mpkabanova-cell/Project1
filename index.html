@@ -2985,11 +2985,18 @@ function stMarkCard(knew) {
   if (!stFcState.flipped) return;
   stFcState.answers.push({ idx: stFcState.idx, correct: knew, given: knew ? 'Знал' : 'Не знал' });
   if (knew) stFcState.knew++; else stFcState.didnt++;
-  stFcState.idx++;
-  if (stFcState.idx >= stFcState.cards.length) {
-    stFinish('flashcard', stFcState.knew, stFcState.cards.length, stFcState.answers); return;
-  }
-  stRenderFlashcard();
+  // Close current card first to avoid showing next answer during flip animation
+  document.getElementById('st-fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
+  document.getElementById('st-fc-card').classList.remove('flipped');
+  stFcState.flipped = false;
+  setTimeout(() => {
+    stFcState.idx++;
+    if (stFcState.idx >= stFcState.cards.length) {
+      stFinish('flashcard', stFcState.knew, stFcState.cards.length, stFcState.answers);
+      return;
+    }
+    stRenderFlashcard();
+  }, 220);
 }
 
 function stRenderQuestion() {
