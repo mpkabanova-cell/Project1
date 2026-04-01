@@ -3229,7 +3229,7 @@ async function _loadAndRenderResults(container) {
     const deck = decks.find(x => x.id === currentSetId);
     const deckCards = deck?.cards || [];
     // Pre-populate deck cache so accordion doesn't need extra fetch
-    if (deckCards.length && deckId) _deckCache[deckId] = deckCards;
+    if (deckCards.length && currentSetId) _deckCache[currentSetId] = deckCards;
     // Clear previous per-set result details
     Object.keys(_rd).forEach(k => { if (k.startsWith('rs')) delete _rd[k]; });
     let breakdownHtml = '';
@@ -3287,7 +3287,7 @@ async function _loadAndRenderResults(container) {
       <div id="results-rows-wrap">
       ${results.map((r, i) => {
         const rid = 'rs' + i;
-        _rd[rid] = { deckId, answers: r.answers, cards: deckCards };
+        _rd[rid] = { deckId: currentSetId, answers: r.answers, cards: deckCards };
         const dt  = r.date?.toDate ? r.date.toDate() : new Date(r.date || Date.now());
         const d   = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
         const t   = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
