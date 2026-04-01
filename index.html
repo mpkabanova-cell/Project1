@@ -1636,6 +1636,22 @@ async function _loadTeacherDecks() {
     });
     // Auto-seed demo decks for demo account when library has no demo sets
     if (currentUser?.email === DEMO_TEACHER.email) {
+      const DEMO_DATA_VERSION = 'v2';
+      const markerKey = `demo_data_version_${currentUser.uid}`;
+      const needRefresh = localStorage.getItem(markerKey) !== DEMO_DATA_VERSION;
+      if (needRefresh) {
+        try {
+          await _refreshDemoDataForTeacher(currentUser.uid);
+          localStorage.setItem(markerKey, DEMO_DATA_VERSION);
+          const refreshed = await _db.collection('decks').where('teacherId', '==', currentUser.uid).get();
+          decks = refreshed.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          decks.sort((a, b) => {
+            const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
+            const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
+            return tb - ta;
+          });
+        } catch (re) { console.error('[demo-refresh]', re.code, re.message); }
+      }
       const hasDemoDecks = decks.some(d => d.name && d.name.startsWith('Биология 7'));
       if (!hasDemoDecks) {
         try {
@@ -3940,6 +3956,14 @@ async function _seedDataForTeacher(tid) {
     for (const r of ALL_RESULTS) {
       const key = r.sid + '|' + r.deckId;
       if (alreadySeeded.has(key)) continue;
+      const deckDef = DECKS.find(d => d.name === r.deckName);
+      const enrichedAnswers = (r.answers || []).map((a, i) => {
+        if (a.given != null && String(a.given).trim() !== '') return a;
+        const idx = a.idx ?? i;
+        const card = deckDef?.cards?.[idx];
+        const given = _fallbackGivenForAnswer(card, a);
+        return { ...a, given };
+      });
       await _db.collection('results').add({
         deckId: r.deckId, deckName: r.deckName,
         teacherId: tid,
@@ -3947,7 +3971,7 @@ async function _seedDataForTeacher(tid) {
         group: r.grp,
         correct: r.correct, total: r.total, pct: r.pct,
         mode: r.mode,
-        answers: r.answers,
+        answers: enrichedAnswers,
         date: tsAgo(r.ago)
       });
       written++;
@@ -3960,7 +3984,6 @@ async function _seedDataForTeacher(tid) {
 // ─── RESULT DETAIL ACCORDION ─────────────────────────────────────────────────
 const _rd = {};          // rid → { deckId, answers, cards? }
 const _deckCache = {};   // deckId → cards[]
-let _givenBackfillDoneFor = null;
 
 async function _loadDeckCards(deckId) {
   if (_deckCache[deckId]) return _deckCache[deckId];
@@ -3998,7 +4021,6 @@ function _expectedAnswerForCard(card) {
 
 async function _backfillMissingGivenAnswers(teacherId) {
   if (!_db || !teacherId) return;
-  if (_givenBackfillDoneFor === teacherId) return;
   try {
     const snap = await _db.collection('results').where('teacherId', '==', teacherId).get();
     const updates = [];
@@ -4021,10 +4043,23 @@ async function _backfillMissingGivenAnswers(teacherId) {
       if (changed) updates.push(doc.ref.update({ answers: patched }));
     }
     if (updates.length) await Promise.all(updates);
-    _givenBackfillDoneFor = teacherId;
   } catch (e) {
     console.error('[backfill given] error:', e?.code || e?.message || e);
   }
+}
+
+async function _refreshDemoDataForTeacher(tid) {
+  if (!_db || !tid) return;
+  const decksSnap = await _db.collection('decks').where('teacherId', '==', tid).get();
+  const resSnap = await _db.collection('results').where('teacherId', '==', tid).get();
+  const refs = [...decksSnap.docs.map(d => d.ref), ...resSnap.docs.map(d => d.ref)];
+  const CHUNK = 400;
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const batch = _db.batch();
+    refs.slice(i, i + CHUNK).forEach(ref => batch.delete(ref));
+    await batch.commit();
+  }
+  await _seedDataForTeacher(tid);
 }
 
 async function _toggleResultDetail(header, rid) {
