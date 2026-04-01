@@ -687,45 +687,77 @@
     .class-chart-section { margin-top: 26px; }
     .class-chart-section h4 {
       font-size: 0.82rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .5px; color: var(--muted); margin-bottom: 12px;
+      letter-spacing: .5px; color: var(--muted); margin-bottom: 8px;
     }
-    .class-chart {
+    .class-chart-legend {
+      display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+      font-size:0.74rem; color:var(--muted); margin-bottom:10px;
+    }
+    .class-chart-legend .dot {
+      width:10px; height:10px; border-radius:99px; display:inline-block; margin-right:6px;
+      background: linear-gradient(180deg, rgba(108,99,255,0.95), rgba(108,99,255,0.65));
+    }
+    .class-chart-shell {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px 12px 10px;
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      min-height: 190px;
+      padding: 12px 12px 10px;
       overflow-x: auto;
     }
-    .class-col {
-      min-width: 72px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    .class-chart-plot {
+      min-width: 360px;
+      display: grid;
+      grid-template-columns: 36px 1fr;
       gap: 8px;
+      align-items: stretch;
+    }
+    .class-y-axis {
+      position: relative;
+      height: 180px;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    .class-y-axis span {
+      position: absolute;
+      right: 0;
+      transform: translateY(50%);
+    }
+    .class-bars-area {
+      position: relative;
+      height: 180px;
+      border-left: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0 8px 0 10px;
+    }
+    .class-grid-line {
+      position: absolute;
+      left: 0; right: 0;
+      border-top: 1px dashed rgba(120,127,151,0.25);
+    }
+    .class-bars-row {
+      position: absolute;
+      left: 10px; right: 8px; bottom: 0;
+      display: flex; align-items: flex-end; gap: 10px;
+      height: 100%;
+    }
+    .class-col {
+      min-width: 74px; max-width: 90px;
+      display: flex; flex-direction: column; align-items: center;
       flex-shrink: 0;
     }
     .class-col-bar-wrap {
-      width: 44px;
-      height: 118px;
-      background: var(--card);
-      border-radius: 8px;
-      display: flex;
-      align-items: flex-end;
-      overflow: hidden;
-      border: 1px solid var(--border);
+      width: 46px; height: 140px;
+      display: flex; align-items: flex-end;
     }
     .class-col-bar {
       width: 100%;
       min-height: 4px;
       border-radius: 7px 7px 0 0;
-      background: linear-gradient(180deg, rgba(108,99,255,0.9), rgba(108,99,255,0.65));
+      background: linear-gradient(180deg, rgba(108,99,255,0.95), rgba(108,99,255,0.65));
+      box-shadow: 0 2px 8px rgba(108,99,255,0.22);
     }
-    .class-col-name { font-size: 0.78rem; font-weight: 700; color: var(--text); }
-    .class-col-meta { font-size: 0.72rem; color: var(--muted); text-align: center; line-height: 1.25; }
+    .class-col-name { margin-top: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text); text-align:center; }
+    .class-col-meta { font-size: 0.7rem; color: var(--muted); text-align: center; line-height: 1.25; margin-top: 2px; }
     .stats-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.92rem; }
     .btn-clear-stats {
       background: transparent; border: none; color: var(--muted);
@@ -2479,6 +2511,37 @@ async function downloadGlobalXLSX() {
   } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
 }
 
+function _renderClassChart(groupsForChart, chartId) {
+  if (!groupsForChart?.length) return '';
+  const yTicks = [100, 75, 50, 25, 0];
+  return `<div class="class-chart-section"${chartId ? ` id="${chartId}"` : ''}>
+    <h4>Результаты по классам</h4>
+    <div class="class-chart-legend">
+      <span><span class="dot"></span>Высота столбца = средний балл класса</span>
+      <span>Подпись: средний % и количество работ</span>
+    </div>
+    <div class="class-chart-shell">
+      <div class="class-chart-plot">
+        <div class="class-y-axis">
+          ${yTicks.map(v => `<span style="bottom:${v}%">${v}%</span>`).join('')}
+        </div>
+        <div class="class-bars-area">
+          ${yTicks.map(v => `<div class="class-grid-line" style="bottom:${v}%"></div>`).join('')}
+          <div class="class-bars-row">
+            ${groupsForChart.map(g => `<div class="class-col">
+              <div class="class-col-bar-wrap">
+                <div class="class-col-bar" style="height:${Math.max(4, g.avg)}%" title="${esc(g.name)}: ${g.avg}%"></div>
+              </div>
+              <div class="class-col-name">${esc(g.name)}</div>
+              <div class="class-col-meta">${g.avg}% · ${g.count} раб.</div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function _filterResultsGroup() {
   const val = document.getElementById('results-group-filter')?.value || '';
   const rows = [...document.querySelectorAll('#results-rows-wrap .stat-row')];
@@ -3425,20 +3488,7 @@ async function _loadAndRenderResults(container) {
         avg: Math.round(v.sum / v.count)
       }))
       .sort((a, b) => b.avg - a.avg);
-    if (groupsForChart.length) {
-      classChartHtml = `<div class="class-chart-section">
-        <h4>Результаты по классам</h4>
-        <div class="class-chart">
-          ${groupsForChart.map(g => `<div class="class-col">
-            <div class="class-col-bar-wrap">
-              <div class="class-col-bar" style="height:${Math.max(4, g.avg)}%"></div>
-            </div>
-            <div class="class-col-name">${esc(g.name)}</div>
-            <div class="class-col-meta">${g.avg}% · ${g.count} раб.</div>
-          </div>`).join('')}
-        </div>
-      </div>`;
-    }
+    if (groupsForChart.length) classChartHtml = _renderClassChart(groupsForChart, '');
 
     // Group filter
     const groups = [...new Set(results.map(r => r.group).filter(Boolean))].sort();
@@ -3671,18 +3721,7 @@ async function renderGlobalStats() {
     const groupsForChart = Object.entries(byGroup)
       .map(([name, v]) => ({ name, count: v.count, avg: Math.round(v.sum / v.count) }))
       .sort((a, b) => b.avg - a.avg);
-    if (groupsForChart.length) {
-      histEl.insertAdjacentHTML('afterend', `<div class="class-chart-section" id="global-class-chart" style="margin-top:18px">
-        <h4>Результаты по классам</h4>
-        <div class="class-chart">
-          ${groupsForChart.map(g => `<div class="class-col">
-            <div class="class-col-bar-wrap"><div class="class-col-bar" style="height:${Math.max(4, g.avg)}%"></div></div>
-            <div class="class-col-name">${esc(g.name)}</div>
-            <div class="class-col-meta">${g.avg}% · ${g.count} раб.</div>
-          </div>`).join('')}
-        </div>
-      </div>`);
-    }
+    if (groupsForChart.length) histEl.insertAdjacentHTML('afterend', _renderClassChart(groupsForChart, 'global-class-chart'));
 
     if (countEl) countEl.textContent = `${total} результатов`;
     _filterGlobal();
