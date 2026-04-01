@@ -1308,6 +1308,7 @@
         <button class="btn-clear-stats" onclick="clearAllHistory()">Очистить</button>
       </div>
       <div id="global-history"></div>
+      <div id="global-class-charts"></div>
     </div>
   </div>
 </div>
@@ -2540,11 +2541,11 @@ async function downloadGlobalXLSX() {
   } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
 }
 
-function _renderClassChart(groupsForChart, chartId) {
+function _renderClassChart(groupsForChart, chartId, titleText) {
   if (!groupsForChart?.length) return '';
   const yTicks = [100, 75, 50, 25, 0];
   return `<div class="class-chart-section"${chartId ? ` id="${chartId}"` : ''}>
-    <h4>Результаты по классам</h4>
+    <h4>${esc(titleText || 'Результаты по классам')}</h4>
     <div class="class-chart-legend">
       <span><span class="dot"></span>Высота столбца = средний балл класса</span>
       <span>Наведите на столбец, чтобы увидеть число ответов</span>
@@ -2596,6 +2597,46 @@ function _filterResultsGroup() {
   if (cntEl) cntEl.textContent = visible;
   if (bestEl) bestEl.textContent = best + '%';
   if (avgEl) avgEl.textContent = avg + '%';
+}
+
+let _globalStatsAllResults = [];
+
+function _renderGlobalClassCharts() {
+  const mount = document.getElementById('global-class-charts');
+  if (!mount) return;
+  const group = document.getElementById('global-group-filter')?.value || '';
+  const deck  = document.getElementById('global-deck-filter')?.value || '';
+
+  let data = [..._globalStatsAllResults];
+  if (group) data = data.filter(r => (r.group || '') === group);
+  if (_gScoreFilter === 'high') data = data.filter(r => Number(r.pct || 0) >= 80);
+  if (_gScoreFilter === 'mid') data = data.filter(r => Number(r.pct || 0) >= 50 && Number(r.pct || 0) < 80);
+  if (_gScoreFilter === 'low') data = data.filter(r => Number(r.pct || 0) < 50);
+  if (deck) data = data.filter(r => (r.deckName || '') === deck);
+
+  const byDeck = {};
+  data.forEach(r => {
+    const key = (r.deckName || 'Без названия');
+    if (!byDeck[key]) byDeck[key] = [];
+    byDeck[key].push(r);
+  });
+
+  const deckNames = Object.keys(byDeck).sort();
+  if (!deckNames.length) { mount.innerHTML = ''; return; }
+  mount.innerHTML = deckNames.map((name, i) => {
+    const rows = byDeck[name];
+    const byGroup = {};
+    rows.forEach(r => {
+      const g = (r.group || 'Без класса').trim() || 'Без класса';
+      if (!byGroup[g]) byGroup[g] = { sum: 0, count: 0 };
+      byGroup[g].sum += Number(r.pct || 0);
+      byGroup[g].count++;
+    });
+    const groupsForChart = Object.entries(byGroup)
+      .map(([gName, v]) => ({ name: gName, count: v.count, avg: Math.round(v.sum / v.count) }))
+      .sort((a, b) => b.avg - a.avg);
+    return _renderClassChart(groupsForChart, `global-class-chart-${i}`, `Результаты по классам · ${name}`);
+  }).join('');
 }
 
 // ─── IMPORT CARDS ────────────────────────────────────────────────────────────
@@ -3739,23 +3780,11 @@ async function renderGlobalStats() {
         <div class="result-detail"></div>
       </div>`;
     }).join('');
-    // Bottom class chart for global stats
-    const oldGlobalChart = document.getElementById('global-class-chart');
-    if (oldGlobalChart) oldGlobalChart.remove();
-    const byGroup = {};
-    results.forEach(r => {
-      const g = (r.group || 'Без класса').trim() || 'Без класса';
-      if (!byGroup[g]) byGroup[g] = { sum: 0, count: 0 };
-      byGroup[g].sum += Number(r.pct || 0);
-      byGroup[g].count++;
-    });
-    const groupsForChart = Object.entries(byGroup)
-      .map(([name, v]) => ({ name, count: v.count, avg: Math.round(v.sum / v.count) }))
-      .sort((a, b) => b.avg - a.avg);
-    if (groupsForChart.length) histEl.insertAdjacentHTML('afterend', _renderClassChart(groupsForChart, 'global-class-chart'));
+    _globalStatsAllResults = results;
 
     if (countEl) countEl.textContent = `${total} ${ruPlural(total, 'результат', 'результата', 'результатов')}`;
     _filterGlobal();
+    _renderGlobalClassCharts();
   } catch(e) {
     console.error('renderGlobalStats:', e);
     sumEl.innerHTML = '';
@@ -3789,6 +3818,7 @@ function _filterGlobal() {
       ? `${total} ${ruPlural(total, 'результат', 'результата', 'результатов')}`
       : `${visible} из ${total}`;
   }
+  _renderGlobalClassCharts();
 }
 
 function _setScoreFilter(btn, val) {
