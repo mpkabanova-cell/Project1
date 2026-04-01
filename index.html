@@ -207,6 +207,27 @@
     }
     .deck-name { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
     .deck-meta { color: var(--muted); font-size: 0.82rem; }
+    .deck-top-row { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+    .deck-date-line { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
+    .deck-menu-wrap { position: relative; }
+    .deck-menu-btn {
+      border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+      width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 1rem; line-height: 1;
+    }
+    .deck-menu-btn:hover { color: var(--text); border-color: #cfd5ea; }
+    .deck-menu {
+      position: absolute; right: 0; top: 32px; z-index: 20;
+      min-width: 190px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: 0 12px 24px rgba(48,64,122,.16); padding: 6px;
+      display: none;
+    }
+    .deck-menu.open { display: block; }
+    .deck-menu button {
+      width: 100%; text-align: left; border: none; background: transparent; color: var(--text);
+      font-size: 0.82rem; border-radius: 8px; padding: 8px 10px; cursor: pointer;
+    }
+    .deck-menu button:hover { background: var(--card); }
+    .deck-menu .danger { color: var(--accent2); }
     .deck-footer {
       display: flex; gap: 8px; margin-top: 6px;
       padding-top: 12px; border-top: 1px solid var(--border);
@@ -2151,6 +2172,7 @@ let selectedDeckId = null;
 let libraryPanelMode = 'details';
 let libraryFolders = [];
 let selectedFolder = 'all';
+let openDeckMenuId = null;
 
 function _foldersKey() { return `qf_folders_${currentUser?.uid || 'local'}`; }
 function _loadFolders() {
@@ -2159,6 +2181,11 @@ function _loadFolders() {
 }
 function _saveFolders() {
   localStorage.setItem(_foldersKey(), JSON.stringify(libraryFolders));
+}
+
+function _formatDeckDate(d) {
+  const dt = d?.createdAt?.toDate ? d.createdAt.toDate() : new Date(d?.createdAt || Date.now());
+  return dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 }
 function createFolder() {
   const name = prompt('Название папки:');
@@ -2414,14 +2441,33 @@ function renderDecks() {
     const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
     const modeBg    = d.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
     const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    const subject = _guessSubjectLabel(d.name);
+    const dateStr = _formatDeckDate(d);
+    const menuOpen = openDeckMenuId === d.id ? 'open' : '';
     return `
     <div class="deck-card ${selectedDeckId===d.id?'active':''}" onclick="selectedDeckId='${d.id}';currentSetId='${d.id}';libraryPanelMode='details';renderDecks()">
       <button class="btn-del-deck" onclick="event.stopPropagation();confirmDelete('deck','${d.id}')">✕</button>
+      <div class="deck-top-row">
+        <div>
+          <div class="deck-name">${esc(d.name)}</div>
+          <div class="deck-date-line">${dateStr} · ${esc(subject)}</div>
+        </div>
+        <div class="deck-menu-wrap" onclick="event.stopPropagation()">
+          <button class="deck-menu-btn" onclick="toggleDeckMenu('${d.id}')">⋯</button>
+          <div class="deck-menu ${menuOpen}">
+            <button onclick="openSet('${d.id}','cards')">Редактировать</button>
+            <button onclick="openSet('${d.id}','play')">Пройти</button>
+            <button onclick="openSet('${d.id}','results')">Результаты</button>
+            <button onclick="_openShareInline('${d.id}')">Выдать ученикам</button>
+            <button onclick="duplicateDeck('${d.id}')">Дублировать</button>
+            <button class="danger" onclick="confirmDelete('deck','${d.id}')">Удалить</button>
+          </div>
+        </div>
+      </div>
       <div class="deck-badges">
         <span class="deck-badge">${d.cards.length} карт.</span>
         <span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>
       </div>
-      <div class="deck-name">${esc(d.name)}</div>
       <div class="deck-meta">${esc(d.desc || '')}</div>
       ${d.folder ? `<div style="font-size:.73rem;color:var(--muted)">📁 ${esc(d.folder)}</div>` : ''}
       <div class="deck-footer">
@@ -2434,6 +2480,15 @@ function renderDecks() {
   }).join('');
   renderLibrarySidePanel();
 }
+
+function toggleDeckMenu(id) {
+  openDeckMenuId = (openDeckMenuId === id) ? null : id;
+  renderDecks();
+}
+
+document.addEventListener('click', () => {
+  if (openDeckMenuId) { openDeckMenuId = null; renderDecks(); }
+});
 
 // ─── SET PAGE ────────────────────────────────────────────────────────────────
 function openSet(id, tab = 'cards') {
