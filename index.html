@@ -2199,13 +2199,13 @@ function createFolder() {
   renderDecks();
 }
 
-function renderFoldersBar(visibleDecksAll) {
+function renderFoldersBar(allDecks, visibleDecksAll) {
   const wrap = document.getElementById('library-folders');
   if (!wrap) return;
   const counts = {};
   const subjects = {};
-  visibleDecksAll.forEach(d => {
-    const f = d.folder || 'Общий класс';
+  allDecks.forEach(d => {
+    const f = d.folder || 'Общая';
     counts[f] = (counts[f] || 0) + 1;
     const subj = _guessSubjectLabel(d.name);
     if (!subjects[f]) subjects[f] = {};
@@ -2230,7 +2230,7 @@ function renderFoldersBar(visibleDecksAll) {
       <div class="cfc-title">${esc(f)}</div>
       <div class="cfc-sub">${esc(topSubjects(f))}</div>
     </div>`);
-  const archiveCount = visibleDecksAll.filter(d => d.archived).length;
+  const archiveCount = allDecks.filter(d => d.archived).length;
   const archiveCard = `<div class="class-folder-card cfc-archive ${showArchiveOnly?'active':''}" onclick="showArchiveOnly=!showArchiveOnly;renderDecks()">
       <div class="cfc-top"><div class="cfc-icon">🗂️</div><div class="cfc-count">${archiveCount}</div></div>
       <div class="cfc-title">Архив</div>
@@ -2346,9 +2346,12 @@ function renderLibrarySidePanel(visibleDecks = null) {
     panel.innerHTML = '<div class="side-sub">Создайте первое задание, чтобы увидеть предпросмотр и быстро выдать ученикам.</div>';
     return;
   }
-  const source = visibleDecks && visibleDecks.length ? visibleDecks : decks;
-  const d = source.find(x => x.id === selectedDeckId) || source[0];
-  if (!d) return;
+  const source = visibleDecks && visibleDecks.length ? visibleDecks : [];
+  const d = source.find(x => x.id === selectedDeckId);
+  if (!d) {
+    panel.innerHTML = '<div class="side-sub">Выберите задание в списке, чтобы увидеть детали и действия.</div>';
+    return;
+  }
   selectedDeckId = d.id;
   panel.innerHTML = `
     <div class="side-head">${esc(d.name)}</div>
@@ -2441,7 +2444,7 @@ function renderDecks() {
     subjSel.innerHTML = `<option value="all">Все предметы</option>${subjects.map(s=>`<option value="${esc(s)}"${prev===s?' selected':''}>${esc(s)}</option>`).join('')}`;
   }
   const subjectVal = document.getElementById('library-subject-filter')?.value || 'all';
-  renderFoldersBar(filteredBySearch);
+  renderFoldersBar(decks, filteredBySearch);
   const visibleDecks = filteredBySearch.filter(d => {
     if (selectedFolder === 'all') return true;
     return (d.folder || 'Общая') === selectedFolder;
@@ -2451,10 +2454,10 @@ function renderDecks() {
       <div class="empty-icon">📚</div>
       <p>Заданий пока нет. <strong>Нажмите «+ Создать»!</strong></p>
     </div>`;
-    renderLibrarySidePanel();
+    renderLibrarySidePanel([]);
     return;
   }
-  if (!visibleDecks.some(d => d.id === selectedDeckId)) selectedDeckId = visibleDecks[0]?.id || null;
+  if (!visibleDecks.some(d => d.id === selectedDeckId)) selectedDeckId = null;
   if (!currentSetId && selectedDeckId) currentSetId = selectedDeckId;
   grid.innerHTML = visibleDecks.map(d => {
     const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
