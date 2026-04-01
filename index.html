@@ -4202,10 +4202,10 @@ async function renderGlobalStats() {
     const avg    = Math.round(results.reduce((s, r) => s + r.pct, 0) / total);
     const unique = new Set(results.map(r => r.studentId || r.studentName)).size;
     sumEl.innerHTML = `
-      <div class="stat-card"><div class="val">${total}</div><div class="lbl">Все работы</div></div>
-      <div class="stat-card" style="border-color:rgba(108,99,255,0.2)"><div class="val" style="color:var(--accent)">${unique}</div><div class="lbl">Учеников</div></div>
-      <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
-      <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
+      <div class="stat-card"><div class="val" id="g-stat-total">${total}</div><div class="lbl">Все работы</div></div>
+      <div class="stat-card" style="border-color:rgba(108,99,255,0.2)"><div class="val" id="g-stat-unique" style="color:var(--accent)">${unique}</div><div class="lbl">Учеников</div></div>
+      <div class="stat-card best"><div class="val" id="g-stat-best">${best}%</div><div class="lbl">Лучший результат</div></div>
+      <div class="stat-card avg"><div class="val" id="g-stat-avg">${avg}%</div><div class="lbl">Средний балл</div></div>
     `;
     // Clear previous global result details
     Object.keys(_rd).forEach(k => { if (k.startsWith('rg')) delete _rd[k]; });
@@ -4218,7 +4218,7 @@ async function renderGlobalStats() {
       const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
       const ml = r.mode === 'flashcard' ? '🃏' : '🧠';
-      return `<div class="stat-row" data-group="${esc(r.group||'')}" data-deck="${esc(r.deckName||'')}" data-pct="${r.pct}">
+      return `<div class="stat-row" data-group="${esc(r.group||'')}" data-deck="${esc(r.deckName||'')}" data-pct="${r.pct}" data-student="${esc(r.studentId || r.studentName || '')}">
         <div class="stat-row-header" onclick="_toggleResultDetail(this,'${rid}')">
           <div class="results-row-name">${esc(r.studentName || '—')}</div>
           <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ml} ${esc(r.deckName || '—')}</div>
@@ -4249,6 +4249,9 @@ function _filterGlobal() {
   const deck  = document.getElementById('global-deck-filter')?.value || '';
   const rows  = document.querySelectorAll('#global-history .stat-row');
   let visible = 0;
+  let best = 0;
+  let sum = 0;
+  const students = new Set();
   rows.forEach(row => {
     const pct = parseInt(row.dataset.pct || '0');
     const matchGroup = !group || row.dataset.group === group;
@@ -4259,8 +4262,22 @@ function _filterGlobal() {
       || (_gScoreFilter === 'low'  && pct < 50);
     const show = matchGroup && matchDeck && matchScore;
     row.style.display = show ? '' : 'none';
-    if (show) visible++;
+    if (show) {
+      visible++;
+      sum += pct;
+      if (pct > best) best = pct;
+      students.add(row.dataset.student || '');
+    }
   });
+  const avg = visible ? Math.round(sum / visible) : 0;
+  const totalEl = document.getElementById('g-stat-total');
+  const uniqEl = document.getElementById('g-stat-unique');
+  const bestEl = document.getElementById('g-stat-best');
+  const avgEl = document.getElementById('g-stat-avg');
+  if (totalEl) totalEl.textContent = visible;
+  if (uniqEl) uniqEl.textContent = students.size;
+  if (bestEl) bestEl.textContent = best + '%';
+  if (avgEl) avgEl.textContent = avg + '%';
   const countEl = document.getElementById('global-results-count');
   if (countEl) {
     const total = rows.length;
