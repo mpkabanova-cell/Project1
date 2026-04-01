@@ -2160,9 +2160,13 @@ function renderFoldersBar(visibleDecksAll) {
     const f = d.folder || 'Без папки';
     counts[f] = (counts[f] || 0) + 1;
   });
+  const allFolders = [...new Set([
+    ...libraryFolders,
+    ...visibleDecksAll.map(d => (d.folder || '').trim()).filter(Boolean)
+  ])].sort();
   const pills = [
     `<button class="folder-pill ${selectedFolder==='all'?'active':''}" onclick="selectedFolder='all';renderDecks()">Все</button>`,
-    ...libraryFolders.map(f => `<button class="folder-pill ${selectedFolder===f?'active':''}" onclick="selectedFolder='${esc(f)}';renderDecks()">${esc(f)} (${counts[f]||0})</button>`),
+    ...allFolders.map(f => `<button class="folder-pill ${selectedFolder===f?'active':''}" onclick="selectedFolder='${esc(f)}';renderDecks()">${esc(f)} (${counts[f]||0})</button>`),
     `<button class="folder-pill ${selectedFolder==='__none'?'active':''}" onclick="selectedFolder='__none';renderDecks()">Без папки (${counts['Без папки']||0})</button>`,
     `<button class="folder-pill" onclick="createFolder()">+ Новая папка</button>`
   ];
@@ -2184,8 +2188,9 @@ function _guessSubjectFolder(name = '') {
 
 async function _autoOrganizeFolders() {
   if (!decks.length) return;
-  const marker = `qf_folders_autofill_${currentUser?.uid || 'local'}_v1`;
-  if (localStorage.getItem(marker) === '1') return;
+  const marker = `qf_folders_autofill_${currentUser?.uid || 'local'}_v2`;
+  const hasSubjectFolders = (libraryFolders || []).length > 0;
+  if (localStorage.getItem(marker) === '1' && hasSubjectFolders) return;
 
   const needed = new Set([...libraryFolders, ...decks.map(d => _guessSubjectFolder(d.name))]);
   libraryFolders = [...needed].filter(x => x && x !== 'Без предмета').sort();
