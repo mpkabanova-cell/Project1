@@ -3658,6 +3658,32 @@ async function renderGlobalStats() {
         <div class="result-detail"></div>
       </div>`;
     }).join('');
+    // Bottom class chart for global stats
+    const oldGlobalChart = document.getElementById('global-class-chart');
+    if (oldGlobalChart) oldGlobalChart.remove();
+    const byGroup = {};
+    results.forEach(r => {
+      const g = (r.group || 'Без класса').trim() || 'Без класса';
+      if (!byGroup[g]) byGroup[g] = { sum: 0, count: 0 };
+      byGroup[g].sum += Number(r.pct || 0);
+      byGroup[g].count++;
+    });
+    const groupsForChart = Object.entries(byGroup)
+      .map(([name, v]) => ({ name, count: v.count, avg: Math.round(v.sum / v.count) }))
+      .sort((a, b) => b.avg - a.avg);
+    if (groupsForChart.length) {
+      histEl.insertAdjacentHTML('afterend', `<div class="class-chart-section" id="global-class-chart" style="margin-top:18px">
+        <h4>Результаты по классам</h4>
+        <div class="class-chart">
+          ${groupsForChart.map(g => `<div class="class-col">
+            <div class="class-col-bar-wrap"><div class="class-col-bar" style="height:${Math.max(4, g.avg)}%"></div></div>
+            <div class="class-col-name">${esc(g.name)}</div>
+            <div class="class-col-meta">${g.avg}% · ${g.count} раб.</div>
+          </div>`).join('')}
+        </div>
+      </div>`);
+    }
+
     if (countEl) countEl.textContent = `${total} результатов`;
     _filterGlobal();
   } catch(e) {
