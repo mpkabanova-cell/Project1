@@ -3349,7 +3349,7 @@ async function _loadAndRenderResults(container) {
     const groupFilter = groups.length > 1
       ? `<div class="results-filter-wrap">
            <span class="results-filter-label">Фильтр по классу</span>
-           <select id="results-group-filter" class="results-filter-select" onchange="_filterResultsGroup()">
+           <select id="results-group-filter" class="results-filter-select" onchange="_filterResultsGroup()" oninput="_filterResultsGroup()">
              <option value="">Все классы</option>
              ${groups.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('')}
            </select>
@@ -3396,6 +3396,14 @@ async function _loadAndRenderResults(container) {
       </div>
       ${breakdownHtml}
     `;
+    // Ensure summary cards always sync with current filter value
+    _filterResultsGroup();
+    const gf = document.getElementById('results-group-filter');
+    if (gf && !gf.dataset.bound) {
+      gf.addEventListener('change', _filterResultsGroup);
+      gf.addEventListener('input', _filterResultsGroup);
+      gf.dataset.bound = '1';
+    }
   } catch(e) {
     console.error('loadResults error:', e.code, e.message);
     const hint = e.code === 'permission-denied'
