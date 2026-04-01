@@ -133,6 +133,28 @@
     .mode-btn.active { background: var(--accent); color: #fff; }
 
     /* ── DECKS LIST ── */
+    .library-quick-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .library-hub { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:16px; align-items:start; }
+    .library-left { min-width:0; }
+    .library-right {
+      background: var(--surface); border:1px solid var(--border); border-radius: 14px;
+      padding:14px; position: sticky; top: 16px;
+    }
+    .library-search-row { margin-bottom:10px; }
+    .library-search-row input {
+      width:100%; border:1px solid var(--border); border-radius:10px;
+      padding:10px 12px; font-size:0.9rem; background: var(--surface);
+    }
+    .deck-card.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,99,255,.15); }
+    .side-head { font-size:1.05rem; font-weight:800; margin-bottom:4px; }
+    .side-sub { color:var(--muted); font-size:.82rem; margin-bottom:10px; }
+    .side-actions { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 12px; }
+    .side-stat-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-bottom:10px; }
+    .side-stat { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:8px; text-align:center; }
+    .side-stat .v { font-weight:800; font-size:1rem; }
+    .side-stat .l { color:var(--muted); font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; }
+    .side-share-box { border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--card); }
+    .side-share-code { font-family:monospace; font-weight:800; color:var(--accent); }
     .decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     .deck-card {
       background: var(--surface); border: 1px solid var(--border);
@@ -801,6 +823,8 @@
     /* ── Планшет (≤ 860px) ── */
     @media (max-width: 860px) {
       main { padding: 24px 16px; }
+      .library-hub { grid-template-columns: 1fr; }
+      .library-right { position: static; }
       .decks-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
       .set-tabs { gap: 2px; }
       .set-tab { padding: 8px 12px; font-size: 0.82rem; }
@@ -1052,7 +1076,16 @@
         </div>
       </div>
     </div>
-    <div class="decks-grid" id="decks-grid"></div>
+    <div id="library-quick-actions" class="library-quick-actions"></div>
+    <div class="library-hub">
+      <div class="library-left">
+        <div class="library-search-row">
+          <input id="library-search" placeholder="Поиск по названию задания..." oninput="renderDecks()">
+        </div>
+        <div class="decks-grid" id="decks-grid"></div>
+      </div>
+      <div class="library-right" id="library-side-panel"></div>
+    </div>
   </div>
 
   <!-- ═══ SET PAGE ═══ -->
@@ -2075,21 +2108,148 @@ function goHome() {
 }
 
 // ─── DECKS LIST ─────────────────────────────────────────────────────────────
+let selectedDeckId = null;
+let libraryPanelMode = 'details';
+
+function _copyTextSafe(text, okMsg) {
+  navigator.clipboard.writeText(text).then(() => toast(okMsg || 'Скопировано'));
+}
+
+function _openShareInline(id) {
+  const d = decks.find(x => x.id === id);
+  if (!d) return;
+  const base = location.href.split('#')[0];
+  const shareUrl = base + '#q=' + d.shortCode;
+  const box = document.getElementById('side-share-inline');
+  if (box) {
+    box.style.display = '';
+    box.innerHTML = `
+      <div class="side-share-box">
+        <div style="font-size:.73rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Код задания</div>
+        <div class="side-share-code">${esc(d.shortCode || '—')}</div>
+        <div style="font-size:.73rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px">Ссылка</div>
+        <div style="display:flex;gap:6px">
+          <input value="${esc(shareUrl)}" readonly style="flex:1;border:1px solid var(--border);border-radius:8px;padding:7px 8px;font-size:.78rem;background:var(--surface)" onclick="this.select()">
+          <button class="btn-secondary" style="padding:7px 10px;font-size:.78rem" onclick="_copyTextSafe('${esc(shareUrl)}','Ссылка скопирована')">Копировать</button>
+        </div>
+      </div>`;
+  }
+}
+
+function renderLibrarySidePanel() {
+  const panel = document.getElementById('library-side-panel');
+  if (!panel) return;
+  if (libraryPanelMode === 'create') {
+    panel.innerHTML = `
+      <div class="side-head">Новое задание</div>
+      <div class="side-sub">Создание без перехода на другой экран</div>
+      <div class="form-row"><label>Название</label><input id="inline-new-name" placeholder="Например: Биология 7"></div>
+      <div class="form-row"><label>Описание</label><textarea id="inline-new-desc" rows="2" placeholder="Кратко опишите задание"></textarea></div>
+      <div class="form-row"><label>Тип задания</label>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="inline-mode-test" onclick="setInlineNewMode('test')">🧠 Тест</button>
+          <button class="mode-btn" id="inline-mode-fc" onclick="setInlineNewMode('flashcard')">🃏 Карточки</button>
+        </div>
+      </div>
+      <div class="side-actions">
+        <button class="btn-primary" onclick="createNewSetInline()">Создать</button>
+        <button class="btn-secondary" onclick="libraryPanelMode='details';renderLibrarySidePanel()">Отмена</button>
+      </div>
+    `;
+    setTimeout(() => document.getElementById('inline-new-name')?.focus(), 30);
+    return;
+  }
+  if (!decks.length) {
+    panel.innerHTML = '<div class="side-sub">Создайте первое задание, чтобы увидеть предпросмотр и быстро выдать ученикам.</div>';
+    return;
+  }
+  const d = decks.find(x => x.id === selectedDeckId) || decks[0];
+  if (!d) return;
+  selectedDeckId = d.id;
+  panel.innerHTML = `
+    <div class="side-head">${esc(d.name)}</div>
+    <div class="side-sub">${esc(d.desc || 'Без описания')}</div>
+    <div class="side-stat-grid">
+      <div class="side-stat"><div class="v">${d.cards?.length || 0}</div><div class="l">Карточек</div></div>
+      <div class="side-stat"><div class="v">${d.mode === 'flashcard' ? '🃏' : '🧠'}</div><div class="l">Режим</div></div>
+      <div class="side-stat"><div class="v">${d.shortCode ? 'есть' : '—'}</div><div class="l">Код</div></div>
+    </div>
+    <div class="side-actions">
+      <button class="btn-primary" onclick="openSet('${d.id}','cards')">Открыть</button>
+      <button class="btn-secondary" onclick="_openShareInline('${d.id}')">Выдать</button>
+      <button class="btn-secondary" onclick="openSet('${d.id}','results')">Результаты</button>
+      <button class="btn-secondary" onclick="duplicateDeck('${d.id}')">Дублировать</button>
+    </div>
+    <div id="side-share-inline" style="display:none"></div>
+  `;
+}
+
+let inlineNewMode = 'test';
+function setInlineNewMode(mode) {
+  inlineNewMode = mode;
+  document.getElementById('inline-mode-test')?.classList.toggle('active', mode === 'test');
+  document.getElementById('inline-mode-fc')?.classList.toggle('active', mode === 'flashcard');
+}
+
+async function createNewSetInline() {
+  const name = document.getElementById('inline-new-name')?.value?.trim();
+  if (!name) { toast('Введите название задания'); return; }
+  const data = {
+    teacherId: currentUser?.uid || 'local',
+    name,
+    desc: document.getElementById('inline-new-desc')?.value?.trim() || '',
+    mode: inlineNewMode,
+    cards: [],
+    history: [],
+    timeLimit: null,
+    shortCode: generateShortCode(),
+    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+  };
+  try {
+    if (_db && currentUser) {
+      const ref = await _db.collection('decks').add(data);
+      decks.unshift({ id: ref.id, ...data, createdAt: new Date() });
+      selectedDeckId = ref.id;
+    } else {
+      const id = uid();
+      decks.unshift({ id, ...data });
+      selectedDeckId = id;
+    }
+    libraryPanelMode = 'details';
+    renderDecks();
+    toast('Задание создано');
+  } catch(e) { toast('Ошибка создания: ' + (e.message || e.code)); }
+}
+
 function renderDecks() {
+  const qa = document.getElementById('library-quick-actions');
+  if (qa) {
+    qa.innerHTML = `
+      <button class="btn-primary" onclick="libraryPanelMode='create';renderLibrarySidePanel()">+ Создать задание</button>
+      <button class="btn-secondary" onclick="showImportModal()" ${!currentSetId ? 'disabled' : ''}>⬆ Импортировать</button>
+      <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : 'toast(\\'Сначала выберите задание\\')'}">🔗 Выдать</button>
+      <button class="btn-secondary" onclick="${selectedDeckId ? `openSet('${selectedDeckId}','results')` : 'toast(\\'Сначала выберите задание\\')'}">📊 Результаты</button>
+    `;
+  }
   const grid = document.getElementById('decks-grid');
+  const q = (document.getElementById('library-search')?.value || '').trim().toLowerCase();
+  const visibleDecks = q ? decks.filter(d => (d.name || '').toLowerCase().includes(q) || (d.desc || '').toLowerCase().includes(q)) : decks;
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
       <p>Заданий пока нет. <strong>Нажмите «+ Создать»!</strong></p>
     </div>`;
+    renderLibrarySidePanel();
     return;
   }
-  grid.innerHTML = decks.map(d => {
+  if (!selectedDeckId && visibleDecks.length) selectedDeckId = visibleDecks[0].id;
+  if (!currentSetId && selectedDeckId) currentSetId = selectedDeckId;
+  grid.innerHTML = visibleDecks.map(d => {
     const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
     const modeBg    = d.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
     const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
     return `
-    <div class="deck-card" onclick="openSet('${d.id}','cards')">
+    <div class="deck-card ${selectedDeckId===d.id?'active':''}" onclick="selectedDeckId='${d.id}';currentSetId='${d.id}';libraryPanelMode='details';renderDecks()">
       <button class="btn-del-deck" onclick="event.stopPropagation();confirmDelete('deck','${d.id}')">✕</button>
       <div class="deck-badges">
         <span class="deck-badge">${d.cards.length} карт.</span>
@@ -2099,11 +2259,13 @@ function renderDecks() {
       <div class="deck-meta">${esc(d.desc || '')}</div>
       <div class="deck-footer">
         <button class="btn-start" onclick="event.stopPropagation();openSet('${d.id}','play')">▶ Начать</button>
-        <button class="btn-edit" onclick="event.stopPropagation();openSet('${d.id}','cards')">✏️ Карточки</button>
+        <button class="btn-edit" onclick="event.stopPropagation();openSet('${d.id}','cards')">✏️ Открыть</button>
         <button class="btn-edit" title="Дублировать задание" onclick="event.stopPropagation();duplicateDeck('${d.id}')">⧉</button>
       </div>
+      <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Код: <strong>${esc(d.shortCode || '—')}</strong></div>
     </div>`;
   }).join('');
+  renderLibrarySidePanel();
 }
 
 // ─── SET PAGE ────────────────────────────────────────────────────────────────
