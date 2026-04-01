@@ -824,16 +824,16 @@
       .page-title { font-size: 1.3rem; }
       .page-sub { font-size: 0.88rem; margin-bottom: 18px; }
 
-      /* Библиотека наборов — 1 колонка */
+      /* Библиотека заданий — 1 колонка */
       .decks-grid { grid-template-columns: 1fr; gap: 10px; }
 
-      /* Страница набора — шапка */
+      /* Страница задания — шапка */
       .set-header {
         flex-direction: column; align-items: flex-start; gap: 10px;
       }
       .set-header-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
 
-      /* Вкладки набора — горизонтальный скролл */
+      /* Вкладки задания — горизонтальный скролл */
       .set-tabs {
         overflow-x: auto; -webkit-overflow-scrolling: touch;
         flex-wrap: nowrap; gap: 0; border-radius: 10px;
@@ -1042,7 +1042,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
       <div>
         <div class="page-title">Библиотека</div>
-        <div class="page-sub" style="margin-bottom:0">Все наборы карточек-викторин</div>
+        <div class="page-sub" style="margin-bottom:0">Все задания карточек-викторин</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
@@ -1078,7 +1078,7 @@
       <!-- Edit settings panel (collapsed by default) -->
       <div class="set-edit-panel" id="set-edit-panel">
         <div class="form-row">
-          <label>Тип набора</label>
+          <label>Тип задания</label>
           <div class="mode-toggle">
             <button class="mode-btn active" id="edit-mode-test" onclick="setEditMode('test')">🧠 Тест</button>
             <button class="mode-btn" id="edit-mode-flashcard" onclick="setEditMode('flashcard')">🃏 Карточки</button>
@@ -1086,11 +1086,11 @@
         </div>
         <div class="form-row">
           <label>Название</label>
-          <input type="text" id="edit-name" placeholder="Название набора">
+          <input type="text" id="edit-name" placeholder="Название задания">
         </div>
         <div class="form-row" style="margin-bottom:0">
           <label>Описание</label>
-          <textarea id="edit-desc" placeholder="О чём этот набор?" rows="2"></textarea>
+          <textarea id="edit-desc" placeholder="О чём это задание?" rows="2"></textarea>
         </div>
         <div class="form-actions" style="margin-top:16px">
           <button class="btn-primary" onclick="saveSetSettings()">Сохранить изменения</button>
@@ -1267,7 +1267,7 @@
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
     <div>
       <div class="page-title" style="margin-bottom:4px">Результаты учеников</div>
-      <div class="page-sub" style="margin-bottom:0">Все прохождения по всем наборам</div>
+      <div class="page-sub" style="margin-bottom:0">Все прохождения по всем заданиям</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="downloadGlobalXLSX()">⬇ Excel</button>
@@ -1285,7 +1285,7 @@
         </select>
       </div>
       <div class="sf-group">
-        <div class="sf-label">Набор</div>
+        <div class="sf-label">Задание</div>
         <select class="sf-select" id="global-deck-filter" onchange="_filterGlobal()">
           <option value="">Все работы</option>
         </select>
@@ -1438,13 +1438,13 @@
 <!-- ═══ SHARE MODAL ═══ -->
 <div class="modal-overlay" id="share-modal">
   <div class="modal" style="max-width:440px">
-    <h3>Поделиться набором</h3>
+    <h3>Поделиться заданием</h3>
     <div class="modal-sub" id="share-modal-name"></div>
 
     <!-- Short code for students -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
       <div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:2px">Код набора (ученик вводит в приложении)</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:2px">Код задания (ученик вводит в приложении)</div>
         <div id="share-deck-code" style="font-size:1.1rem;font-weight:800;font-family:monospace;color:var(--accent);letter-spacing:1px"></div>
       </div>
     </div>
@@ -1500,7 +1500,7 @@
   <div class="quiz-code-card">
     <h3>Пройти тест по коду</h3>
     <div style="display:flex;gap:10px">
-      <input type="text" id="quiz-code-input" placeholder="Код набора (от учителя)"
+      <input type="text" id="quiz-code-input" placeholder="Код задания (от учителя)"
              style="flex:1" onkeydown="if(event.key==='Enter')openQuizByCode(this.value.trim())">
       <button class="btn-primary" onclick="openQuizByCode(document.getElementById('quiz-code-input').value.trim())" style="white-space:nowrap">Начать →</button>
     </div>
@@ -1583,10 +1583,10 @@
 <!-- ═══ NEW SET MODAL ═══ -->
 <div class="modal-overlay" id="new-set-modal">
   <div class="modal">
-    <h3>Создать набор</h3>
+    <h3>Создать задание</h3>
     <div class="modal-sub">Выберите тип и задайте название</div>
     <div class="form-row">
-      <label>Тип набора</label>
+      <label>Тип задания</label>
       <div class="mode-toggle">
         <button class="mode-btn active" id="new-mode-test" onclick="setNewMode('test')">🧠 Тест</button>
         <button class="mode-btn" id="new-mode-flashcard" onclick="setNewMode('flashcard')">🃏 Карточки</button>
@@ -1598,7 +1598,7 @@
     </div>
     <div class="form-row">
       <label>Описание (необязательно)</label>
-      <textarea id="new-set-desc" placeholder="О чём этот набор?" rows="2"></textarea>
+      <textarea id="new-set-desc" placeholder="О чём это задание?" rows="2"></textarea>
     </div>
     <div class="form-row" style="margin-bottom:0">
       <label>Лимит времени (минут, необязательно)</label>
@@ -1606,7 +1606,7 @@
     </div>
     <div class="modal-actions" style="margin-top:20px">
       <button class="btn-secondary" onclick="closeNewSetModal()">Отмена</button>
-      <button class="btn-primary" onclick="createNewSet()">Создать набор →</button>
+      <button class="btn-primary" onclick="createNewSet()">Создать задание →</button>
     </div>
   </div>
 </div>
@@ -1887,7 +1887,7 @@ async function repeatQuiz(deckId) {
   showLoadingOverlay(true);
   try {
     const docSnap = await _db.collection('decks').doc(deckId).get();
-    if (!docSnap.exists) { toast('Набор не найден'); showLoadingOverlay(false); return; }
+    if (!docSnap.exists) { toast('Задание не найдено'); showLoadingOverlay(false); return; }
     studentDeck = { id: docSnap.id, ...docSnap.data() };
     isStudentMode = true;
     document.getElementById('main-header').style.display = 'none';
@@ -1908,11 +1908,11 @@ async function repeatQuiz(deckId) {
       document.getElementById('st-quiz-section').style.display = 'none';
       showLoadingOverlay(false);
     }
-  } catch(e) { toast('Ошибка загрузки набора'); showLoadingOverlay(false); }
+  } catch(e) { toast('Ошибка загрузки задания'); showLoadingOverlay(false); }
 }
 
 async function openQuizByCode(code) {
-  if (!code) { toast('Введите код набора'); return; }
+  if (!code) { toast('Введите код задания'); return; }
   if (!_db) { toast('Firebase не настроен'); return; }
   showLoadingOverlay(true);
   try {
@@ -1929,7 +1929,7 @@ async function openQuizByCode(code) {
       const d = await _db.collection('decks').doc(code.trim()).get();
       if (d.exists) docSnap = d;
     }
-    if (!docSnap) { toast('Набор не найден — проверьте код'); showLoadingOverlay(false); return; }
+    if (!docSnap) { toast('Задание не найдено — проверьте код'); showLoadingOverlay(false); return; }
     studentDeck = { id: docSnap.id, ...docSnap.data() };
     isStudentMode = true;
     document.getElementById('main-header').style.display = 'none';
@@ -1964,7 +1964,7 @@ async function openQuizByCode(code) {
       document.getElementById('student-step-quiz').style.display = 'none';
       document.getElementById('student-step-results').style.display = 'none';
     }
-  } catch(e) { toast('Ошибка загрузки набора'); }
+  } catch(e) { toast('Ошибка загрузки задания'); }
   showLoadingOverlay(false);
 }
 
@@ -2079,7 +2079,7 @@ function renderDecks() {
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
-      <p>Наборов пока нет. <strong>Нажмите «+ Создать»!</strong></p>
+      <p>Заданий пока нет. <strong>Нажмите «+ Создать»!</strong></p>
     </div>`;
     return;
   }
@@ -2099,7 +2099,7 @@ function renderDecks() {
       <div class="deck-footer">
         <button class="btn-start" onclick="event.stopPropagation();openSet('${d.id}','play')">▶ Начать</button>
         <button class="btn-edit" onclick="event.stopPropagation();openSet('${d.id}','cards')">✏️ Карточки</button>
-        <button class="btn-edit" title="Дублировать набор" onclick="event.stopPropagation();duplicateDeck('${d.id}')">⧉</button>
+        <button class="btn-edit" title="Дублировать задание" onclick="event.stopPropagation();duplicateDeck('${d.id}')">⧉</button>
       </div>
     </div>`;
   }).join('');
@@ -2509,13 +2509,13 @@ async function downloadResultsXLSX() {
         const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
         return tb - ta;
       });
-    const header = ['Ученик', 'Класс', 'Набор', 'Дата', 'Правильно', 'Всего', '%'];
+    const header = ['Ученик', 'Класс', 'Задание', 'Дата', 'Правильно', 'Всего', '%'];
     const rows   = results.map(r => {
       const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
       return [r.studentName || '', r.group || '', r.deckName || '', dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
     });
     const deck = decks.find(x => x.id === currentSetId);
-    const safe = (deck?.name || 'набор').replace(/[\\/:*?"<>|]/g, '_');
+    const safe = (deck?.name || 'задание').replace(/[\\/:*?"<>|]/g, '_');
     _downloadXLSX([header, ...rows], 'Результаты', `результаты_${safe}.xlsx`);
   } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
 }
@@ -2530,7 +2530,7 @@ async function downloadGlobalXLSX() {
         const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
         return tb - ta;
       });
-    const header = ['Ученик', 'Класс', 'Набор', 'Режим', 'Дата', 'Правильно', 'Всего', '%'];
+    const header = ['Ученик', 'Класс', 'Задание', 'Режим', 'Дата', 'Правильно', 'Всего', '%'];
     const rows   = results.map(r => {
       const dt   = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
       const mode = r.mode === 'flashcard' ? 'Карточки' : 'Тест';
@@ -2681,7 +2681,7 @@ function setNewMode(mode) {
 
 async function createNewSet() {
   const name = document.getElementById('new-set-name').value.trim();
-  if (!name) { toast('Введите название набора'); return; }
+  if (!name) { toast('Введите название задания'); return; }
   const btn = document.querySelector('#new-set-modal .btn-primary');
   if (btn) { btn.textContent = 'Создаю…'; btn.disabled = true; }
   const tlRaw = parseInt(document.getElementById('new-set-timelimit').value, 10);
@@ -2701,7 +2701,7 @@ async function createNewSet() {
       const d = { id: ref.id, ...data, createdAt: new Date() };
       decks.unshift(d);
       openSet(ref.id, 'cards');
-      toast('Набор создан! Добавляйте карточки');
+      toast('Задание создано! Добавляйте карточки');
     } catch(e) {
       console.error('createNewSet error:', e);
       const msg = e.code === 'permission-denied' || (e.message && e.message.includes('permission'))
@@ -2713,9 +2713,9 @@ async function createNewSet() {
     const d = { id: uid(), ...data };
     decks.unshift(d);
     openSet(d.id, 'cards');
-    toast('Набор создан! (локально — настройте Firebase для синхронизации)');
+    toast('Задание создано! (локально — настройте Firebase для синхронизации)');
   }
-  if (btn) { btn.textContent = 'Создать набор →'; btn.disabled = false; }
+  if (btn) { btn.textContent = 'Создать задание →'; btn.disabled = false; }
 }
 
 // ─── DELETE ──────────────────────────────────────────────────────────────────
@@ -2724,8 +2724,8 @@ let pendingDelete = null;
 function confirmDelete(type, id) {
   pendingDelete = { type, id };
   const name = type === 'deck' ? decks.find(x => x.id === id)?.name : null;
-  document.getElementById('modal-title').textContent = 'Удалить набор?';
-  document.getElementById('modal-text').textContent = `Набор «${name}» и все его карточки будут удалены безвозвратно.`;
+  document.getElementById('modal-title').textContent = 'Удалить задание?';
+  document.getElementById('modal-text').textContent = `Задание «${name}» и все его карточки будут удалены безвозвратно.`;
   document.getElementById('modal-overlay').classList.add('show');
   document.getElementById('modal-confirm-btn').onclick = doDelete;
 }
@@ -2747,7 +2747,7 @@ async function doDelete() {
     const id = pendingDelete.id;
     decks = decks.filter(d => d.id !== id);
     closeModal();
-    toast('Набор удалён');
+    toast('Задание удалено');
     goHome();
     if (_db && currentUser) {
       try { await _db.collection('decks').doc(id).delete(); } catch(e) {}
@@ -2779,13 +2779,13 @@ async function duplicateDeck(id) {
       const d = { id: ref.id, ...data, createdAt: new Date() };
       decks.unshift(d);
       renderDecks();
-      toast('Набор скопирован: «' + data.name + '»');
+      toast('Задание скопировано: «' + data.name + '»');
     } catch(e) { toast('Ошибка дублирования: ' + (e.message || e.code)); }
   } else {
     const d = { id: uid(), ...data };
     decks.unshift(d);
     renderDecks();
-    toast('Набор скопирован (локально)');
+    toast('Задание скопировано (локально)');
   }
 }
 
@@ -3596,7 +3596,7 @@ async function _loadAndRenderResults(container) {
 }
 
 async function clearTeacherResults() {
-  if (!confirm('Очистить все результаты учеников для этого набора?')) return;
+  if (!confirm('Очистить все результаты учеников для этого задания?')) return;
   if (!_db) return;
   const snap = await _db.collection('results').where('deckId', '==', currentSetId).get();
   const batch = _db.batch();
@@ -3614,7 +3614,7 @@ function renderSetStats() {
   if (!d) { el.innerHTML = ''; return; }
   const history = d.history || [];
   if (!history.length) {
-    el.innerHTML = '<div class="stats-empty">Вы ещё не проходили этот набор</div>'; return;
+    el.innerHTML = '<div class="stats-empty">Вы ещё не проходили это задание</div>'; return;
   }
   const best = Math.max(...history.map(h => h.pct));
   const avg  = Math.round(history.reduce((s, h) => s + h.pct, 0) / history.length);
@@ -3645,7 +3645,7 @@ function renderSetStats() {
 }
 
 function clearSetStats() {
-  if (!confirm('Очистить историю прохождений этого набора?')) return;
+  if (!confirm('Очистить историю прохождений этого задания?')) return;
   const d = decks.find(x => x.id === currentSetId);
   if (d) { d.history = []; save(); }
   renderSetStats();
@@ -3685,7 +3685,7 @@ async function renderGlobalStats() {
       sumEl.innerHTML = '';
       histEl.innerHTML = `<div class="stats-empty">
         Ученики ещё не проходили ваши тесты.<br>
-        Нажмите <strong>🔗 Поделиться</strong> на любом наборе и отправьте ссылку.
+        Нажмите <strong>🔗 Поделиться</strong> в любом задании и отправьте ссылку.
       </div>`;
       return;
     }
@@ -3702,7 +3702,7 @@ async function renderGlobalStats() {
     }
     if (dSel) {
       const prev = dSel.value;
-      dSel.innerHTML = '<option value="">Все работы</option>' +
+      dSel.innerHTML = '<option value="">Все задания</option>' +
         deckNames.map(n => `<option value="${esc(n)}"${prev===n?' selected':''}>${esc(n)}</option>`).join('');
     }
 
@@ -4008,7 +4008,7 @@ async function createDemoAccounts() {
       // Seed demo data while logged in as teacher (before signing out)
       if (acc.role === 'teacher') {
         teacherUid = uid;
-        msg.textContent = 'Создаю наборы и результаты…';
+        msg.textContent = 'Создаю задания и результаты…';
         await _seedDataForTeacher(uid);
       }
 
@@ -4038,7 +4038,7 @@ async function seedDemoData() {
     const { results, decks: deckCount } = await _seedDataForTeacher(currentUser.uid);
     await _loadTeacherDecks();
     if (results > 0) {
-      toast(`✓ Добавлено ${deckCount} ${ruPlural(deckCount, 'набор', 'набора', 'наборов')} и ${results} ${ruPlural(results, 'результат', 'результата', 'результатов')} учеников`, 5000);
+      toast(`✓ Добавлено ${deckCount} ${ruPlural(deckCount, 'задание', 'задания', 'заданий')} и ${results} ${ruPlural(results, 'результат', 'результата', 'результатов')} учеников`, 5000);
       if (btn) { btn.textContent = '✓ Готово'; }
     } else {
       toast('Примеры уже есть в вашей библиотеке', 3000);
@@ -4154,7 +4154,7 @@ async function _seedDataForTeacher(tid) {
 
     // Guard: all deck IDs must be valid strings
     for (const k of Object.keys(deckIds)) {
-      if (!deckIds[k]) throw new Error('Не удалось создать набор: ' + k);
+      if (!deckIds[k]) throw new Error('Не удалось создать задание: ' + k);
     }
 
     // ── 2. Seed student results ─────────────────────────────────────────────
