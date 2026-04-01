@@ -2249,18 +2249,18 @@ function renderFoldersBar(allDecks, visibleDecksAll) {
     if (folder.startsWith('9 ')) return 'cfc-9';
     return 'cfc-all';
   }
-  const cards = allFolders.map(f => `<div class="class-folder-card ${cls(f)} ${selectedFolder===f?'active':''}" onclick="selectedFolder='${esc(f)}';renderDecks()">
+  const cards = allFolders.map(f => `<div class="class-folder-card ${cls(f)} ${selectedFolder===f && !showArchiveOnly?'active':''}" onclick="showArchiveOnly=false;selectedFolder='${esc(f)}';renderDecks()">
       <div class="cfc-top"><div class="cfc-icon">📁</div><div class="cfc-count">${counts[f]||0}</div></div>
       <div class="cfc-title">${esc(f)}</div>
       <div class="cfc-sub">${esc(topSubjects(f))}</div>
     </div>`);
   const archiveCount = allDecks.filter(d => d.archived).length;
-  const archiveCard = `<div class="class-folder-card cfc-archive ${showArchiveOnly?'active':''}" onclick="showArchiveOnly=!showArchiveOnly;renderDecks()">
+  const archiveCard = `<div class="class-folder-card cfc-archive ${showArchiveOnly?'active':''}" onclick="showArchiveOnly=!showArchiveOnly;if(showArchiveOnly)selectedFolder='all';renderDecks()">
       <div class="cfc-top"><div class="cfc-icon">🗂️</div><div class="cfc-count">${archiveCount}</div></div>
       <div class="cfc-title">Архив</div>
       <div class="cfc-sub">Скрытые задания</div>
     </div>`;
-  const pills = [`<button class="folder-pill ${selectedFolder==='all'?'active':''}" onclick="selectedFolder='all';renderDecks()">Все задания</button>`];
+  const pills = [`<button class="folder-pill ${selectedFolder==='all' && !showArchiveOnly?'active':''}" onclick="showArchiveOnly=false;selectedFolder='all';renderDecks()">Все задания</button>`];
   wrap.innerHTML = cards.join('') + archiveCard + pills.join('');
 }
 
