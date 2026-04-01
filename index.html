@@ -553,9 +553,33 @@
     }
     .stat-row {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 14px 16px; margin-bottom: 8px;
-      display: flex; align-items: center; gap: 14px;
+      border-radius: 10px; margin-bottom: 8px; overflow: hidden;
     }
+    .stat-row-header {
+      padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+      cursor: pointer; transition: background .15s;
+    }
+    .stat-row-header:hover { background: rgba(108,99,255,.045); }
+    .rd-chevron {
+      margin-left: auto; color: var(--muted); font-size: 1.1rem;
+      flex-shrink: 0; transition: transform .25s; line-height: 1;
+    }
+    .stat-row-header.open .rd-chevron { transform: rotate(180deg); }
+    .result-detail {
+      max-height: 0; overflow: hidden;
+      transition: max-height .35s ease;
+    }
+    .result-detail.open { max-height: 600px; }
+    .rd-inner {
+      padding: 10px 16px 14px; border-top: 1px solid var(--border);
+    }
+    .rd-q {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 5px 0; font-size: 0.84rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rd-q:last-child { border-bottom: none; }
+    .rd-icon { font-weight: 700; flex-shrink: 0; min-width: 16px; font-size: 0.9rem; margin-top: 1px; }
     .stat-row-date { font-size: 0.78rem; color: var(--muted); white-space: nowrap; min-width: 90px; }
     .stat-row-mode {
       font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px;
@@ -703,11 +727,12 @@
       .stat-card { padding: 12px 10px; }
       .stat-card .val { font-size: 1.6rem; }
 
-      .stat-row { flex-wrap: wrap; gap: 4px; }
+      .stat-row-header { flex-wrap: wrap; gap: 4px; }
       .stat-row-date { min-width: unset; width: 100%; }
       .stat-row-bar-wrap { order: 3; width: 100%; }
       .stat-row-score { order: 2; }
       .stat-row-mode { order: 1; }
+      .rd-chevron { margin-left: 0; }
 
       .results-row { flex-wrap: wrap; gap: 4px; }
       .results-row-name { width: 100%; font-size: 0.88rem; }
@@ -3203,6 +3228,10 @@ async function _loadAndRenderResults(container) {
     // Build per-question breakdown from results that have answers[]
     const deck = decks.find(x => x.id === currentSetId);
     const deckCards = deck?.cards || [];
+    // Pre-populate deck cache so accordion doesn't need extra fetch
+    if (deckCards.length && deckId) _deckCache[deckId] = deckCards;
+    // Clear previous per-set result details
+    Object.keys(_rd).forEach(k => { if (k.startsWith('rs')) delete _rd[k]; });
     let breakdownHtml = '';
     if (deckCards.length) {
       const tally = deckCards.map(() => ({ correct: 0, total: 0 }));
@@ -3256,17 +3285,23 @@ async function _loadAndRenderResults(container) {
         </div>
       </div>
       <div id="results-rows-wrap">
-      ${results.map(r => {
+      ${results.map((r, i) => {
+        const rid = 'rs' + i;
+        _rd[rid] = { deckId, answers: r.answers, cards: deckCards };
         const dt  = r.date?.toDate ? r.date.toDate() : new Date(r.date || Date.now());
         const d   = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
         const t   = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         const c   = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
         const grp = r.group ? `<span style="font-size:0.72rem;background:rgba(99,91,255,0.1);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px">${esc(r.group)}</span>` : '';
         return `<div class="stat-row" data-group="${esc(r.group||'')}">
-          <div class="results-row-name">${esc(r.studentName || r.name || '—')}${grp}</div>
-          <div class="results-row-date">${d}, ${t}</div>
-          <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
-          <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+          <div class="stat-row-header" onclick="_toggleResultDetail(this,'${rid}')">
+            <div class="results-row-name">${esc(r.studentName || r.name || '—')}${grp}</div>
+            <div class="results-row-date">${d}, ${t}</div>
+            <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
+            <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+            <span class="rd-chevron">▾</span>
+          </div>
+          <div class="result-detail"></div>
         </div>`;
       }).join('')}
       </div>
@@ -3405,18 +3440,27 @@ async function renderGlobalStats() {
       <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
       <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
     `;
-    histEl.innerHTML = results.map(r => {
+    // Clear previous global result details
+    Object.keys(_rd).forEach(k => { if (k.startsWith('rg')) delete _rd[k]; });
+
+    histEl.innerHTML = results.map((r, i) => {
+      const rid = 'rg' + i;
+      _rd[rid] = { deckId: r.deckId, answers: r.answers };
       const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || Date.now());
       const d  = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
       const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
       const ml = r.mode === 'flashcard' ? '🃏' : '🧠';
       return `<div class="stat-row" data-group="${esc(r.group||'')}" data-deck="${esc(r.deckName||'')}" data-pct="${r.pct}">
-        <div class="results-row-name">${esc(r.studentName || '—')}</div>
-        <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ml} ${esc(r.deckName || '—')}</div>
-        <div class="results-row-date">${d}, ${t}</div>
-        <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
-        <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+        <div class="stat-row-header" onclick="_toggleResultDetail(this,'${rid}')">
+          <div class="results-row-name">${esc(r.studentName || '—')}</div>
+          <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ml} ${esc(r.deckName || '—')}</div>
+          <div class="results-row-date">${d}, ${t}</div>
+          <div class="results-row-bar-wrap"><div class="results-row-bar" style="width:${r.pct}%;background:${c}"></div></div>
+          <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
+          <span class="rd-chevron">▾</span>
+        </div>
+        <div class="result-detail"></div>
       </div>`;
     }).join('');
     if (countEl) countEl.textContent = `${total} результатов`;
@@ -3903,6 +3947,57 @@ async function _seedDataForTeacher(tid) {
 
     console.log(`[seed] done — decks:${Object.keys(deckIds).length} results:${written}`);
     return { decks: Object.keys(deckIds).length, results: written };
+}
+
+// ─── RESULT DETAIL ACCORDION ─────────────────────────────────────────────────
+const _rd = {};          // rid → { deckId, answers, cards? }
+const _deckCache = {};   // deckId → cards[]
+
+async function _loadDeckCards(deckId) {
+  if (_deckCache[deckId]) return _deckCache[deckId];
+  if (!_db || !deckId) return [];
+  try {
+    const snap = await _db.collection('decks').doc(deckId).get();
+    _deckCache[deckId] = snap.exists ? (snap.data().cards || []) : [];
+  } catch(e) { _deckCache[deckId] = []; }
+  return _deckCache[deckId];
+}
+
+async function _toggleResultDetail(header, rid) {
+  const detail = header.nextElementSibling;
+  if (!detail || !detail.classList.contains('result-detail')) return;
+  const isOpen = header.classList.contains('open');
+  if (isOpen) {
+    header.classList.remove('open');
+    detail.classList.remove('open');
+    return;
+  }
+  header.classList.add('open');
+  detail.classList.add('open');
+  if (detail.dataset.loaded) return;
+  detail.dataset.loaded = '1';
+
+  const data = _rd[rid];
+  if (!data?.answers?.length) {
+    detail.innerHTML = '<div class="rd-inner" style="color:var(--muted);font-size:0.84rem">Детальные данные недоступны</div>';
+    return;
+  }
+  detail.innerHTML = '<div class="rd-inner" style="color:var(--muted);font-size:0.84rem">⏳ Загрузка…</div>';
+
+  const cards = data.cards || await _loadDeckCards(data.deckId);
+
+  const rows = data.answers.map((a, i) => {
+    const idx = a.idx ?? i;
+    const card = cards?.[idx];
+    const qText = card?.question || `Вопрос ${idx + 1}`;
+    const color = a.correct ? 'var(--green)' : 'var(--accent2)';
+    return `<div class="rd-q">
+      <span class="rd-icon" style="color:${color}">${a.correct ? '✓' : '✗'}</span>
+      <span>${esc(qText)}</span>
+    </div>`;
+  }).join('');
+  detail.innerHTML = `<div class="rd-inner">${rows}</div>`;
+  detail.style.maxHeight = detail.scrollHeight + 'px';
 }
 
 initApp();
