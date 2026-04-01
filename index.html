@@ -2432,9 +2432,27 @@ async function downloadGlobalXLSX() {
 
 function _filterResultsGroup() {
   const val = document.getElementById('results-group-filter')?.value || '';
-  document.querySelectorAll('#results-rows-wrap .stat-row').forEach(row => {
-    row.style.display = (!val || row.dataset.group === val) ? '' : 'none';
+  const rows = [...document.querySelectorAll('#results-rows-wrap .stat-row')];
+  let visible = 0;
+  let best = 0;
+  let sum = 0;
+  rows.forEach(row => {
+    const show = (!val || row.dataset.group === val);
+    row.style.display = show ? '' : 'none';
+    if (show) {
+      visible++;
+      const pct = Number(row.dataset.pct || 0);
+      sum += pct;
+      if (pct > best) best = pct;
+    }
   });
+  const avg = visible ? Math.round(sum / visible) : 0;
+  const cntEl = document.getElementById('set-stats-count');
+  const bestEl = document.getElementById('set-stats-best');
+  const avgEl = document.getElementById('set-stats-avg');
+  if (cntEl) cntEl.textContent = visible;
+  if (bestEl) bestEl.textContent = best + '%';
+  if (avgEl) avgEl.textContent = avg + '%';
 }
 
 // ─── IMPORT CARDS ────────────────────────────────────────────────────────────
@@ -3340,9 +3358,9 @@ async function _loadAndRenderResults(container) {
 
     container.innerHTML = `
       <div class="stats-summary" style="margin-bottom:20px">
-        <div class="stat-card"><div class="val">${results.length}</div><div class="lbl">Работ сдано</div></div>
-        <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
-        <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
+        <div class="stat-card"><div class="val" id="set-stats-count">${results.length}</div><div class="lbl">Работ сдано</div></div>
+        <div class="stat-card best"><div class="val" id="set-stats-best">${best}%</div><div class="lbl">Лучший результат</div></div>
+        <div class="stat-card avg"><div class="val" id="set-stats-avg">${avg}%</div><div class="lbl">Средний балл</div></div>
       </div>
       <div class="stats-history-title" style="margin-bottom:8px">
         <span>Список учеников</span>
@@ -3364,7 +3382,7 @@ async function _loadAndRenderResults(container) {
         const t   = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         const c   = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
         const grp = r.group ? `<span style="font-size:0.72rem;background:rgba(99,91,255,0.1);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px">${esc(r.group)}</span>` : '';
-        return `<div class="stat-row" data-group="${esc(r.group||'')}">
+        return `<div class="stat-row" data-group="${esc(r.group||'')}" data-pct="${r.pct}">
           <div class="stat-row-header" onclick="_toggleResultDetail(this,'${rid}')">
             <div class="results-row-name">${esc(r.studentName || r.name || '—')}${grp}</div>
             <div class="results-row-date">${d}, ${t}</div>
