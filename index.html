@@ -169,6 +169,7 @@
     .cfc-8 { background: linear-gradient(135deg, #f0d7ff, #e7c1ff); }
     .cfc-9 { background: linear-gradient(135deg, #d7d3ff, #c8c2ff); }
     .cfc-all { background: linear-gradient(135deg, #e8ecf8, #dde3f3); }
+    .cfc-archive { background: linear-gradient(135deg, #e4e6ed, #d5d9e4); }
     .library-hub { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:16px; align-items:start; }
     .library-left { min-width:0; }
     .library-right {
@@ -196,13 +197,13 @@
     .side-share-code { font-family:monospace; font-weight:800; color:var(--accent); }
     .decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     .deck-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: 18px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(44,57,112,0.04);
-      transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s; position: relative;
+      background: #f1f3fc; border: 1px solid #e6e9f4;
+      border-radius: 14px; padding: 14px; cursor: pointer;
+      box-shadow: none;
+      transition: border-color 0.2s, transform 0.15s; position: relative;
       display: flex; flex-direction: column; gap: 8px;
     }
-    .deck-card:hover { border-color: #d5daf0; transform: translateY(-1px); box-shadow: 0 8px 22px rgba(57,72,132,0.1); }
+    .deck-card:hover { border-color: #d7dcf0; transform: translateY(-1px); }
     .deck-badges { display: flex; gap: 6px; flex-wrap: wrap; }
     .deck-badge {
       display: inline-block; background: #eef0ff; color: var(--accent);
@@ -231,20 +232,13 @@
     }
     .deck-menu button:hover { background: var(--card); }
     .deck-menu .danger { color: var(--accent2); }
-    .deck-footer {
-      display: flex; gap: 8px; margin-top: 6px;
-      padding-top: 12px; border-top: 1px solid var(--border);
-    }
+    .deck-footer { display: flex; gap: 8px; margin-top: auto; padding-top: 6px; }
     .deck-footer .btn-start {
-      flex: 1; background: linear-gradient(180deg, #6f67ff, #6258ff); color: #fff; border: none; border-radius: 10px;
-      padding: 8px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+      background: #fff; color: #505878; border: 1px solid #e0e5f2; border-radius: 8px;
+      padding: 6px 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
     }
-    .deck-footer .btn-start:hover { opacity: 0.88; }
-    .deck-footer .btn-edit {
-      background: var(--card); border: 1px solid var(--border); color: var(--muted);
-      border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
-    }
-    .deck-footer .btn-edit:hover { color: var(--text); border-color: var(--muted); }
+    .deck-footer .btn-start:hover { border-color:#ced4e8; background:#fcfdff; }
+    .deck-footer .btn-edit { display:none; }
     .deck-card .btn-del-deck {
       position: absolute; top: 12px; right: 12px;
       background: transparent; border: none; color: var(--border); font-size: 0.85rem;
@@ -2236,11 +2230,14 @@ function renderFoldersBar(visibleDecksAll) {
       <div class="cfc-title">${esc(f)}</div>
       <div class="cfc-sub">${esc(topSubjects(f))}</div>
     </div>`);
-  const pills = [
-    `<button class="folder-pill ${selectedFolder==='all'?'active':''}" onclick="selectedFolder='all';renderDecks()">Все задания</button>`,
-    `<button class="folder-pill ${showArchiveOnly?'active':''}" onclick="showArchiveOnly=!showArchiveOnly;renderDecks()">${showArchiveOnly?'Архив: вкл':'Архив'}</button>`,
-  ];
-  wrap.innerHTML = cards.join('') + pills.join('');
+  const archiveCount = visibleDecksAll.filter(d => d.archived).length;
+  const archiveCard = `<div class="class-folder-card cfc-archive ${showArchiveOnly?'active':''}" onclick="showArchiveOnly=!showArchiveOnly;renderDecks()">
+      <div class="cfc-top"><div class="cfc-icon">🗂️</div><div class="cfc-count">${archiveCount}</div></div>
+      <div class="cfc-title">Архив</div>
+      <div class="cfc-sub">Скрытые задания</div>
+    </div>`;
+  const pills = [`<button class="folder-pill ${selectedFolder==='all'?'active':''}" onclick="selectedFolder='all';renderDecks()">Все задания</button>`];
+  wrap.innerHTML = cards.join('') + archiveCard + pills.join('');
 }
 
 function _guessSubjectFolder(name = '') {
@@ -2275,7 +2272,7 @@ function toggleArchiveDeck(id) {
 
 async function _autoOrganizeFolders() {
   if (!decks.length) return;
-  const marker = `qf_folders_autofill_${currentUser?.uid || 'local'}_v2`;
+  const marker = `qf_folders_autofill_${currentUser?.uid || 'local'}_v3`;
   const hasSubjectFolders = (libraryFolders || []).length > 0;
   if (localStorage.getItem(marker) === '1' && hasSubjectFolders) return;
 
@@ -2322,7 +2319,7 @@ function _openShareInline(id) {
   }
 }
 
-function renderLibrarySidePanel() {
+function renderLibrarySidePanel(visibleDecks = null) {
   const panel = document.getElementById('library-side-panel');
   if (!panel) return;
   if (libraryPanelMode === 'create') {
@@ -2349,7 +2346,8 @@ function renderLibrarySidePanel() {
     panel.innerHTML = '<div class="side-sub">Создайте первое задание, чтобы увидеть предпросмотр и быстро выдать ученикам.</div>';
     return;
   }
-  const d = decks.find(x => x.id === selectedDeckId) || decks[0];
+  const source = visibleDecks && visibleDecks.length ? visibleDecks : decks;
+  const d = source.find(x => x.id === selectedDeckId) || source[0];
   if (!d) return;
   selectedDeckId = d.id;
   panel.innerHTML = `
@@ -2456,7 +2454,7 @@ function renderDecks() {
     renderLibrarySidePanel();
     return;
   }
-  if (!selectedDeckId && visibleDecks.length) selectedDeckId = visibleDecks[0].id;
+  if (!visibleDecks.some(d => d.id === selectedDeckId)) selectedDeckId = visibleDecks[0]?.id || null;
   if (!currentSetId && selectedDeckId) currentSetId = selectedDeckId;
   grid.innerHTML = visibleDecks.map(d => {
     const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
@@ -2500,7 +2498,7 @@ function renderDecks() {
       <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Код: <strong>${esc(d.shortCode || '—')}</strong></div>
     </div>`;
   }).join('');
-  renderLibrarySidePanel();
+  renderLibrarySidePanel(visibleDecks);
 }
 
 function toggleDeckMenu(id) {
