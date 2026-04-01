@@ -567,6 +567,41 @@
     .stat-row-bar { height: 6px; border-radius: 99px; transition: width 0.6s; }
     .stat-row-score { font-size: 0.9rem; font-weight: 700; white-space: nowrap; min-width: 48px; text-align: right; }
 
+    /* ── GLOBAL STATS LAYOUT ── */
+    .stats-layout { display:flex; gap:20px; align-items:flex-start; }
+    .stats-sidebar {
+      width:196px; flex-shrink:0;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:14px; padding:18px 16px;
+      position:sticky; top:20px;
+    }
+    .stats-main { flex:1; min-width:0; }
+    .sf-group { margin-bottom:18px; }
+    .sf-label {
+      font-size:0.71rem; font-weight:700; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px;
+    }
+    .sf-select {
+      width:100%; font-size:0.84rem; padding:7px 10px;
+      border:1px solid var(--border); border-radius:8px;
+      background:var(--bg); color:var(--text); cursor:pointer;
+    }
+    .sf-pill {
+      display:block; width:100%; text-align:left;
+      padding:6px 10px; border-radius:7px;
+      border:1px solid var(--border); background:var(--bg);
+      cursor:pointer; font-size:0.83rem; color:var(--text);
+      margin-bottom:4px; transition:all .15s;
+    }
+    .sf-pill.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .sf-pill:hover:not(.active) { background:rgba(108,99,255,.08); }
+    .sf-reset {
+      width:100%; padding:7px 10px; border-radius:8px; font-size:0.82rem;
+      border:1px solid var(--border); background:transparent; cursor:pointer;
+      color:var(--muted); margin-top:4px; transition:background .15s;
+    }
+    .sf-reset:hover { background:var(--hover); color:var(--text); }
+
     /* ── QUESTION BREAKDOWN ── */
     .breakdown-section { margin-top: 28px; }
     .breakdown-section h4 { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 12px; }
@@ -715,6 +750,8 @@
       main { padding: 12px 10px; }
       .btn-new-set { padding: 6px 10px; font-size: 0.78rem; }
       .stats-summary { grid-template-columns: 1fr 1fr; }
+      .stats-layout { flex-direction:column; }
+      .stats-sidebar { width:100%; position:static; }
     }
   </style>
 </head>
@@ -831,7 +868,6 @@
         <div class="page-sub" style="margin-bottom:0">Все наборы карточек-викторин</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="btn-secondary" id="btn-fill-examples" onclick="seedDemoData()" style="padding:8px 14px;font-size:0.85rem">Заполнить примерами</button>
         <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
         <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
           <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="showStatsPage()">📊 Статистика</button>
@@ -1051,7 +1087,7 @@
 <!-- ═══ GLOBAL STATS VIEW ═══ -->
 <div class="view" id="view-stats">
   <button class="back-btn" onclick="goHome()">← Библиотека</button>
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
     <div>
       <div class="page-title" style="margin-bottom:4px">Результаты учеников</div>
       <div class="page-sub" style="margin-bottom:0">Все прохождения по всем наборам</div>
@@ -1061,12 +1097,42 @@
       <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="renderGlobalStats()">🔄 Обновить</button>
     </div>
   </div>
-  <div class="stats-summary" id="global-summary"></div>
-  <div class="stats-history-title" style="margin-top:28px;margin-bottom:12px">
-    <span>Все результаты</span>
-    <button class="btn-clear-stats" onclick="clearAllHistory()">Очистить</button>
+
+  <div class="stats-layout">
+    <!-- LEFT SIDEBAR: filters -->
+    <aside class="stats-sidebar" id="global-sidebar">
+      <div class="sf-group">
+        <div class="sf-label">Класс / группа</div>
+        <select class="sf-select" id="global-group-filter" onchange="_filterGlobal()">
+          <option value="">Все классы</option>
+        </select>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">Набор</div>
+        <select class="sf-select" id="global-deck-filter" onchange="_filterGlobal()">
+          <option value="">Все наборы</option>
+        </select>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">Результат</div>
+        <button class="sf-pill active" onclick="_setScoreFilter(this,'')" >Все</button>
+        <button class="sf-pill" onclick="_setScoreFilter(this,'high')">≥ 80%</button>
+        <button class="sf-pill" onclick="_setScoreFilter(this,'mid')">50 – 79%</button>
+        <button class="sf-pill" onclick="_setScoreFilter(this,'low')">&lt; 50%</button>
+      </div>
+      <button class="sf-reset" onclick="_resetGlobalFilters()">Сбросить фильтры</button>
+    </aside>
+
+    <!-- RIGHT: summary + results -->
+    <div class="stats-main">
+      <div class="stats-summary" id="global-summary"></div>
+      <div class="stats-history-title" style="margin-top:24px;margin-bottom:12px">
+        <span id="global-results-count">Все результаты</span>
+        <button class="btn-clear-stats" onclick="clearAllHistory()">Очистить</button>
+      </div>
+      <div id="global-history"></div>
+    </div>
   </div>
-  <div id="global-history"></div>
 </div>
 
 <!-- ═══ STUDENT MODE VIEW ═══ -->
@@ -1537,6 +1603,22 @@ async function _loadTeacherDecks() {
       const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
       return tb - ta;
     });
+    // Auto-seed demo decks for demo account when library has no demo sets
+    if (currentUser?.email === DEMO_TEACHER.email) {
+      const hasDemoDecks = decks.some(d => d.name && d.name.startsWith('Биология 7'));
+      if (!hasDemoDecks) {
+        try {
+          await _seedDataForTeacher(currentUser.uid);
+          const snap2 = await _db.collection('decks').where('teacherId', '==', currentUser.uid).get();
+          decks = snap2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          decks.sort((a, b) => {
+            const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
+            const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
+            return tb - ta;
+          });
+        } catch(se) { console.error('[auto-seed]', se.code, se.message); }
+      }
+    }
   } catch(e) {
     console.error('[decks] load error:', e.code, e.message);
     decks = [];
@@ -3269,8 +3351,9 @@ function showStatsPage() {
 }
 
 async function renderGlobalStats() {
-  const sumEl  = document.getElementById('global-summary');
-  const histEl = document.getElementById('global-history');
+  const sumEl   = document.getElementById('global-summary');
+  const histEl  = document.getElementById('global-history');
+  const countEl = document.getElementById('global-results-count');
   sumEl.innerHTML = '<div style="color:var(--muted);font-size:0.88rem">Загрузка…</div>';
   histEl.innerHTML = '';
   if (!_db || !currentUser) {
@@ -3281,7 +3364,7 @@ async function renderGlobalStats() {
   try {
     const snap = await _db.collection('results')
       .where('teacherId', '==', currentUser.uid).get();
-    const results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    let results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => {
         const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
         const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
@@ -3292,8 +3375,26 @@ async function renderGlobalStats() {
       histEl.innerHTML = `<div class="stats-empty">
         Ученики ещё не проходили ваши тесты.<br>
         Нажмите <strong>🔗 Поделиться</strong> на любом наборе и отправьте ссылку.
-      </div>`; return;
+      </div>`;
+      return;
     }
+
+    // Populate sidebar filters
+    const groups = [...new Set(results.map(r => r.group).filter(Boolean))].sort();
+    const deckNames = [...new Set(results.map(r => r.deckName).filter(Boolean))].sort();
+    const gSel = document.getElementById('global-group-filter');
+    const dSel = document.getElementById('global-deck-filter');
+    if (gSel) {
+      const prev = gSel.value;
+      gSel.innerHTML = '<option value="">Все классы</option>' +
+        groups.map(g => `<option value="${esc(g)}"${prev===g?' selected':''}>${esc(g)}</option>`).join('');
+    }
+    if (dSel) {
+      const prev = dSel.value;
+      dSel.innerHTML = '<option value="">Все наборы</option>' +
+        deckNames.map(n => `<option value="${esc(n)}"${prev===n?' selected':''}>${esc(n)}</option>`).join('');
+    }
+
     const total  = results.length;
     const best   = Math.max(...results.map(r => r.pct));
     const avg    = Math.round(results.reduce((s, r) => s + r.pct, 0) / total);
@@ -3310,7 +3411,7 @@ async function renderGlobalStats() {
       const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
       const ml = r.mode === 'flashcard' ? '🃏' : '🧠';
-      return `<div class="stat-row">
+      return `<div class="stat-row" data-group="${esc(r.group||'')}" data-deck="${esc(r.deckName||'')}" data-pct="${r.pct}">
         <div class="results-row-name">${esc(r.studentName || '—')}</div>
         <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ml} ${esc(r.deckName || '—')}</div>
         <div class="results-row-date">${d}, ${t}</div>
@@ -3318,11 +3419,58 @@ async function renderGlobalStats() {
         <div class="results-row-score" style="color:${c}">${r.correct}/${r.total} · ${r.pct}%</div>
       </div>`;
     }).join('');
+    if (countEl) countEl.textContent = `${total} результатов`;
+    _filterGlobal();
   } catch(e) {
     console.error('renderGlobalStats:', e);
     sumEl.innerHTML = '';
     histEl.innerHTML = `<div class="stats-empty">❌ Ошибка: ${e.code || e.message}</div>`;
   }
+}
+
+let _gScoreFilter = '';
+
+function _filterGlobal() {
+  const group = document.getElementById('global-group-filter')?.value || '';
+  const deck  = document.getElementById('global-deck-filter')?.value || '';
+  const rows  = document.querySelectorAll('#global-history .stat-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const pct = parseInt(row.dataset.pct || '0');
+    const matchGroup = !group || row.dataset.group === group;
+    const matchDeck  = !deck  || row.dataset.deck  === deck;
+    const matchScore = !_gScoreFilter
+      || (_gScoreFilter === 'high' && pct >= 80)
+      || (_gScoreFilter === 'mid'  && pct >= 50 && pct < 80)
+      || (_gScoreFilter === 'low'  && pct < 50);
+    const show = matchGroup && matchDeck && matchScore;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  const countEl = document.getElementById('global-results-count');
+  if (countEl) {
+    const total = rows.length;
+    countEl.textContent = visible === total ? `${total} результатов` : `${visible} из ${total}`;
+  }
+}
+
+function _setScoreFilter(btn, val) {
+  _gScoreFilter = val;
+  document.querySelectorAll('#global-sidebar .sf-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _filterGlobal();
+}
+
+function _resetGlobalFilters() {
+  _gScoreFilter = '';
+  const gSel = document.getElementById('global-group-filter');
+  const dSel = document.getElementById('global-deck-filter');
+  if (gSel) gSel.value = '';
+  if (dSel) dSel.value = '';
+  document.querySelectorAll('#global-sidebar .sf-pill').forEach((b, i) => {
+    b.classList.toggle('active', i === 0);
+  });
+  _filterGlobal();
 }
 
 async function clearAllHistory() {
@@ -3601,6 +3749,35 @@ async function _seedDataForTeacher(tid) {
           { id: uid(), type:'flashcard', question:'teacher', answer:'учитель', options:[], image:null },
           { id: uid(), type:'flashcard', question:'window', answer:'окно', options:[], image:null },
         ]
+      },
+      {
+        _key: 'demo-phys',
+        name: 'Физика 9 — Формулы движения',
+        desc: 'Карточки: физические формулы и их обозначения',
+        mode: 'flashcard', timeLimit: null,
+        cards: [
+          { id: uid(), type:'flashcard', question:'Формула скорости (v)', answer:'v = s / t', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Второй закон Ньютона (F)', answer:'F = m · a', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Кинетическая энергия (Ek)', answer:'Ek = m·v² / 2', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Потенциальная энергия (Ep)', answer:'Ep = m·g·h', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Закон Ома (I)', answer:'I = U / R', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Мощность (P)', answer:'P = A / t', options:[], image:null },
+        ]
+      },
+      {
+        _key: 'demo-chem',
+        name: 'Химия 8 — Элементы и символы',
+        desc: 'Карточки: символы химических элементов',
+        mode: 'flashcard', timeLimit: null,
+        cards: [
+          { id: uid(), type:'flashcard', question:'Кислород', answer:'O', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Водород', answer:'H', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Углерод', answer:'C', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Натрий', answer:'Na', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Железо', answer:'Fe', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Медь', answer:'Cu', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'Золото', answer:'Au', options:[], image:null },
+        ]
       }
     ];
 
@@ -3649,6 +3826,8 @@ async function _seedDataForTeacher(tid) {
     const bioId   = deckIds['demo-bio'];
     const histId  = deckIds['demo-hist'];
     const cardsId = deckIds['demo-cards'];
+    const physId  = deckIds['demo-phys'];
+    const chemId  = deckIds['demo-chem'];
 
     function tsAgo(n) {
       const d = new Date(); d.setDate(d.getDate() - n);
@@ -3690,6 +3869,19 @@ async function _seedDataForTeacher(tid) {
       { sid:'s-petrova-m', sname:'Петрова Мария',    grp:'7А', deckId:cardsId, deckName:DECKS[2].name, mode:'flashcard', correct:4,total:5,pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:true}],  ago:4 },
       { sid:'s-sidorov-d', sname:'Сидоров Дмитрий', grp:'7А', deckId:cardsId, deckName:DECKS[2].name, mode:'flashcard', correct:5,total:5,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}],   ago:4 },
       { sid:'s-popova-el', sname:'Попова Елена',    grp:'7Б', deckId:cardsId, deckName:DECKS[2].name, mode:'flashcard', correct:3,total:5,pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}],  ago:6 },
+      // Физика 9 — 5 students
+      { sid:'s-novikov-s', sname:'Новиков Сергей',  grp:'8А', deckId:physId,  deckName:DECKS[3].name, mode:'flashcard', correct:6,total:6,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true},{idx:5,correct:true}],   ago:3 },
+      { sid:'s-kozlova-d', sname:'Козлова Дарья',   grp:'8А', deckId:physId,  deckName:DECKS[3].name, mode:'flashcard', correct:5,total:6,pct:83,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true},{idx:5,correct:true}],  ago:3 },
+      { sid:'s-ivanov-al', sname:'Иванов Алексей',  grp:'7А', deckId:physId,  deckName:DECKS[3].name, mode:'flashcard', correct:4,total:6,pct:67,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true},{idx:5,correct:true}],  ago:4 },
+      { sid:'s-kuznets-a', sname:'Кузнецова Анна',  grp:'7Б', deckId:physId,  deckName:DECKS[3].name, mode:'flashcard', correct:3,total:6,pct:50,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:false},{idx:5,correct:true}], ago:5 },
+      { sid:'s-smirnov-p', sname:'Смирнов Павел',   grp:'7Б', deckId:physId,  deckName:DECKS[3].name, mode:'flashcard', correct:2,total:6,pct:33,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true},{idx:5,correct:false}], ago:5 },
+      // Химия 8 — 6 students
+      { sid:'s-petrova-m', sname:'Петрова Мария',    grp:'7А', deckId:chemId,  deckName:DECKS[4].name, mode:'flashcard', correct:7,total:7,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true},{idx:5,correct:true},{idx:6,correct:true}],   ago:2 },
+      { sid:'s-sidorov-d', sname:'Сидоров Дмитрий', grp:'7А', deckId:chemId,  deckName:DECKS[4].name, mode:'flashcard', correct:6,total:7,pct:86,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true},{idx:5,correct:true},{idx:6,correct:true}],  ago:2 },
+      { sid:'s-kuznets-a', sname:'Кузнецова Анна',  grp:'7Б', deckId:chemId,  deckName:DECKS[4].name, mode:'flashcard', correct:5,total:7,pct:71,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:false},{idx:5,correct:true},{idx:6,correct:true}],  ago:3 },
+      { sid:'s-popova-el', sname:'Попова Елена',    grp:'7Б', deckId:chemId,  deckName:DECKS[4].name, mode:'flashcard', correct:4,total:7,pct:57,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true},{idx:5,correct:false},{idx:6,correct:true}],  ago:3 },
+      { sid:'s-novikov-s', sname:'Новиков Сергей',  grp:'8А', deckId:chemId,  deckName:DECKS[4].name, mode:'flashcard', correct:7,total:7,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true},{idx:5,correct:true},{idx:6,correct:true}],   ago:1 },
+      { sid:'s-kozlova-d', sname:'Козлова Дарья',   grp:'8А', deckId:chemId,  deckName:DECKS[4].name, mode:'flashcard', correct:6,total:7,pct:86,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true},{idx:5,correct:true},{idx:6,correct:true}],  ago:1 },
     ];
 
     let written = 0;
