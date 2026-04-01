@@ -2238,8 +2238,8 @@ function renderDecks() {
     qa.innerHTML = `
       <button class="btn-primary" onclick="libraryPanelMode='create';renderLibrarySidePanel()">+ Создать задание</button>
       <button class="btn-secondary" onclick="showImportModal()" ${!currentSetId ? 'disabled' : ''}>⬆ Импортировать</button>
-      <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : 'toast(\\'Сначала выберите задание\\')'}">🔗 Выдать</button>
-      <button class="btn-secondary" onclick="${selectedDeckId ? `openSet('${selectedDeckId}','results')` : 'toast(\\'Сначала выберите задание\\')'}">📊 Результаты</button>
+      <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : `toast('Сначала выберите задание')`}">🔗 Выдать</button>
+      <button class="btn-secondary" onclick="${selectedDeckId ? `openSet('${selectedDeckId}','results')` : `toast('Сначала выберите задание')`}">📊 Результаты</button>
     `;
   }
   const grid = document.getElementById('decks-grid');
