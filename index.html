@@ -4012,6 +4012,13 @@ function _fallbackGivenForAnswer(card, answerObj) {
   function typoLike(s) {
     if (!s) return 'неточный ответ';
     const lower = s.toLowerCase();
+    const ql = q;
+    if (ql.includes('формула скорости')) return 'v = t / s';
+    if (ql.includes('второй закон ньютона')) return 'F = m / a';
+    if (ql.includes('кинетическая энергия')) return 'Ek = m·v²';
+    if (ql.includes('потенциальная энергия')) return 'Ep = m·g';
+    if (ql.includes('закон ома')) return 'I = R / U';
+    if (ql.includes('мощность')) return 'P = t / A';
     if (lower.includes('временнообяз')) return 'временнообязаные';
     if (lower.includes('митоз')) return 'мейоз';
     if (lower.includes('клетка')) return 'молекула';
@@ -4044,6 +4051,19 @@ function _fallbackGivenForAnswer(card, answerObj) {
   return 'неточный ответ';
 }
 
+function _shouldRewriteGiven(existingGiven, card, answerObj) {
+  if (answerObj?.correct) return false;
+  const g = String(existingGiven || '').trim();
+  if (!g) return true;
+  const generic = new Set(['Неверный ответ', 'не помню', 'затрудняюсь ответить', 'неточный ответ']);
+  if (generic.has(g)) return true;
+  // Truncated/math-broken strings: "F = m .", "Ek = m·v² /", "Ep = m·g·"
+  if (/[=/*·+\-]\s*$/.test(g)) return true;
+  if (/\.\s*$/.test(g)) return true;
+  if (/=\s*[^=]{0,3}\s*$/.test(g)) return true;
+  return false;
+}
+
 function _expectedAnswerForCard(card) {
   if (!card) return '';
   if (card.type === 'open' || card.type === 'flashcard') return (card.answer || '').trim();
@@ -4064,11 +4084,10 @@ async function _backfillMissingGivenAnswers(teacherId) {
       const cards = await _loadDeckCards(data.deckId);
       let changed = false;
       const patched = answers.map((a, i) => {
-      const existingGiven = String(a?.given ?? '').trim();
-      const generic = new Set(['Неверный ответ', 'не помню', 'затрудняюсь ответить', 'неточный ответ']);
-      if (existingGiven && !generic.has(existingGiven)) return a;
+        const existingGiven = String(a?.given ?? '').trim();
         const idx = a?.idx ?? i;
         const card = cards?.[idx];
+        if (!_shouldRewriteGiven(existingGiven, card, a)) return a;
         const given = _fallbackGivenForAnswer(card, a);
         changed = true;
         return { ...a, given };
