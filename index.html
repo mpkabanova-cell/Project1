@@ -1020,7 +1020,6 @@
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="header-user-info" style="display:none;align-items:center;gap:8px">
-      <span id="header-user-name" style="font-size:0.85rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
       <span id="header-user-role-badge"></span>
     </div>
     <button class="btn-new-set" id="btn-create-new" onclick="showNewSetModal()" style="display:none">+ Создать</button>
@@ -1850,7 +1849,6 @@ function _applyUserUI() {
   document.getElementById('main-header').style.display = isTeacher ? '' : 'none';
   if (isTeacher) {
     document.getElementById('header-user-info').style.display = 'flex';
-    document.getElementById('header-user-name').textContent = currentUserData?.name || '';
     const roleLabel = '👩‍🏫 Учитель';
     document.getElementById('header-user-role-badge').innerHTML =
       `<span class="deck-badge" style="background:rgba(99,91,255,0.1);color:var(--accent)">${roleLabel}</span>`;
