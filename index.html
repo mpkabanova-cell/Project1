@@ -1287,7 +1287,7 @@
       <div class="sf-group">
         <div class="sf-label">Набор</div>
         <select class="sf-select" id="global-deck-filter" onchange="_filterGlobal()">
-          <option value="">Все наборы</option>
+          <option value="">Все работы</option>
         </select>
       </div>
       <div class="sf-group">
@@ -2547,7 +2547,7 @@ function _renderClassChart(groupsForChart, chartId) {
     <h4>Результаты по классам</h4>
     <div class="class-chart-legend">
       <span><span class="dot"></span>Высота столбца = средний балл класса</span>
-      <span>Наведите на столбец, чтобы увидеть число работ</span>
+      <span>Наведите на столбец, чтобы увидеть число ответов</span>
     </div>
     <div class="class-chart-shell">
       <div class="class-chart-plot">
@@ -2560,7 +2560,7 @@ function _renderClassChart(groupsForChart, chartId) {
             ${groupsForChart.map(g => `<div class="class-col">
               <div class="class-col-bar-wrap" style="--p:${Math.max(4, g.avg)}%">
                 <div class="class-col-pct">${g.avg}%</div>
-                <div class="class-col-bar" title="${esc(g.name)}: ${g.avg}% · ${g.count} ${ruPlural(g.count, 'работа', 'работы', 'работ')}"></div>
+                <div class="class-col-bar" title="${esc(g.name)}: ${g.avg}% · ${g.count} ${ruPlural(g.count, 'ответ', 'ответа', 'ответов')}"></div>
               </div>
             </div>`).join('')}
           </div>
@@ -3702,7 +3702,7 @@ async function renderGlobalStats() {
     }
     if (dSel) {
       const prev = dSel.value;
-      dSel.innerHTML = '<option value="">Все наборы</option>' +
+      dSel.innerHTML = '<option value="">Все работы</option>' +
         deckNames.map(n => `<option value="${esc(n)}"${prev===n?' selected':''}>${esc(n)}</option>`).join('');
     }
 
@@ -3711,7 +3711,7 @@ async function renderGlobalStats() {
     const avg    = Math.round(results.reduce((s, r) => s + r.pct, 0) / total);
     const unique = new Set(results.map(r => r.studentId || r.studentName)).size;
     sumEl.innerHTML = `
-      <div class="stat-card"><div class="val">${total}</div><div class="lbl">Всего работ</div></div>
+      <div class="stat-card"><div class="val">${total}</div><div class="lbl">Все работы</div></div>
       <div class="stat-card" style="border-color:rgba(108,99,255,0.2)"><div class="val" style="color:var(--accent)">${unique}</div><div class="lbl">Учеников</div></div>
       <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
       <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
