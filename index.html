@@ -3305,14 +3305,16 @@ async function _loadAndRenderResults(container) {
         <div class="stat-card best"><div class="val">${best}%</div><div class="lbl">Лучший результат</div></div>
         <div class="stat-card avg"><div class="val">${avg}%</div><div class="lbl">Средний балл</div></div>
       </div>
-      <div class="stats-history-title">
+      <div class="stats-history-title" style="margin-bottom:8px">
         <span>Список учеников</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          ${groupFilter}
           <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="downloadResultsXLSX()">⬇ Excel</button>
           <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="renderTeacherResults()">🔄 Обновить</button>
           <button class="btn-clear-stats" onclick="clearTeacherResults()">Очистить</button>
         </div>
+      </div>
+      <div style="display:flex;justify-content:flex-start;align-items:center;margin-bottom:10px">
+        ${groupFilter}
       </div>
       <div id="results-rows-wrap">
       ${results.map((r, i) => {
