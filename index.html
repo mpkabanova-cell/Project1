@@ -830,10 +830,13 @@
         <div class="page-title">Библиотека</div>
         <div class="page-sub" style="margin-bottom:0">Все наборы карточек-викторин</div>
       </div>
-      <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
-      <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
-        <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="showStatsPage()">📊 Статистика</button>
-        <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="showNewSetModal()">+ Создать</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn-secondary" id="btn-fill-examples" onclick="seedDemoData()" style="padding:8px 14px;font-size:0.85rem">Заполнить примерами</button>
+        <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
+        <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
+          <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="showStatsPage()">📊 Статистика</button>
+          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="showNewSetModal()">+ Создать</button>
+        </div>
       </div>
     </div>
     <div class="decks-grid" id="decks-grid"></div>
@@ -3457,7 +3460,7 @@ async function confirmRoleSetup() {
 }
 
 // ─── DEMO ACCOUNTS ───────────────────────────────────────────────────────────
-const DEMO_TEACHER = { email: 'teacher@demo.test', password: 'demo123456', name: 'Иванова Анна (учитель)', role: 'teacher' };
+const DEMO_TEACHER = { email: 'teacher@demo.test', password: 'demo123456', name: 'Козлова Светлана (демо)', role: 'teacher' };
 const DEMO_STUDENT = { email: 'student@demo.test', password: 'demo123456', name: 'Петров Иван (ученик)', role: 'student' };
 
 function fillDemo(role) {
@@ -3535,22 +3538,29 @@ async function createDemoAccounts() {
 // ─── SEED DEMO DATA ──────────────────────────────────────────────────────────
 async function seedDemoData() {
   if (!_db || !currentUser) { toast('Войдите как учитель'); return; }
+  const btn = document.getElementById('btn-fill-examples');
+  if (btn) { btn.textContent = 'Загружаю…'; btn.disabled = true; }
   try {
-    const { results } = await _seedDataForTeacher(currentUser.uid);
+    const { results, decks: deckCount } = await _seedDataForTeacher(currentUser.uid);
     await _loadTeacherDecks();
-    if (results > 0) toast(`✓ Добавлено ${results} результатов. Смотрите «Статистика» или внутри набора.`, 5000);
-    else toast('Данные уже загружены.', 3000);
+    if (results > 0) {
+      toast(`✓ Добавлено ${deckCount} набора и ${results} результатов учеников`, 5000);
+      if (btn) { btn.textContent = '✓ Готово'; }
+    } else {
+      toast('Примеры уже есть в вашей библиотеке', 3000);
+      if (btn) { btn.textContent = 'Заполнить примерами'; btn.disabled = false; }
+    }
   } catch(e) {
     console.error('seedDemoData:', e);
     toast('Ошибка: ' + (e.message || e.code), 4000);
+    if (btn) { btn.textContent = 'Заполнить примерами'; btn.disabled = false; }
   }
 }
 
 async function _seedDataForTeacher(tid) {
-  if (!_db || !tid) return;
+  if (!_db || !tid) throw new Error('DB или UID не доступны');
 
-  try {
-    const serverTS = () => firebase.firestore.FieldValue.serverTimestamp();
+  const serverTS = () => firebase.firestore.FieldValue.serverTimestamp();
 
     // ── 1. Ensure demo decks exist ──────────────────────────────────────────
     const DECKS = [
@@ -3594,13 +3604,19 @@ async function _seedDataForTeacher(tid) {
       }
     ];
 
-    // Find or create decks (query Firestore directly, don't rely on local decks array)
+    // ── 1. Find or create decks ────────────────────────────────────────────
     const existingSnap = await _db.collection('decks').where('teacherId','==',tid).get();
     const existingDecks = existingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log('[seed] existing decks:', existingDecks.map(d=>d.name));
+
     const deckIds = {};
     for (const d of DECKS) {
       const found = existingDecks.find(x => x.name === d.name);
-      if (found) { deckIds[d._key] = found.id; continue; }
+      if (found) {
+        deckIds[d._key] = found.id;
+        console.log('[seed] deck found:', d.name, found.id);
+        continue;
+      }
       const { _key, ...data } = d;
       const ref = await _db.collection('decks').add({
         ...data,
@@ -3610,6 +3626,12 @@ async function _seedDataForTeacher(tid) {
         createdAt: serverTS()
       });
       deckIds[_key] = ref.id;
+      console.log('[seed] deck created:', d.name, ref.id);
+    }
+
+    // Guard: all deck IDs must be valid strings
+    for (const k of Object.keys(deckIds)) {
+      if (!deckIds[k]) throw new Error('Не удалось создать набор: ' + k);
     }
 
     // ── 2. Seed student results ─────────────────────────────────────────────
@@ -3624,81 +3646,71 @@ async function _seedDataForTeacher(tid) {
       { name: 'Козлова Дарья',   group: '8А', sid: 's-kozlova-d' },
     ];
 
-    // Bio deck results — varied scores, with full answers[]
     const bioId   = deckIds['demo-bio'];
     const histId  = deckIds['demo-hist'];
     const cardsId = deckIds['demo-cards'];
-    const bioDeck = DECKS[0];
-    const histDeck = DECKS[1];
 
-    function daysAgo(n) {
+    function tsAgo(n) {
       const d = new Date(); d.setDate(d.getDate() - n);
       return firebase.firestore.Timestamp.fromDate(d);
     }
 
-    const bioResults = [
-      // 7А — mostly good
-      { s: STUDENTS[0], correct:5, total:5, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:1 },
-      { s: STUDENTS[1], correct:4, total:5, pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:1 },
-      { s: STUDENTS[2], correct:3, total:5, pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:2 },
-      // 7Б — more mixed
-      { s: STUDENTS[3], correct:4, total:5, pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:2 },
-      { s: STUDENTS[4], correct:2, total:5, pct:40,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:3 },
-      { s: STUDENTS[5], correct:1, total:5, pct:20,  answers:[{idx:0,correct:false},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:false}], daysAgo:3 },
-      // 8А
-      { s: STUDENTS[6], correct:5, total:5, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:0 },
-      { s: STUDENTS[7], correct:3, total:5, pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:0 },
-    ];
+    // Existing results — skip by studentId|deckId key; also purge orphans (deckId missing)
+    const existingRes = await _db.collection('results').where('teacherId','==',tid).get();
+    const orphanDeletes = [];
+    const alreadySeeded = new Set();
+    existingRes.docs.forEach(doc => {
+      const d = doc.data();
+      if (!d.deckId) { orphanDeletes.push(doc.ref.delete()); return; }
+      alreadySeeded.add(d.studentId + '|' + d.deckId);
+    });
+    if (orphanDeletes.length) {
+      await Promise.all(orphanDeletes);
+      console.log('[seed] purged orphan results:', orphanDeletes.length);
+    }
 
-    const histResults = [
-      { s: STUDENTS[0], correct:3, total:4, pct:75,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true}], daysAgo:7 },
-      { s: STUDENTS[1], correct:4, total:4, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true}], daysAgo:7 },
-      { s: STUDENTS[3], correct:2, total:4, pct:50,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:true}], daysAgo:8 },
-      { s: STUDENTS[4], correct:1, total:4, pct:25,  answers:[{idx:0,correct:false},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false}], daysAgo:8 },
-      { s: STUDENTS[6], correct:4, total:4, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true}], daysAgo:5 },
-      { s: STUDENTS[7], correct:3, total:4, pct:75,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false}], daysAgo:5 },
+    const ALL_RESULTS = [
+      // Биология 7 — 8 students
+      { sid:'s-ivanov-al', sname:'Иванов Алексей',   grp:'7А', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:5,total:5,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}],   ago:1 },
+      { sid:'s-petrova-m', sname:'Петрова Мария',    grp:'7А', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:4,total:5,pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:true}],  ago:1 },
+      { sid:'s-sidorov-d', sname:'Сидоров Дмитрий', grp:'7А', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:3,total:5,pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}], ago:2 },
+      { sid:'s-kuznets-a', sname:'Кузнецова Анна',  grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:4,total:5,pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}],  ago:2 },
+      { sid:'s-smirnov-p', sname:'Смирнов Павел',   grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:2,total:5,pct:40,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}], ago:3 },
+      { sid:'s-popova-el', sname:'Попова Елена',    grp:'7Б', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:1,total:5,pct:20,  answers:[{idx:0,correct:false},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:false}], ago:3 },
+      { sid:'s-novikov-s', sname:'Новиков Сергей',  grp:'8А', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:5,total:5,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}],   ago:0 },
+      { sid:'s-kozlova-d', sname:'Козлова Дарья',   grp:'8А', deckId:bioId,   deckName:DECKS[0].name, mode:'test',      correct:3,total:5,pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}],  ago:0 },
+      // История 8 — 6 students
+      { sid:'s-ivanov-al', sname:'Иванов Алексей',   grp:'7А', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:3,total:4,pct:75,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true}],  ago:7 },
+      { sid:'s-petrova-m', sname:'Петрова Мария',    grp:'7А', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:4,total:4,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true}],   ago:7 },
+      { sid:'s-kuznets-a', sname:'Кузнецова Анна',  grp:'7Б', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:2,total:4,pct:50,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:true}], ago:8 },
+      { sid:'s-smirnov-p', sname:'Смирнов Павел',   grp:'7Б', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:1,total:4,pct:25,  answers:[{idx:0,correct:false},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false}], ago:8 },
+      { sid:'s-novikov-s', sname:'Новиков Сергей',  grp:'8А', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:4,total:4,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true}],   ago:5 },
+      { sid:'s-kozlova-d', sname:'Козлова Дарья',   grp:'8А', deckId:histId,  deckName:DECKS[1].name, mode:'test',      correct:3,total:4,pct:75,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false}],  ago:5 },
+      // Английский — 3 students
+      { sid:'s-petrova-m', sname:'Петрова Мария',    grp:'7А', deckId:cardsId, deckName:DECKS[2].name, mode:'flashcard', correct:4,total:5,pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:true}],  ago:4 },
+      { sid:'s-sidorov-d', sname:'Сидоров Дмитрий', grp:'7А', deckId:cardsId, deckName:DECKS[2].name, mode:'flashcard', correct:5,total:5,pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}],   ago:4 },
+      { sid:'s-popova-el', sname:'Попова Елена',    grp:'7Б', deckId:cardsId, deckName:DECKS[2].name, mode:'flashcard', correct:3,total:5,pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}],  ago:6 },
     ];
-
-    const cardResults = [
-      { s: STUDENTS[1], correct:4, total:5, pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:4 },
-      { s: STUDENTS[2], correct:5, total:5, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:4 },
-      { s: STUDENTS[5], correct:3, total:5, pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:6 },
-    ];
-
-    // Write all results — skip if already seeded (check by teacherId + studentId + deckId heuristic)
-    const existing = await _db.collection('results').where('teacherId','==',tid).get();
-    const alreadySeeded = new Set(existing.docs.map(d => d.data().studentId + '|' + d.data().deckId));
 
     let written = 0;
-    const allBatches = [
-      ...bioResults.map(r => ({ deckId: bioId, deckName: bioDeck.name, mode:'test', ...r })),
-      ...histResults.map(r => ({ deckId: histId, deckName: histDeck.name, mode:'test', ...r })),
-      ...cardResults.map(r => ({ deckId: cardsId, deckName: DECKS[2].name, mode:'flashcard', ...r })),
-    ];
-
-    for (const r of allBatches) {
-      const key = r.s.sid + '|' + r.deckId;
+    for (const r of ALL_RESULTS) {
+      const key = r.sid + '|' + r.deckId;
       if (alreadySeeded.has(key)) continue;
       await _db.collection('results').add({
         deckId: r.deckId, deckName: r.deckName,
         teacherId: tid,
-        studentId: r.s.sid, studentName: r.s.name,
-        group: r.s.group,
+        studentId: r.sid, studentName: r.sname,
+        group: r.grp,
         correct: r.correct, total: r.total, pct: r.pct,
         mode: r.mode,
         answers: r.answers,
-        date: daysAgo(r.daysAgo)
+        date: tsAgo(r.ago)
       });
       written++;
     }
 
-    console.log(`[seed] decks:${Object.keys(deckIds).length} results written:${written}`);
+    console.log(`[seed] done — decks:${Object.keys(deckIds).length} results:${written}`);
     return { decks: Object.keys(deckIds).length, results: written };
-
-  } catch(e) {
-    console.error('[seed] error:', e.code, e.message);
-    throw e;
-  }
 }
 
 initApp();
