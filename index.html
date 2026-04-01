@@ -677,6 +677,13 @@
     .breakdown-bar-wrap { width: 90px; background: var(--card); border-radius: 99px; height: 7px; flex-shrink: 0; }
     .breakdown-bar { height: 7px; border-radius: 99px; transition: width 0.5s; }
     .breakdown-pct { font-size: 0.8rem; font-weight: 700; min-width: 38px; text-align: right; flex-shrink: 0; }
+    .breakdown-mistakes {
+      margin: -2px 0 8px 34px;
+      font-size: 0.74rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .breakdown-mistakes strong { color: var(--text); }
     .stats-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.92rem; }
     .btn-clear-stats {
       background: transparent; border: none; color: var(--muted);
@@ -3319,11 +3326,19 @@ async function _loadAndRenderResults(container) {
     let breakdownHtml = '';
     if (deckCards.length) {
       const tally = deckCards.map(() => ({ correct: 0, total: 0 }));
+      const mistakes = deckCards.map(() => ({}));
       results.forEach(r => {
         (r.answers || []).forEach(a => {
           if (a.idx < tally.length) {
             tally[a.idx].total++;
             if (a.correct) tally[a.idx].correct++;
+            else {
+              const raw = String(a.given || '').trim();
+              const key = raw && !['неточный ответ','Неверный ответ','не помню','затрудняюсь ответить'].includes(raw)
+                ? raw
+                : 'неконкретный ответ';
+              mistakes[a.idx][key] = (mistakes[a.idx][key] || 0) + 1;
+            }
           }
         });
       });
@@ -3331,12 +3346,20 @@ async function _loadAndRenderResults(container) {
         if (!t.total) return '';
         const pct = Math.round(t.correct / t.total * 100);
         const c   = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+        const topMistakes = Object.entries(mistakes[i] || {})
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 2)
+          .map(([txt, n]) => `"${esc(txt)}" (${n})`)
+          .join(', ');
+        const mistakesHtml = topMistakes
+          ? `<div class="breakdown-mistakes"><strong>Частые ошибки:</strong> ${topMistakes}</div>`
+          : '';
         return `<div class="breakdown-row">
           <div class="breakdown-num">#${i+1}</div>
           <div class="breakdown-q" title="${esc(deckCards[i].question)}">${esc(deckCards[i].question)}</div>
           <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${pct}%;background:${c}"></div></div>
           <div class="breakdown-pct" style="color:${c}">${pct}%</div>
-        </div>`;
+        </div>${mistakesHtml}`;
       }).join('');
       if (rows.trim()) {
         breakdownHtml = `<div class="breakdown-section">
