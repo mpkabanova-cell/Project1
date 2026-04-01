@@ -3211,6 +3211,7 @@ function renderTeacherResults() {
 
 async function _loadAndRenderResults(container) {
   try {
+    await _backfillMissingGivenAnswers(currentUser?.uid);
     const snap = await _db.collection('results')
       .where('deckId', '==', currentSetId).get();
     const results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -3403,6 +3404,7 @@ async function renderGlobalStats() {
     return;
   }
   try {
+    await _backfillMissingGivenAnswers(currentUser?.uid);
     const snap = await _db.collection('results')
       .where('teacherId', '==', currentUser.uid).get();
     let results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -3958,6 +3960,7 @@ async function _seedDataForTeacher(tid) {
 // ─── RESULT DETAIL ACCORDION ─────────────────────────────────────────────────
 const _rd = {};          // rid → { deckId, answers, cards? }
 const _deckCache = {};   // deckId → cards[]
+let _givenBackfillDoneFor = null;
 
 async function _loadDeckCards(deckId) {
   if (_deckCache[deckId]) return _deckCache[deckId];
@@ -3967,6 +3970,52 @@ async function _loadDeckCards(deckId) {
     _deckCache[deckId] = snap.exists ? (snap.data().cards || []) : [];
   } catch(e) { _deckCache[deckId] = []; }
   return _deckCache[deckId];
+}
+
+function _fallbackGivenForAnswer(card, answerObj) {
+  const isCorrect = !!answerObj?.correct;
+  if (isCorrect) return '';
+  if (!card) return 'Неверный ответ';
+  if (card.type === 'single') {
+    const wrong = (card.options || []).find(o => !o.correct);
+    return wrong?.text || 'Неверный вариант';
+  }
+  if (card.type === 'multi') {
+    const wrong = (card.options || []).filter(o => !o.correct).map(o => o.text);
+    return wrong.slice(0, 2).join(', ') || 'Неверная комбинация';
+  }
+  if (card.type === 'open' || card.type === 'flashcard') return 'Неверный ответ';
+  return 'Неверный ответ';
+}
+
+async function _backfillMissingGivenAnswers(teacherId) {
+  if (!_db || !teacherId) return;
+  if (_givenBackfillDoneFor === teacherId) return;
+  try {
+    const snap = await _db.collection('results').where('teacherId', '==', teacherId).get();
+    const updates = [];
+    for (const doc of snap.docs) {
+      const data = doc.data() || {};
+      const answers = Array.isArray(data.answers) ? data.answers : [];
+      if (!answers.length) continue;
+      if (answers.every(a => a?.given != null && String(a.given).trim() !== '')) continue;
+      const cards = await _loadDeckCards(data.deckId);
+      let changed = false;
+      const patched = answers.map((a, i) => {
+        if (a?.given != null && String(a.given).trim() !== '') return a;
+        const idx = a?.idx ?? i;
+        const card = cards?.[idx];
+        const given = _fallbackGivenForAnswer(card, a);
+        changed = true;
+        return { ...a, given };
+      });
+      if (changed) updates.push(doc.ref.update({ answers: patched }));
+    }
+    if (updates.length) await Promise.all(updates);
+    _givenBackfillDoneFor = teacherId;
+  } catch (e) {
+    console.error('[backfill given] error:', e?.code || e?.message || e);
+  }
 }
 
 async function _toggleResultDetail(header, rid) {
