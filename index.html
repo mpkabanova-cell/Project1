@@ -3984,8 +3984,16 @@ function _fallbackGivenForAnswer(card, answerObj) {
     const wrong = (card.options || []).filter(o => !o.correct).map(o => o.text);
     return wrong.slice(0, 2).join(', ') || 'Неверная комбинация';
   }
-  if (card.type === 'open' || card.type === 'flashcard') return 'Неверный ответ';
+  if (card.type === 'open') return 'затрудняюсь ответить';
+  if (card.type === 'flashcard') return 'не помню';
   return 'Неверный ответ';
+}
+
+function _expectedAnswerForCard(card) {
+  if (!card) return '';
+  if (card.type === 'open' || card.type === 'flashcard') return (card.answer || '').trim();
+  const opts = card.options || [];
+  return opts.filter(o => o.correct).map(o => o.text).join(', ');
 }
 
 async function _backfillMissingGivenAnswers(teacherId) {
@@ -4002,7 +4010,8 @@ async function _backfillMissingGivenAnswers(teacherId) {
       const cards = await _loadDeckCards(data.deckId);
       let changed = false;
       const patched = answers.map((a, i) => {
-        if (a?.given != null && String(a.given).trim() !== '') return a;
+      const existingGiven = String(a?.given ?? '').trim();
+      if (existingGiven && existingGiven !== 'Неверный ответ') return a;
         const idx = a?.idx ?? i;
         const card = cards?.[idx];
         const given = _fallbackGivenForAnswer(card, a);
@@ -4047,12 +4056,14 @@ async function _toggleResultDetail(header, rid) {
     const qText = card?.question || `Вопрос ${idx + 1}`;
     const color = a.correct ? 'var(--green)' : 'var(--accent2)';
     const given = (a.given != null && String(a.given).trim() !== '') ? String(a.given).trim() : '';
+    const expected = _expectedAnswerForCard(card);
     let extra = '';
     if (!a.correct) {
       const body = given
         ? esc(given)
-        : '<span style="color:var(--muted);font-style:italic">Не сохранён — пройдите тест заново после обновления сайта</span>';
+        : '<span style="color:var(--muted);font-style:italic">не указан</span>';
       extra += `<div class="rd-given"><strong>Ответ ученика</strong>${body}</div>`;
+      if (expected) extra += `<div class="rd-given"><strong>Верный ответ</strong>${esc(expected)}</div>`;
     }
     return `<div class="rd-q">
       <span class="rd-icon" style="color:${color}">${a.correct ? '✓' : '✗'}</span>
