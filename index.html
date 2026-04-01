@@ -1526,20 +1526,30 @@ function _applyUserUI() {
 
 async function _loadTeacherDecks() {
   try {
-    console.log('[decks] loading for uid:', currentUser.uid);
     const snap = await _db.collection('decks')
       .where('teacherId', '==', currentUser.uid).get();
-    console.log('[decks] found:', snap.size);
     decks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     decks.sort((a, b) => {
       const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
       const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
       return tb - ta;
     });
+    // Auto-seed example data on first login (empty library)
+    if (!decks.length) {
+      await seedDemoData();
+      // Reload decks after seeding
+      const snap2 = await _db.collection('decks')
+        .where('teacherId', '==', currentUser.uid).get();
+      decks = snap2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      decks.sort((a, b) => {
+        const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
+        const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
+        return tb - ta;
+      });
+    }
   } catch(e) {
     console.error('[decks] load error:', e.code, e.message);
     decks = [];
-    toast('Не удалось загрузить наборы: ' + (e.code || e.message), 5000);
   }
   showPage('decks');
   renderDecks();
@@ -3288,12 +3298,11 @@ async function renderGlobalStats() {
         return tb - ta;
       });
     if (!results.length) {
-      // Auto-seed example data on first visit
-      sumEl.innerHTML = '<div style="color:var(--muted);font-size:0.88rem">Подготовка данных…</div>';
-      histEl.innerHTML = '';
-      await seedDemoData();
-      await renderGlobalStats();
-      return;
+      sumEl.innerHTML = '';
+      histEl.innerHTML = `<div class="stats-empty">
+        Ученики ещё не проходили ваши тесты.<br>
+        Нажмите <strong>🔗 Поделиться</strong> на любом наборе и отправьте ссылку.
+      </div>`; return;
     }
     const total  = results.length;
     const best   = Math.max(...results.map(r => r.pct));
