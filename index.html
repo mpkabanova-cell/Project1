@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -1053,7 +1054,7 @@
       <div class="page-sub" style="margin-bottom:0">Все прохождения по всем наборам</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="downloadGlobalCSV()">⬇ CSV</button>
+      <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="downloadGlobalXLSX()">⬇ Excel</button>
       <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="renderGlobalStats()">🔄 Обновить</button>
     </div>
   </div>
@@ -2202,46 +2203,65 @@ function renderSetCards() {
 }
 
 // ─── CSV EXPORT ──────────────────────────────────────────────────────────────
-function _downloadCSV(rows, filename) {
-  const BOM = '\uFEFF'; // UTF-8 BOM for Excel
-  const csv = BOM + rows.map(r => r.map(cell => {
-    const s = String(cell ?? '').replace(/"/g, '""');
-    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
-  }).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+function _downloadXLSX(rows, sheetName, filename) {
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Auto column widths based on content
+  const colWidths = rows[0].map((_, ci) => ({
+    wch: Math.min(40, Math.max(10, ...rows.map(r => String(r[ci] ?? '').length)))
+  }));
+  ws['!cols'] = colWidths;
+
+  // Bold header row
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+    if (cell) { cell.s = { font: { bold: true } }; }
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename);
 }
 
-async function downloadResultsCSV() {
+async function downloadResultsXLSX() {
   if (!_db || !currentSetId) return;
   try {
     const snap = await _db.collection('results').where('deckId', '==', currentSetId).get();
-    const results = snap.docs.map(d => d.data());
-    const header  = ['Ученик', 'Класс', 'Набор', 'Дата', 'Правильно', 'Всего', '%'];
-    const rows    = results.map(r => {
+    const results = snap.docs.map(d => d.data())
+      .sort((a, b) => {
+        const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
+        const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
+        return tb - ta;
+      });
+    const header = ['Ученик', 'Класс', 'Набор', 'Дата', 'Правильно', 'Всего', '%'];
+    const rows   = results.map(r => {
       const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
       return [r.studentName || '', r.group || '', r.deckName || '', dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
     });
     const deck = decks.find(x => x.id === currentSetId);
-    _downloadCSV([header, ...rows], `результаты_${(deck?.name||'набор').replace(/\s+/g,'_')}.csv`);
+    const safe = (deck?.name || 'набор').replace(/[\\/:*?"<>|]/g, '_');
+    _downloadXLSX([header, ...rows], 'Результаты', `результаты_${safe}.xlsx`);
   } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
 }
 
-async function downloadGlobalCSV() {
+async function downloadGlobalXLSX() {
   if (!_db || !currentUser) return;
   try {
     const snap = await _db.collection('results').where('teacherId', '==', currentUser.uid).get();
-    const results = snap.docs.map(d => d.data());
-    const header  = ['Ученик', 'Класс', 'Набор', 'Режим', 'Дата', 'Правильно', 'Всего', '%'];
-    const rows    = results.map(r => {
-      const dt  = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
+    const results = snap.docs.map(d => d.data())
+      .sort((a, b) => {
+        const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
+        const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
+        return tb - ta;
+      });
+    const header = ['Ученик', 'Класс', 'Набор', 'Режим', 'Дата', 'Правильно', 'Всего', '%'];
+    const rows   = results.map(r => {
+      const dt   = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
       const mode = r.mode === 'flashcard' ? 'Карточки' : 'Тест';
       return [r.studentName || '', r.group || '', r.deckName || '', mode, dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
     });
-    _downloadCSV([header, ...rows], 'все_результаты.csv');
+    _downloadXLSX([header, ...rows], 'Все результаты', 'все_результаты.xlsx');
   } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
 }
 
@@ -3148,7 +3168,7 @@ async function _loadAndRenderResults(container) {
         <span>Список учеников</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${groupFilter}
-          <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="downloadResultsCSV()">⬇ CSV</button>
+          <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="downloadResultsXLSX()">⬇ Excel</button>
           <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem" onclick="renderTeacherResults()">🔄 Обновить</button>
           <button class="btn-clear-stats" onclick="clearTeacherResults()">Очистить</button>
         </div>
@@ -3268,11 +3288,12 @@ async function renderGlobalStats() {
         return tb - ta;
       });
     if (!results.length) {
-      sumEl.innerHTML = '';
-      histEl.innerHTML = `<div class="stats-empty">
-        Ученики ещё не проходили ваши тесты.<br>
-        Нажмите <strong>🔗 Поделиться</strong> на любом наборе и отправьте ссылку.
-      </div>`; return;
+      // Auto-seed example data on first visit
+      sumEl.innerHTML = '<div style="color:var(--muted);font-size:0.88rem">Подготовка данных…</div>';
+      histEl.innerHTML = '';
+      await seedDemoData();
+      await renderGlobalStats();
+      return;
     }
     const total  = results.length;
     const best   = Math.max(...results.map(r => r.pct));
@@ -3505,6 +3526,171 @@ async function createDemoAccounts() {
     msg.style.color = 'var(--green)';
     msg.textContent = `✓ Готово! Аккаунты созданы (${created} новых, ${updated} обновлено). Нажмите «Учитель» или «Ученик» для входа.`;
     btn.textContent = '✓ Готово';
+  }
+}
+
+// ─── SEED DEMO DATA ──────────────────────────────────────────────────────────
+async function seedDemoData() {
+  if (!_db || !currentUser) { toast('Войдите как учитель'); return; }
+  const btn = document.getElementById('btn-seed-demo');
+  if (btn) { btn.textContent = 'Загружаю…'; btn.disabled = true; }
+
+  try {
+    const TS = firebase.firestore.FieldValue.serverTimestamp;
+    const tid = currentUser.uid;
+
+    // ── 1. Ensure demo decks exist ──────────────────────────────────────────
+    const DECKS = [
+      {
+        _key: 'demo-bio',
+        name: 'Биология 7 — Клетки и ткани',
+        desc: 'Контрольная работа по теме «Строение клетки»',
+        mode: 'test', timeLimit: 15,
+        cards: [
+          { id: uid(), type:'single', question:'Что является основной структурной единицей живого?', answer:'', options:[{text:'Клетка',correct:true},{text:'Атом',correct:false},{text:'Молекула',correct:false},{text:'Орган',correct:false}], image:null },
+          { id: uid(), type:'single', question:'Где находится генетическая информация клетки?', answer:'', options:[{text:'В ядре',correct:true},{text:'В митохондрии',correct:false},{text:'В рибосоме',correct:false},{text:'В лизосоме',correct:false}], image:null },
+          { id: uid(), type:'single', question:'Какой органоид отвечает за синтез белка?', answer:'', options:[{text:'Рибосома',correct:true},{text:'Ядро',correct:false},{text:'Вакуоль',correct:false},{text:'Аппарат Гольджи',correct:false}], image:null },
+          { id: uid(), type:'open', question:'Как называется процесс деления клетки?', answer:'митоз', options:[], image:null },
+          { id: uid(), type:'single', question:'Что окружает животную клетку снаружи?', answer:'', options:[{text:'Клеточная мембрана',correct:true},{text:'Клеточная стенка',correct:false},{text:'Хлоропласт',correct:false},{text:'Вакуоль',correct:false}], image:null },
+        ]
+      },
+      {
+        _key: 'demo-hist',
+        name: 'История 8 — Великие реформы',
+        desc: 'Тест по реформам Александра II',
+        mode: 'test', timeLimit: null,
+        cards: [
+          { id: uid(), type:'single', question:'В каком году была отменена крепостное право в России?', answer:'', options:[{text:'1861',correct:true},{text:'1812',correct:false},{text:'1905',correct:false},{text:'1881',correct:false}], image:null },
+          { id: uid(), type:'single', question:'Кто провёл реформу отмены крепостного права?', answer:'', options:[{text:'Александр II',correct:true},{text:'Николай I',correct:false},{text:'Пётр I',correct:false},{text:'Александр I',correct:false}], image:null },
+          { id: uid(), type:'multi', question:'Какие реформы провёл Александр II?', answer:'', options:[{text:'Земская реформа',correct:true},{text:'Судебная реформа',correct:true},{text:'Денежная реформа Витте',correct:false},{text:'Военная реформа',correct:true}], image:null },
+          { id: uid(), type:'open', question:'Как называли крестьян, которые временно оставались в зависимости после 1861 года?', answer:'временнообязанные', options:[], image:null },
+        ]
+      },
+      {
+        _key: 'demo-cards',
+        name: 'Английский — Базовая лексика',
+        desc: 'Карточки для запоминания слов',
+        mode: 'flashcard', timeLimit: null,
+        cards: [
+          { id: uid(), type:'flashcard', question:'apple', answer:'яблоко', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'book', answer:'книга', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'school', answer:'школа', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'teacher', answer:'учитель', options:[], image:null },
+          { id: uid(), type:'flashcard', question:'window', answer:'окно', options:[], image:null },
+        ]
+      }
+    ];
+
+    // Find or create decks
+    const deckIds = {};
+    for (const d of DECKS) {
+      // Check if already seeded for this teacher
+      const existing = decks.find(x => x.name === d.name && x.teacherId === tid);
+      if (existing) { deckIds[d._key] = existing.id; continue; }
+      const { _key, ...data } = d;
+      const ref = await _db.collection('decks').add({
+        ...data,
+        teacherId: tid,
+        shortCode: generateShortCode(),
+        history: [],
+        createdAt: TS()
+      });
+      deckIds[_key] = ref.id;
+      decks.unshift({ id: ref.id, ...data, teacherId: tid, createdAt: new Date() });
+    }
+
+    // ── 2. Seed student results ─────────────────────────────────────────────
+    const STUDENTS = [
+      { name: 'Иванов Алексей',   group: '7А', sid: 's-ivanov-al' },
+      { name: 'Петрова Мария',    group: '7А', sid: 's-petrova-m' },
+      { name: 'Сидоров Дмитрий', group: '7А', sid: 's-sidorov-d' },
+      { name: 'Кузнецова Анна',  group: '7Б', sid: 's-kuznets-a' },
+      { name: 'Смирнов Павел',   group: '7Б', sid: 's-smirnov-p' },
+      { name: 'Попова Елена',    group: '7Б', sid: 's-popova-el' },
+      { name: 'Новиков Сергей',  group: '8А', sid: 's-novikov-s' },
+      { name: 'Козлова Дарья',   group: '8А', sid: 's-kozlova-d' },
+    ];
+
+    // Bio deck results — varied scores, with full answers[]
+    const bioId   = deckIds['demo-bio'];
+    const histId  = deckIds['demo-hist'];
+    const cardsId = deckIds['demo-cards'];
+    const bioDeck = DECKS[0];
+    const histDeck = DECKS[1];
+
+    function daysAgo(n) {
+      const d = new Date(); d.setDate(d.getDate() - n);
+      return firebase.firestore.Timestamp.fromDate(d);
+    }
+
+    const bioResults = [
+      // 7А — mostly good
+      { s: STUDENTS[0], correct:5, total:5, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:1 },
+      { s: STUDENTS[1], correct:4, total:5, pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:1 },
+      { s: STUDENTS[2], correct:3, total:5, pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:2 },
+      // 7Б — more mixed
+      { s: STUDENTS[3], correct:4, total:5, pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:2 },
+      { s: STUDENTS[4], correct:2, total:5, pct:40,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:3 },
+      { s: STUDENTS[5], correct:1, total:5, pct:20,  answers:[{idx:0,correct:false},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:false}], daysAgo:3 },
+      // 8А
+      { s: STUDENTS[6], correct:5, total:5, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:0 },
+      { s: STUDENTS[7], correct:3, total:5, pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:0 },
+    ];
+
+    const histResults = [
+      { s: STUDENTS[0], correct:3, total:4, pct:75,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true}], daysAgo:7 },
+      { s: STUDENTS[1], correct:4, total:4, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true}], daysAgo:7 },
+      { s: STUDENTS[3], correct:2, total:4, pct:50,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:false},{idx:3,correct:true}], daysAgo:8 },
+      { s: STUDENTS[4], correct:1, total:4, pct:25,  answers:[{idx:0,correct:false},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false}], daysAgo:8 },
+      { s: STUDENTS[6], correct:4, total:4, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true}], daysAgo:5 },
+      { s: STUDENTS[7], correct:3, total:4, pct:75,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:false}], daysAgo:5 },
+    ];
+
+    const cardResults = [
+      { s: STUDENTS[1], correct:4, total:5, pct:80,  answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:false},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:4 },
+      { s: STUDENTS[2], correct:5, total:5, pct:100, answers:[{idx:0,correct:true},{idx:1,correct:true},{idx:2,correct:true},{idx:3,correct:true},{idx:4,correct:true}], daysAgo:4 },
+      { s: STUDENTS[5], correct:3, total:5, pct:60,  answers:[{idx:0,correct:true},{idx:1,correct:false},{idx:2,correct:true},{idx:3,correct:false},{idx:4,correct:true}], daysAgo:6 },
+    ];
+
+    // Write all results — skip if already seeded (check by teacherId + studentId + deckId heuristic)
+    const existing = await _db.collection('results').where('teacherId','==',tid).get();
+    const alreadySeeded = new Set(existing.docs.map(d => d.data().studentId + '|' + d.data().deckId));
+
+    let written = 0;
+    const allBatches = [
+      ...bioResults.map(r => ({ deckId: bioId, deckName: bioDeck.name, mode:'test', ...r })),
+      ...histResults.map(r => ({ deckId: histId, deckName: histDeck.name, mode:'test', ...r })),
+      ...cardResults.map(r => ({ deckId: cardsId, deckName: DECKS[2].name, mode:'flashcard', ...r })),
+    ];
+
+    for (const r of allBatches) {
+      const key = r.s.sid + '|' + r.deckId;
+      if (alreadySeeded.has(key)) continue;
+      await _db.collection('results').add({
+        deckId: r.deckId, deckName: r.deckName,
+        teacherId: tid,
+        studentId: r.s.sid, studentName: r.s.name,
+        group: r.s.group,
+        correct: r.correct, total: r.total, pct: r.pct,
+        mode: r.mode,
+        answers: r.answers,
+        date: daysAgo(r.daysAgo)
+      });
+      written++;
+    }
+
+    renderDecks();
+    if (written > 0) {
+      toast(`✓ Добавлено ${written} результатов по ${Object.keys(deckIds).length} наборам. Смотрите в «Статистика» или внутри набора.`, 5000);
+    } else {
+      toast('Примеры уже загружены. Откройте «Статистика» или любой набор.', 4000);
+    }
+    if (btn) { btn.textContent = '✓ Готово'; btn.disabled = false; }
+
+  } catch(e) {
+    console.error('seedDemoData:', e);
+    toast('Ошибка: ' + (e.message || e.code), 4000);
+    if (btn) { btn.textContent = 'Загрузить примеры'; btn.disabled = false; }
   }
 }
 
