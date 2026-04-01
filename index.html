@@ -580,10 +580,11 @@
     }
     .rd-q:last-child { border-bottom: none; }
     .rd-q-body { flex: 1; min-width: 0; }
-    .rd-given, .rd-expected {
-      font-size: 0.78rem; margin-top: 4px; color: var(--muted); line-height: 1.35;
+    .rd-given {
+      font-size: 0.78rem; margin-top: 6px; color: var(--text); line-height: 1.4;
+      padding: 8px 10px; background: var(--card); border-radius: 8px; border: 1px solid var(--border);
     }
-    .rd-given strong, .rd-expected strong { color: var(--text); font-weight: 600; }
+    .rd-given strong { color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .03em; display: block; margin-bottom: 4px; }
     .rd-icon { font-weight: 700; flex-shrink: 0; min-width: 16px; font-size: 0.9rem; margin-top: 1px; }
     .stat-row-date { font-size: 0.78rem; color: var(--muted); white-space: nowrap; min-width: 90px; }
     .stat-row-mode {
@@ -3968,13 +3969,6 @@ async function _loadDeckCards(deckId) {
   return _deckCache[deckId];
 }
 
-function _expectedAnswerForCard(card) {
-  if (!card) return '';
-  if (card.type === 'open' || card.type === 'flashcard') return (card.answer || '').trim();
-  const opts = card.options || [];
-  return opts.filter(o => o.correct).map(o => o.text).join(', ');
-}
-
 async function _toggleResultDetail(header, rid) {
   const detail = header.nextElementSibling;
   if (!detail || !detail.classList.contains('result-detail')) return;
@@ -4004,11 +3998,12 @@ async function _toggleResultDetail(header, rid) {
     const qText = card?.question || `Вопрос ${idx + 1}`;
     const color = a.correct ? 'var(--green)' : 'var(--accent2)';
     const given = (a.given != null && String(a.given).trim() !== '') ? String(a.given).trim() : '';
-    const exp = _expectedAnswerForCard(card);
     let extra = '';
     if (!a.correct) {
-      if (given) extra += `<div class="rd-given"><strong>Ответ ученика:</strong> ${esc(given)}</div>`;
-      if (exp) extra += `<div class="rd-expected"><strong>Верный ответ:</strong> ${esc(exp)}</div>`;
+      const body = given
+        ? esc(given)
+        : '<span style="color:var(--muted);font-style:italic">Не сохранён — пройдите тест заново после обновления сайта</span>';
+      extra += `<div class="rd-given"><strong>Ответ ученика</strong>${body}</div>`;
     }
     return `<div class="rd-q">
       <span class="rd-icon" style="color:${color}">${a.correct ? '✓' : '✗'}</span>
