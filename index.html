@@ -16,18 +16,18 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #f0f2f8;
+      --bg: #f6f7fb;
       --surface: #ffffff;
-      --card: #f4f6fc;
-      --accent: #635bff;
+      --card: #f1f3fa;
+      --accent: #6c63ff;
       --accent2: #f43f5e;
       --green: #10b981;
       --yellow: #d97706;
-      --text: #1e2140;
-      --muted: #7c88a8;
-      --border: #e2e8f2;
-      --radius: 14px;
-      --shadow: 0 2px 12px rgba(30,33,64,0.07);
+      --text: #252b4a;
+      --muted: #8b93b2;
+      --border: #e6e9f5;
+      --radius: 16px;
+      --shadow: 0 6px 20px rgba(61, 75, 133, 0.06);
     }
 
     body { background: var(--bg); color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
@@ -47,7 +47,12 @@
       background: transparent; color: var(--muted); font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
     }
     .nav-tab:hover { color: var(--text); background: var(--card); }
-    .nav-tab.active { background: rgba(99,91,255,0.1); color: var(--accent); font-weight: 700; }
+    .nav-tab.active {
+      background: #eef0ff;
+      color: var(--accent);
+      font-weight: 700;
+      border: 1px solid #dde2ff;
+    }
     .btn-new-set {
       background: var(--accent); color: #fff; border: none; border-radius: 8px;
       padding: 8px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
@@ -65,16 +70,18 @@
 
     /* ── BUTTONS ── */
     .btn-primary {
-      background: var(--accent); color: #fff; border: none; border-radius: 10px;
-      padding: 11px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+      background: linear-gradient(180deg, #6f67ff, #6258ff);
+      color: #fff; border: none; border-radius: 12px;
+      padding: 11px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
     }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:hover { opacity: 0.95; transform: translateY(-1px); box-shadow: 0 8px 18px rgba(108,99,255,.28); }
     .btn-primary:active { transform: translateY(0); }
     .btn-secondary {
-      background: transparent; color: var(--muted); border: 1.5px solid var(--border);
-      border-radius: 10px; padding: 11px 20px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
+      background: var(--surface); color: var(--muted); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 11px 20px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
     }
-    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+    .btn-secondary:hover { color: var(--text); border-color: #cfd5ea; background: #fbfcff; }
     .btn-signout {
       background: transparent; color: var(--accent2); border: 1.5px solid rgba(244,63,94,0.3);
       border-radius: 10px; padding: 7px 16px; font-size: 0.85rem; font-weight: 600;
@@ -133,12 +140,16 @@
     .mode-btn.active { background: var(--accent); color: #fff; }
 
     /* ── DECKS LIST ── */
-    .library-quick-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+    .library-quick-actions {
+      display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;
+      background: var(--surface); border:1px solid var(--border); border-radius: 14px; padding: 10px;
+    }
     .library-hub { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:16px; align-items:start; }
     .library-left { min-width:0; }
     .library-right {
       background: var(--surface); border:1px solid var(--border); border-radius: 14px;
       padding:14px; position: sticky; top: 16px;
+      box-shadow: var(--shadow);
     }
     .library-search-row { margin-bottom:10px; }
     .library-search-row input {
@@ -158,16 +169,16 @@
     .decks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     .deck-card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px; cursor: pointer;
-      box-shadow: 0 1px 4px rgba(30,33,64,0.05);
+      border-radius: 16px; padding: 18px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(44,57,112,0.04);
       transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s; position: relative;
       display: flex; flex-direction: column; gap: 8px;
     }
-    .deck-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,91,255,0.13); }
+    .deck-card:hover { border-color: #d5daf0; transform: translateY(-1px); box-shadow: 0 8px 22px rgba(57,72,132,0.1); }
     .deck-badges { display: flex; gap: 6px; flex-wrap: wrap; }
     .deck-badge {
-      display: inline-block; background: var(--accent); color: #fff;
-      font-size: 0.7rem; padding: 2px 9px; border-radius: 99px; font-weight: 600;
+      display: inline-block; background: #eef0ff; color: var(--accent);
+      font-size: 0.7rem; padding: 2px 9px; border-radius: 99px; font-weight: 700;
     }
     .deck-name { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
     .deck-meta { color: var(--muted); font-size: 0.82rem; }
@@ -176,7 +187,7 @@
       padding-top: 12px; border-top: 1px solid var(--border);
     }
     .deck-footer .btn-start {
-      flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      flex: 1; background: linear-gradient(180deg, #6f67ff, #6258ff); color: #fff; border: none; border-radius: 10px;
       padding: 8px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
     }
     .deck-footer .btn-start:hover { opacity: 0.88; }
