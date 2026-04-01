@@ -1534,19 +1534,6 @@ async function _loadTeacherDecks() {
       const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
       return tb - ta;
     });
-    // Auto-seed example data on first login (empty library)
-    if (!decks.length) {
-      await seedDemoData();
-      // Reload decks after seeding
-      const snap2 = await _db.collection('decks')
-        .where('teacherId', '==', currentUser.uid).get();
-      decks = snap2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      decks.sort((a, b) => {
-        const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt || 0);
-        const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt || 0);
-        return tb - ta;
-      });
-    }
   } catch(e) {
     console.error('[decks] load error:', e.code, e.message);
     decks = [];
@@ -3500,6 +3487,7 @@ async function createDemoAccounts() {
 
   const accounts = [DEMO_TEACHER, DEMO_STUDENT];
   let created = 0, updated = 0, errors = [];
+  let teacherUid = null;
 
   for (const acc of accounts) {
     try {
@@ -3510,17 +3498,23 @@ async function createDemoAccounts() {
         created++;
       } catch(e) {
         if (e.code === 'auth/email-already-in-use') {
-          // Sign in to get UID and update/create user doc
           const cred = await _auth.signInWithEmailAndPassword(acc.email, acc.password);
           uid = cred.user.uid;
           updated++;
         } else { errors.push(e.message); continue; }
       }
-      // Always (re)write the user document to ensure role is correct
       await _db.collection('users').doc(uid).set({
         name: acc.name, email: acc.email, role: acc.role,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: false });
+
+      // Seed demo data while logged in as teacher (before signing out)
+      if (acc.role === 'teacher') {
+        teacherUid = uid;
+        msg.textContent = 'Создаю наборы и результаты…';
+        await _seedDataForTeacher(uid);
+      }
+
       await _auth.signOut();
     } catch(e) {
       errors.push(acc.role + ': ' + (e.message || e.code));
@@ -3533,7 +3527,7 @@ async function createDemoAccounts() {
     btn.textContent = 'Попробовать снова'; btn.disabled = false;
   } else {
     msg.style.color = 'var(--green)';
-    msg.textContent = `✓ Готово! Аккаунты созданы (${created} новых, ${updated} обновлено). Нажмите «Учитель» или «Ученик» для входа.`;
+    msg.textContent = `✓ Готово! Войдите кнопкой «Учитель» — библиотека и статистика уже заполнены.`;
     btn.textContent = '✓ Готово';
   }
 }
@@ -3541,12 +3535,22 @@ async function createDemoAccounts() {
 // ─── SEED DEMO DATA ──────────────────────────────────────────────────────────
 async function seedDemoData() {
   if (!_db || !currentUser) { toast('Войдите как учитель'); return; }
-  const btn = document.getElementById('btn-seed-demo');
-  if (btn) { btn.textContent = 'Загружаю…'; btn.disabled = true; }
+  try {
+    const { results } = await _seedDataForTeacher(currentUser.uid);
+    await _loadTeacherDecks();
+    if (results > 0) toast(`✓ Добавлено ${results} результатов. Смотрите «Статистика» или внутри набора.`, 5000);
+    else toast('Данные уже загружены.', 3000);
+  } catch(e) {
+    console.error('seedDemoData:', e);
+    toast('Ошибка: ' + (e.message || e.code), 4000);
+  }
+}
+
+async function _seedDataForTeacher(tid) {
+  if (!_db || !tid) return;
 
   try {
-    const TS = firebase.firestore.FieldValue.serverTimestamp;
-    const tid = currentUser.uid;
+    const serverTS = () => firebase.firestore.FieldValue.serverTimestamp();
 
     // ── 1. Ensure demo decks exist ──────────────────────────────────────────
     const DECKS = [
@@ -3590,22 +3594,22 @@ async function seedDemoData() {
       }
     ];
 
-    // Find or create decks
+    // Find or create decks (query Firestore directly, don't rely on local decks array)
+    const existingSnap = await _db.collection('decks').where('teacherId','==',tid).get();
+    const existingDecks = existingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const deckIds = {};
     for (const d of DECKS) {
-      // Check if already seeded for this teacher
-      const existing = decks.find(x => x.name === d.name && x.teacherId === tid);
-      if (existing) { deckIds[d._key] = existing.id; continue; }
+      const found = existingDecks.find(x => x.name === d.name);
+      if (found) { deckIds[d._key] = found.id; continue; }
       const { _key, ...data } = d;
       const ref = await _db.collection('decks').add({
         ...data,
         teacherId: tid,
         shortCode: generateShortCode(),
         history: [],
-        createdAt: TS()
+        createdAt: serverTS()
       });
       deckIds[_key] = ref.id;
-      decks.unshift({ id: ref.id, ...data, teacherId: tid, createdAt: new Date() });
     }
 
     // ── 2. Seed student results ─────────────────────────────────────────────
@@ -3688,18 +3692,12 @@ async function seedDemoData() {
       written++;
     }
 
-    renderDecks();
-    if (written > 0) {
-      toast(`✓ Добавлено ${written} результатов по ${Object.keys(deckIds).length} наборам. Смотрите в «Статистика» или внутри набора.`, 5000);
-    } else {
-      toast('Примеры уже загружены. Откройте «Статистика» или любой набор.', 4000);
-    }
-    if (btn) { btn.textContent = '✓ Готово'; btn.disabled = false; }
+    console.log(`[seed] decks:${Object.keys(deckIds).length} results written:${written}`);
+    return { decks: Object.keys(deckIds).length, results: written };
 
   } catch(e) {
-    console.error('seedDemoData:', e);
-    toast('Ошибка: ' + (e.message || e.code), 4000);
-    if (btn) { btn.textContent = 'Загрузить примеры'; btn.disabled = false; }
+    console.error('[seed] error:', e.code, e.message);
+    throw e;
   }
 }
 
