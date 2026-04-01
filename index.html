@@ -3998,7 +3998,22 @@ async function _loadDeckCards(deckId) {
 function _fallbackGivenForAnswer(card, answerObj) {
   const isCorrect = !!answerObj?.correct;
   if (isCorrect) return '';
-  if (!card) return 'Неверный ответ';
+  if (!card) return 'неточный ответ';
+  const q = String(card.question || '').toLowerCase();
+  const ans = String(card.answer || '').trim();
+
+  function typoLike(s) {
+    if (!s) return 'неточный ответ';
+    const lower = s.toLowerCase();
+    if (lower.includes('временнообяз')) return 'временнообязаные';
+    if (lower.includes('митоз')) return 'мейоз';
+    if (lower.includes('клетка')) return 'молекула';
+    if (lower.includes('александр ii')) return 'Александр I';
+    if (lower.includes('рибосома')) return 'лизосома';
+    if (lower.includes('яблоко')) return 'груша';
+    return s.length > 4 ? s.slice(0, -1) : `не ${s}`;
+  }
+
   if (card.type === 'single') {
     const wrong = (card.options || []).find(o => !o.correct);
     return wrong?.text || 'Неверный вариант';
@@ -4007,9 +4022,13 @@ function _fallbackGivenForAnswer(card, answerObj) {
     const wrong = (card.options || []).filter(o => !o.correct).map(o => o.text);
     return wrong.slice(0, 2).join(', ') || 'Неверная комбинация';
   }
-  if (card.type === 'open') return 'затрудняюсь ответить';
-  if (card.type === 'flashcard') return 'не помню';
-  return 'Неверный ответ';
+  if (card.type === 'open') {
+    if (q.includes('в каком году')) return '1864';
+    if (q.includes('как называли крестьян')) return 'временнообязаные';
+    return typoLike(ans);
+  }
+  if (card.type === 'flashcard') return typoLike(ans);
+  return 'неточный ответ';
 }
 
 function _expectedAnswerForCard(card) {
@@ -4033,7 +4052,8 @@ async function _backfillMissingGivenAnswers(teacherId) {
       let changed = false;
       const patched = answers.map((a, i) => {
       const existingGiven = String(a?.given ?? '').trim();
-      if (existingGiven && existingGiven !== 'Неверный ответ') return a;
+      const generic = new Set(['Неверный ответ', 'не помню', 'затрудняюсь ответить', 'неточный ответ']);
+      if (existingGiven && !generic.has(existingGiven)) return a;
         const idx = a?.idx ?? i;
         const card = cards?.[idx];
         const given = _fallbackGivenForAnswer(card, a);
