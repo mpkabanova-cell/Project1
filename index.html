@@ -2560,7 +2560,7 @@ function _renderClassChart(groupsForChart, chartId) {
             ${groupsForChart.map(g => `<div class="class-col">
               <div class="class-col-bar-wrap" style="--p:${Math.max(4, g.avg)}%">
                 <div class="class-col-pct">${g.avg}%</div>
-                <div class="class-col-bar" title="${esc(g.name)}: ${g.avg}% · ${g.count} работ"></div>
+                <div class="class-col-bar" title="${esc(g.name)}: ${g.avg}% · ${g.count} ${ruPlural(g.count, 'работа', 'работы', 'работ')}"></div>
               </div>
             </div>`).join('')}
           </div>
@@ -3754,7 +3754,7 @@ async function renderGlobalStats() {
       .sort((a, b) => b.avg - a.avg);
     if (groupsForChart.length) histEl.insertAdjacentHTML('afterend', _renderClassChart(groupsForChart, 'global-class-chart'));
 
-    if (countEl) countEl.textContent = `${total} результатов`;
+    if (countEl) countEl.textContent = `${total} ${ruPlural(total, 'результат', 'результата', 'результатов')}`;
     _filterGlobal();
   } catch(e) {
     console.error('renderGlobalStats:', e);
@@ -3785,7 +3785,9 @@ function _filterGlobal() {
   const countEl = document.getElementById('global-results-count');
   if (countEl) {
     const total = rows.length;
-    countEl.textContent = visible === total ? `${total} результатов` : `${visible} из ${total}`;
+    countEl.textContent = visible === total
+      ? `${total} ${ruPlural(total, 'результат', 'результата', 'результатов')}`
+      : `${visible} из ${total}`;
   }
 }
 
@@ -3874,6 +3876,15 @@ function resetImageForm() {
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function ruPlural(n, one, few, many) {
+  const v = Math.abs(Number(n)) % 100;
+  const n1 = v % 10;
+  if (v > 10 && v < 20) return many;
+  if (n1 > 1 && n1 < 5) return few;
+  if (n1 === 1) return one;
+  return many;
+}
 function escAttr(s) { return String(s || '').replace(/'/g, "\\'"); }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function toast(msg, duration) {
@@ -4027,7 +4038,7 @@ async function seedDemoData() {
     const { results, decks: deckCount } = await _seedDataForTeacher(currentUser.uid);
     await _loadTeacherDecks();
     if (results > 0) {
-      toast(`✓ Добавлено ${deckCount} набора и ${results} результатов учеников`, 5000);
+      toast(`✓ Добавлено ${deckCount} ${ruPlural(deckCount, 'набор', 'набора', 'наборов')} и ${results} ${ruPlural(results, 'результат', 'результата', 'результатов')} учеников`, 5000);
       if (btn) { btn.textContent = '✓ Готово'; }
     } else {
       toast('Примеры уже есть в вашей библиотеке', 3000);
