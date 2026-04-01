@@ -684,6 +684,48 @@
       line-height: 1.35;
     }
     .breakdown-mistakes strong { color: var(--text); }
+    .class-chart-section { margin-top: 26px; }
+    .class-chart-section h4 {
+      font-size: 0.82rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--muted); margin-bottom: 12px;
+    }
+    .class-chart {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 12px 10px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      min-height: 190px;
+      overflow-x: auto;
+    }
+    .class-col {
+      min-width: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .class-col-bar-wrap {
+      width: 44px;
+      height: 118px;
+      background: var(--card);
+      border-radius: 8px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .class-col-bar {
+      width: 100%;
+      min-height: 4px;
+      border-radius: 7px 7px 0 0;
+      background: linear-gradient(180deg, rgba(108,99,255,0.9), rgba(108,99,255,0.65));
+    }
+    .class-col-name { font-size: 0.78rem; font-weight: 700; color: var(--text); }
+    .class-col-meta { font-size: 0.72rem; color: var(--muted); text-align: center; line-height: 1.25; }
     .stats-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.92rem; }
     .btn-clear-stats {
       background: transparent; border: none; color: var(--muted);
@@ -3324,6 +3366,7 @@ async function _loadAndRenderResults(container) {
     // Clear previous per-set result details
     Object.keys(_rd).forEach(k => { if (k.startsWith('rs')) delete _rd[k]; });
     let breakdownHtml = '';
+    let classChartHtml = '';
     if (deckCards.length) {
       const tally = deckCards.map(() => ({ correct: 0, total: 0 }));
       const mistakes = deckCards.map(() => ({}));
@@ -3365,6 +3408,36 @@ async function _loadAndRenderResults(container) {
         breakdownHtml = `<div class="breakdown-section">
           <h4>Разбор по вопросам</h4>${rows}</div>`;
       }
+    }
+
+    // Bar chart by classes/groups
+    const byGroup = {};
+    results.forEach(r => {
+      const g = (r.group || 'Без класса').trim() || 'Без класса';
+      if (!byGroup[g]) byGroup[g] = { sum: 0, count: 0 };
+      byGroup[g].sum += Number(r.pct || 0);
+      byGroup[g].count++;
+    });
+    const groupsForChart = Object.entries(byGroup)
+      .map(([name, v]) => ({
+        name,
+        count: v.count,
+        avg: Math.round(v.sum / v.count)
+      }))
+      .sort((a, b) => b.avg - a.avg);
+    if (groupsForChart.length) {
+      classChartHtml = `<div class="class-chart-section">
+        <h4>Результаты по классам</h4>
+        <div class="class-chart">
+          ${groupsForChart.map(g => `<div class="class-col">
+            <div class="class-col-bar-wrap">
+              <div class="class-col-bar" style="height:${Math.max(4, g.avg)}%"></div>
+            </div>
+            <div class="class-col-name">${esc(g.name)}</div>
+            <div class="class-col-meta">${g.avg}% · ${g.count} раб.</div>
+          </div>`).join('')}
+        </div>
+      </div>`;
     }
 
     // Group filter
@@ -3418,6 +3491,7 @@ async function _loadAndRenderResults(container) {
       }).join('')}
       </div>
       ${breakdownHtml}
+      ${classChartHtml}
     `;
     // Ensure summary cards always sync with current filter value
     _filterResultsGroup();
