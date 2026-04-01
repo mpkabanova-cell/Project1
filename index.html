@@ -144,6 +144,12 @@
       display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;
       background: var(--surface); border:1px solid var(--border); border-radius: 14px; padding: 10px;
     }
+    .library-folders { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+    .folder-pill {
+      border:1px solid var(--border); background:var(--surface); color:var(--muted);
+      border-radius:12px; padding:8px 12px; font-size:.82rem; cursor:pointer;
+    }
+    .folder-pill.active { color:var(--accent); border-color:#d7dcff; background:#eef0ff; font-weight:700; }
     .library-hub { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:16px; align-items:start; }
     .library-left { min-width:0; }
     .library-right {
@@ -1088,6 +1094,7 @@
       </div>
     </div>
     <div id="library-quick-actions" class="library-quick-actions"></div>
+    <div id="library-folders" class="library-folders"></div>
     <div class="library-hub">
       <div class="library-left">
         <div class="library-search-row">
@@ -1817,6 +1824,7 @@ function _applyUserUI() {
 
 async function _loadTeacherDecks() {
   try {
+    _loadFolders();
     const snap = await _db.collection('decks')
       .where('teacherId', '==', currentUser.uid).get();
     decks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -2121,6 +2129,44 @@ function goHome() {
 // ─── DECKS LIST ─────────────────────────────────────────────────────────────
 let selectedDeckId = null;
 let libraryPanelMode = 'details';
+let libraryFolders = [];
+let selectedFolder = 'all';
+
+function _foldersKey() { return `qf_folders_${currentUser?.uid || 'local'}`; }
+function _loadFolders() {
+  try { libraryFolders = JSON.parse(localStorage.getItem(_foldersKey()) || '[]'); }
+  catch { libraryFolders = []; }
+}
+function _saveFolders() {
+  localStorage.setItem(_foldersKey(), JSON.stringify(libraryFolders));
+}
+function createFolder() {
+  const name = prompt('Название папки:');
+  if (!name || !name.trim()) return;
+  const clean = name.trim();
+  if (libraryFolders.includes(clean)) { toast('Папка уже существует'); return; }
+  libraryFolders.push(clean);
+  _saveFolders();
+  selectedFolder = clean;
+  renderDecks();
+}
+
+function renderFoldersBar(visibleDecksAll) {
+  const wrap = document.getElementById('library-folders');
+  if (!wrap) return;
+  const counts = {};
+  visibleDecksAll.forEach(d => {
+    const f = d.folder || 'Без папки';
+    counts[f] = (counts[f] || 0) + 1;
+  });
+  const pills = [
+    `<button class="folder-pill ${selectedFolder==='all'?'active':''}" onclick="selectedFolder='all';renderDecks()">Все</button>`,
+    ...libraryFolders.map(f => `<button class="folder-pill ${selectedFolder===f?'active':''}" onclick="selectedFolder='${esc(f)}';renderDecks()">${esc(f)} (${counts[f]||0})</button>`),
+    `<button class="folder-pill ${selectedFolder==='__none'?'active':''}" onclick="selectedFolder='__none';renderDecks()">Без папки (${counts['Без папки']||0})</button>`,
+    `<button class="folder-pill" onclick="createFolder()">+ Новая папка</button>`
+  ];
+  wrap.innerHTML = pills.join('');
+}
 
 function _copyTextSafe(text, okMsg) {
   navigator.clipboard.writeText(text).then(() => toast(okMsg || 'Скопировано'));
@@ -2191,8 +2237,23 @@ function renderLibrarySidePanel() {
       <button class="btn-secondary" onclick="openSet('${d.id}','results')">Результаты</button>
       <button class="btn-secondary" onclick="duplicateDeck('${d.id}')">Дублировать</button>
     </div>
+    <div class="form-row" style="margin-bottom:8px">
+      <label>Папка</label>
+      <select id="side-folder-select" onchange="assignDeckFolder('${d.id}', this.value)">
+        <option value="">Без папки</option>
+        ${libraryFolders.map(f => `<option value="${esc(f)}"${d.folder===f?' selected':''}>${esc(f)}</option>`).join('')}
+      </select>
+    </div>
     <div id="side-share-inline" style="display:none"></div>
   `;
+}
+
+function assignDeckFolder(deckId, folder) {
+  const d = decks.find(x => x.id === deckId);
+  if (!d) return;
+  d.folder = folder || '';
+  save(deckId);
+  renderDecks();
 }
 
 let inlineNewMode = 'test';
@@ -2233,6 +2294,7 @@ async function createNewSetInline() {
 }
 
 function renderDecks() {
+  if (!libraryFolders.length && localStorage.getItem(_foldersKey())) _loadFolders();
   const qa = document.getElementById('library-quick-actions');
   if (qa) {
     qa.innerHTML = `
@@ -2244,7 +2306,13 @@ function renderDecks() {
   }
   const grid = document.getElementById('decks-grid');
   const q = (document.getElementById('library-search')?.value || '').trim().toLowerCase();
-  const visibleDecks = q ? decks.filter(d => (d.name || '').toLowerCase().includes(q) || (d.desc || '').toLowerCase().includes(q)) : decks;
+  const filteredBySearch = q ? decks.filter(d => (d.name || '').toLowerCase().includes(q) || (d.desc || '').toLowerCase().includes(q)) : decks;
+  renderFoldersBar(filteredBySearch);
+  const visibleDecks = filteredBySearch.filter(d => {
+    if (selectedFolder === 'all') return true;
+    if (selectedFolder === '__none') return !d.folder;
+    return (d.folder || '') === selectedFolder;
+  });
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
@@ -2268,6 +2336,7 @@ function renderDecks() {
       </div>
       <div class="deck-name">${esc(d.name)}</div>
       <div class="deck-meta">${esc(d.desc || '')}</div>
+      ${d.folder ? `<div style="font-size:.73rem;color:var(--muted)">📁 ${esc(d.folder)}</div>` : ''}
       <div class="deck-footer">
         <button class="btn-start" onclick="event.stopPropagation();openSet('${d.id}','play')">▶ Начать</button>
         <button class="btn-edit" onclick="event.stopPropagation();openSet('${d.id}','cards')">✏️ Открыть</button>
