@@ -1894,6 +1894,12 @@ function _applyUserUI() {
 async function _loadTeacherDecks() {
   try {
     _loadFolders();
+    const dedupeInfo = await _dedupeTeacherDecksInDb(currentUser.uid);
+    if (dedupeInfo?.removed > 0) {
+      toast(`Удалены дубли заданий: ${dedupeInfo.removed}`);
+    } else if (dedupeInfo?.error) {
+      toast('Не удалось очистить дубли в базе (права Firestore)', 3500);
+    }
     const snap = await _db.collection('decks')
       .where('teacherId', '==', currentUser.uid).get();
     decks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1933,6 +1939,16 @@ async function _loadTeacherDecks() {
           });
         } catch(se) { console.error('[auto-seed]', se.code, se.message); }
       }
+      // Safety: demo account can occasionally get duplicate deck docs after
+      // repeated refresh/seed cycles on different devices. Keep one per title.
+      const seenDemoNames = new Set();
+      decks = decks.filter(d => {
+        const key = (d?.name || '').trim().toLowerCase();
+        if (!key) return true;
+        if (seenDemoNames.has(key)) return false;
+        seenDemoNames.add(key);
+        return true;
+      });
     }
     await _autoOrganizeFolders();
   } catch(e) {
@@ -1941,6 +1957,77 @@ async function _loadTeacherDecks() {
   }
   showPage('decks');
   renderDecks();
+}
+
+async function _dedupeTeacherDecksInDb(tid) {
+  if (!_db || !tid) return { removed: 0, rewired: 0, error: null };
+  try {
+    const norm = v => String(v || '')
+      .toLowerCase()
+      .replace(/[—–-]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const tsVal = v => {
+      if (!v) return 0;
+      if (typeof v === 'number') return v;
+      if (v?.toDate) return v.toDate().getTime();
+      const t = new Date(v).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
+
+    const decksSnap = await _db.collection('decks').where('teacherId', '==', tid).get();
+    const rows = decksSnap.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() }));
+    const groups = {};
+    rows.forEach(d => {
+      const k = norm(d.name);
+      if (!k) return;
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(d);
+    });
+
+    const idMap = {};
+    const dupRefs = [];
+    Object.values(groups).forEach(list => {
+      if (list.length < 2) return;
+      list.sort((a, b) => tsVal(b.createdAt) - tsVal(a.createdAt));
+      const keep = list[0];
+      list.slice(1).forEach(d => {
+        idMap[d.id] = { keepId: keep.id, keepName: keep.name || d.name || '' };
+        dupRefs.push(d.ref);
+      });
+    });
+    if (!dupRefs.length) return { removed: 0, rewired: 0, error: null };
+
+    const resSnap = await _db.collection('results').where('teacherId', '==', tid).get();
+    const resultDocsToUpdate = [];
+    resSnap.docs.forEach(doc => {
+      const r = doc.data() || {};
+      const m = idMap[r.deckId];
+      if (!m) return;
+      if (r.deckId !== m.keepId || (r.deckName || '') !== (m.keepName || '')) {
+        resultDocsToUpdate.push({ ref: doc.ref, keepId: m.keepId, keepName: m.keepName });
+      }
+    });
+
+    const CHUNK = 350;
+    for (let i = 0; i < resultDocsToUpdate.length; i += CHUNK) {
+      const batch = _db.batch();
+      resultDocsToUpdate.slice(i, i + CHUNK).forEach(x => {
+        batch.set(x.ref, { deckId: x.keepId, deckName: x.keepName || '' }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    for (let i = 0; i < dupRefs.length; i += CHUNK) {
+      const batch = _db.batch();
+      dupRefs.slice(i, i + CHUNK).forEach(ref => batch.delete(ref));
+      await batch.commit();
+    }
+    return { removed: dupRefs.length, rewired: resultDocsToUpdate.length, error: null };
+  } catch (e) {
+    console.error('[dedupe decks] error:', e?.code || e?.message || e);
+    return { removed: 0, rewired: 0, error: e };
+  }
 }
 
 async function _showStudentHome() {
@@ -4634,8 +4721,9 @@ async function _seedDataForTeacher(tid) {
     console.log('[seed] existing decks:', existingDecks.map(d=>d.name));
 
     const deckIds = {};
+    const norm = v => String(v || '').trim().toLowerCase();
     for (const d of DECKS) {
-      const found = existingDecks.find(x => x.name === d.name);
+      const found = existingDecks.find(x => norm(x.name) === norm(d.name));
       if (found) {
         deckIds[d._key] = found.id;
         console.log('[seed] deck found:', d.name, found.id);
