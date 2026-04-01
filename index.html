@@ -742,9 +742,8 @@
     }
     .class-col {
       min-width: 74px; max-width: 90px;
-      display: flex; flex-direction: column; align-items: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
       flex-shrink: 0;
-      justify-content: flex-end;
     }
     .class-col-pct {
       font-size: 0.73rem;
@@ -765,6 +764,22 @@
     }
     .class-col-name { margin-top: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text); text-align:center; }
     .class-col-meta { display:none; }
+    .class-x-axis {
+      margin-left: 44px;
+      margin-top: 6px;
+      padding: 0 8px 0 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .class-x-label {
+      min-width: 74px; max-width: 90px;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+    }
     .stats-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.92rem; }
     .btn-clear-stats {
       background: transparent; border: none; color: var(--muted);
@@ -2540,10 +2555,12 @@ function _renderClassChart(groupsForChart, chartId) {
               <div class="class-col-bar-wrap">
                 <div class="class-col-bar" style="height:${Math.max(4, g.avg)}%" title="${esc(g.name)}: ${g.avg}% · ${g.count} работ"></div>
               </div>
-              <div class="class-col-name">${esc(g.name)}</div>
             </div>`).join('')}
           </div>
         </div>
+      </div>
+      <div class="class-x-axis">
+        ${groupsForChart.map(g => `<div class="class-x-label">${esc(g.name)}</div>`).join('')}
       </div>
     </div>
   </div>`;
