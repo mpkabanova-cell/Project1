@@ -285,6 +285,30 @@
     .set-title-group { flex: 1; }
     .set-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; line-height: 1.2; }
     .set-desc { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .set-meta-badges { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-top: 12px; }
+    .meta-chip {
+      font-size: 0.72rem; font-weight: 600; padding: 4px 10px; border-radius: 99px;
+      background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    }
+    .meta-chip.tag { background: rgba(108,99,255,0.12); border-color: rgba(108,99,255,0.25); color: var(--accent); }
+    .meta-chip.warn { background: rgba(255,193,7,0.12); border-color: rgba(255,193,7,0.35); color: #b8860b; }
+    .deck-tag-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .deck-tag-chips span {
+      font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 6px;
+      background: rgba(108,99,255,0.1); color: var(--accent);
+    }
+    .weak-topics-block {
+      margin-top: 20px; padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .weak-topics-block h4 { margin: 0 0 10px; font-size: 0.95rem; font-weight: 700; }
+    .weak-topics-block .wt-empty { font-size: 0.85rem; color: var(--muted); margin: 0; }
+    .wt-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.82rem; }
+    .wt-row:last-child { margin-bottom: 0; }
+    .wt-name { flex: 0 0 140px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wt-bar-wrap { flex: 1; height: 8px; background: var(--card); border-radius: 99px; overflow: hidden; }
+    .wt-bar { height: 100%; border-radius: 99px; min-width: 2px; }
+    .wt-stat { flex: 0 0 88px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
     .set-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
     /* Edit settings panel */
@@ -1203,6 +1227,7 @@
           <div id="set-badges" style="display:flex;gap:6px;margin-bottom:10px"></div>
           <div class="set-name" id="set-name"></div>
           <div class="set-desc" id="set-desc"></div>
+          <div class="set-meta-badges" id="set-meta-badges" aria-live="polite"></div>
         </div>
         <div class="set-header-actions">
           <button class="btn-share" onclick="generateShareLink()">🔗 Поделиться</button>
@@ -1492,6 +1517,7 @@
     <!-- RIGHT: summary + results -->
     <div class="stats-main">
       <div class="stats-summary" id="global-summary"></div>
+      <div id="global-weak-topics" class="weak-topics-block" style="display:none"></div>
       <div class="stats-history-title" style="margin-top:24px;margin-bottom:12px">
         <span id="global-results-count">Все результаты</span>
         <button class="btn-clear-stats" onclick="clearAllHistory()">Очистить</button>
@@ -2722,6 +2748,7 @@ function renderDecks() {
         <span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>
       </div>
       <div class="deck-meta">${esc(d.desc || '')}</div>
+      ${d.tags && d.tags.length ? `<div class="deck-tag-chips">${d.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
       <div style="font-size:.73rem;color:var(--muted)">📁 ${esc(d.folder || 'Общая')}</div>
       <div class="deck-footer">
         <button class="btn-start" onclick="event.stopPropagation();openSet('${d.id}','play')">▶ Начать</button>
@@ -2760,6 +2787,29 @@ document.addEventListener('click', () => {
 });
 
 // ─── SET PAGE ────────────────────────────────────────────────────────────────
+function _renderSetMetaBadges(d) {
+  const mount = document.getElementById('set-meta-badges');
+  if (!mount) return;
+  const tags = Array.isArray(d.tags) ? d.tags.filter(Boolean) : [];
+  const pol = d.shufflePolicy || 'student';
+  const adv = [];
+  if (d.mode !== 'flashcard' && d.feedbackMode === 'end') {
+    adv.push('<span class="meta-chip warn">Итог в конце теста</span>');
+  }
+  if (pol === 'shuffle') adv.push('<span class="meta-chip">Порядок: случайно</span>');
+  else if (pol === 'ordered') adv.push('<span class="meta-chip">Порядок: как в списке</span>');
+  if (d.maxAttempts != null && d.maxAttempts > 0) {
+    const w = ruPlural(d.maxAttempts, 'попытка', 'попытки', 'попыток');
+    adv.push(`<span class="meta-chip warn">Лимит: ${d.maxAttempts} ${w}</span>`);
+  }
+  if (d.noBack) adv.push('<span class="meta-chip warn">Без возврата к прошлому</span>');
+  if (d.fcWrongToEnd) adv.push('<span class="meta-chip">Карточки: «не знал» в конец</span>');
+  const tagHtml = tags.length
+    ? tags.map(t => `<span class="meta-chip tag" title="Тема">${esc(t)}</span>`).join('')
+    : '<span class="meta-chip">Без темы — задайте в «✏️ Изменить»</span>';
+  mount.innerHTML = tagHtml + adv.join('');
+}
+
 function openSet(id, tab = 'cards') {
   const d = decks.find(x => x.id === id);
   if (!d) return;
@@ -2793,6 +2843,7 @@ function renderSetHeader(d) {
     <span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
   document.getElementById('set-name').textContent = d.name;
   document.getElementById('set-desc').textContent = d.desc || '';
+  _renderSetMetaBadges(d);
   document.getElementById('tab-cards-count').textContent = d.cards.length ? `(${d.cards.length})` : '';
   // populate edit fields
   document.getElementById('edit-name').value = d.name;
@@ -3339,13 +3390,10 @@ function _filterResultsGroup() {
 
 let _globalStatsAllResults = [];
 
-function _renderGlobalClassCharts() {
-  const mount = document.getElementById('global-class-charts');
-  if (!mount) return;
+function _getGlobalStatsFilteredData() {
   const group = document.getElementById('global-group-filter')?.value || '';
   const deck  = document.getElementById('global-deck-filter')?.value || '';
   const tag   = document.getElementById('global-tag-filter')?.value || '';
-
   let data = [..._globalStatsAllResults];
   if (group) data = data.filter(r => (r.group || '') === group);
   if (_gScoreFilter === 'high') data = data.filter(r => Number(r.pct || 0) >= 80);
@@ -3353,6 +3401,49 @@ function _renderGlobalClassCharts() {
   if (_gScoreFilter === 'low') data = data.filter(r => Number(r.pct || 0) < 50);
   if (deck) data = data.filter(r => (r.deckName || '') === deck);
   if (tag) data = data.filter(r => Array.isArray(r.deckTags) && r.deckTags.includes(tag));
+  return data;
+}
+
+function _renderWeakTopicsSummary() {
+  const el = document.getElementById('global-weak-topics');
+  if (!el) return;
+  const data = _getGlobalStatsFilteredData();
+  if (!data.length) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  const tagAgg = {};
+  data.forEach(r => {
+    const tags = Array.isArray(r.deckTags) ? r.deckTags.filter(Boolean) : [];
+    tags.forEach(t => {
+      if (!tagAgg[t]) tagAgg[t] = { sum: 0, n: 0 };
+      tagAgg[t].sum += Number(r.pct || 0);
+      tagAgg[t].n++;
+    });
+  });
+  const rows = Object.entries(tagAgg)
+    .map(([name, v]) => ({ name, avg: Math.round(v.sum / v.n), n: v.n }))
+    .sort((a, b) => a.avg - b.avg);
+  if (!rows.length) {
+    el.style.display = 'block';
+    el.innerHTML = '<h4>Слабые темы</h4><p class="wt-empty">В отфильтрованных результатах нет тем у заданий. Укажите темы в настройках задания («✏️ Изменить») — они сохранятся в следующих прохождениях.</p>';
+    return;
+  }
+  el.style.display = 'block';
+  const body = rows.slice(0, 12).map(r => {
+    const w = Math.min(100, Math.max(3, r.avg));
+    const c = r.avg >= 80 ? 'var(--green)' : r.avg >= 50 ? 'var(--yellow)' : 'var(--accent2)';
+    const nr = ruPlural(r.n, 'раз', 'раза', 'раз');
+    return `<div class="wt-row"><span class="wt-name" title="${escAttr(r.name)}">${esc(r.name)}</span><div class="wt-bar-wrap"><div class="wt-bar" style="width:${w}%;background:${c}"></div></div><span class="wt-stat">${r.avg}% · ${r.n} ${nr}</span></div>`;
+  }).join('');
+  el.innerHTML = '<h4>Слабые темы (средний % по теме)</h4>' + body;
+}
+
+function _renderGlobalClassCharts() {
+  const mount = document.getElementById('global-class-charts');
+  if (!mount) return;
+  const data = _getGlobalStatsFilteredData();
 
   const byDeck = {};
   data.forEach(r => {
@@ -4832,6 +4923,8 @@ async function renderGlobalStats() {
         Ученики ещё не проходили ваши тесты.<br>
         Нажмите <strong>🔗 Поделиться</strong> в любом задании и отправьте ссылку.
       </div>`;
+      const wt = document.getElementById('global-weak-topics');
+      if (wt) { wt.style.display = 'none'; wt.innerHTML = ''; }
       return;
     }
 
@@ -4896,11 +4989,12 @@ async function renderGlobalStats() {
 
     if (countEl) countEl.textContent = `${total} ${ruPlural(total, 'результат', 'результата', 'результатов')}`;
     _filterGlobal();
-    _renderGlobalClassCharts();
   } catch(e) {
     console.error('renderGlobalStats:', e);
     sumEl.innerHTML = '';
     histEl.innerHTML = `<div class="stats-empty">❌ Ошибка: ${e.code || e.message}</div>`;
+    const wt = document.getElementById('global-weak-topics');
+    if (wt) { wt.style.display = 'none'; wt.innerHTML = ''; }
   }
 }
 
@@ -4956,6 +5050,7 @@ function _filterGlobal() {
       : `${visible} из ${total}`;
   }
   _renderGlobalClassCharts();
+  _renderWeakTopicsSummary();
 }
 
 function _setScoreFilter(btn, val) {
