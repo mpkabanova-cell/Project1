@@ -341,6 +341,18 @@
     .type-badge.single { background: rgba(99,91,255,0.1); color: var(--accent); }
     .type-badge.multi { background: rgba(217,119,6,0.1); color: var(--yellow); }
     .type-badge.open { background: rgba(16,185,129,0.12); color: var(--green); }
+    .type-badge.tf { background: rgba(59,130,246,0.12); color: #2563eb; }
+    .type-badge.match { background: rgba(168,85,247,0.12); color: #7c3aed; }
+    .match-pair-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .match-pair-row input { flex: 1; min-width: 120px; }
+    .match-play-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .match-play-row label { font-size: 0.88rem; min-width: 100px; flex: 1; }
+    .match-play-row select { flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); }
+    .fc-hint-bar { text-align: center; margin-top: 10px; }
+    .fc-hint-text { font-size: 0.84rem; color: var(--muted); margin-top: 6px; display: none; }
+    .fc-hint-text.show { display: block; }
+    .set-advanced summary { cursor: pointer; font-weight: 700; color: var(--text); }
+    .set-advanced[open] summary { margin-bottom: 8px; }
 
     /* ── ADD CARD FORM (inline) ── */
     .add-card-bar { margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
@@ -1168,6 +1180,9 @@
           <select id="library-subject-filter" onchange="renderDecks()">
             <option value="all">Все предметы</option>
           </select>
+          <select id="library-tag-filter" onchange="renderDecks()" style="max-width:160px">
+            <option value="">Все темы</option>
+          </select>
         </div>
         <div class="decks-grid" id="decks-grid"></div>
         <button id="btn-library-top" class="btn-scroll-top" onclick="scrollLibraryTop()">↑ Наверх</button>
@@ -1213,6 +1228,42 @@
           <label>Описание</label>
           <textarea id="edit-desc" placeholder="О чём это задание?" rows="2"></textarea>
         </div>
+        <div class="form-row">
+          <label>Темы / теги</label>
+          <input type="text" id="edit-tags" placeholder="Через запятую: биология, контрольная">
+        </div>
+        <details class="set-advanced" id="set-advanced-details" style="margin-top:12px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface)">
+          <summary>Дополнительно</summary>
+          <div class="form-row" style="margin-top:10px">
+            <label>Обратная связь в тесте</label>
+            <select id="edit-feedback-mode">
+              <option value="immediate">Сразу после ответа</option>
+              <option value="end">Только итог в конце</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Порядок вопросов</label>
+            <select id="edit-shuffle-policy">
+              <option value="student">Как выберет ученик при старте</option>
+              <option value="shuffle">Всегда случайно</option>
+              <option value="ordered">Как в редакторе</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Лимит попыток на ученика</label>
+            <input type="number" id="edit-max-attempts" min="1" max="99" placeholder="Без лимита" style="max-width:120px">
+          </div>
+          <div class="form-row" style="margin-bottom:0">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="edit-no-back"> Запрет возврата (после «Далее» к прошлому вопросу нельзя)
+            </label>
+          </div>
+          <div class="form-row" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="checkbox" id="edit-fc-wrong-end"> Карточки: «не знал» — в конец очереди в этой сессии
+            </label>
+          </div>
+        </details>
         <div class="form-actions" style="margin-top:16px">
           <button class="btn-primary" onclick="saveSetSettings()">Сохранить изменения</button>
           <button class="btn-secondary" onclick="toggleEditPanel()">Отмена</button>
@@ -1248,6 +1299,8 @@
                 <option value="single">Один верный ответ</option>
                 <option value="multi">Несколько верных ответов</option>
                 <option value="open">Открытый ответ</option>
+                <option value="tf">Верно / неверно</option>
+                <option value="match">Сопоставление пары</option>
               </select>
             </div>
             <div class="form-row">
@@ -1317,6 +1370,10 @@
             </div>
           </div>
         </div>
+        <div class="fc-hint-bar" id="fc-hint-bar" style="display:none">
+          <button type="button" class="btn-secondary" style="font-size:0.82rem;padding:6px 12px" onclick="toggleFcHint(false)">Подсказка</button>
+          <div class="fc-hint-text" id="fc-hint-text"></div>
+        </div>
         <div class="flashcard-actions flashcard-actions-hidden" id="fc-actions">
           <button class="fc-btn-no" onclick="markCard(false)">✗ Не знал</button>
           <button class="fc-btn-knew" onclick="markCard(true)">✓ Знал!</button>
@@ -1338,9 +1395,14 @@
             <input type="text" id="quiz-open-answer" placeholder="Введите ответ..." onkeydown="if(event.key==='Enter')checkOpenAnswer()">
             <button class="btn-primary" onclick="checkOpenAnswer()">Проверить</button>
           </div>
+          <div id="quiz-match-block" style="display:none">
+            <div id="quiz-match-rows"></div>
+            <button type="button" class="btn-primary" id="quiz-match-submit" onclick="checkMatchAnswer()" style="margin-top:8px">Проверить</button>
+          </div>
           <div class="quiz-feedback" id="quiz-feedback"></div>
           <div class="quiz-next-btn" id="quiz-next-btn">
-            <button class="btn-primary" onclick="nextQuestion()">Следующий вопрос →</button>
+            <button class="btn-primary" id="quiz-next-btn-inner" onclick="nextQuestion()">Следующий вопрос →</button>
+            <button class="btn-secondary" id="quiz-prev-btn" style="display:none;margin-top:8px" onclick="prevQuestion()">← Предыдущий</button>
           </div>
         </div>
       </div>
@@ -1409,6 +1471,12 @@
         <div class="sf-label">Задание</div>
         <select class="sf-select" id="global-deck-filter" onchange="_filterGlobal()">
           <option value="">Все работы</option>
+        </select>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">Тема / тег</div>
+        <select class="sf-select" id="global-tag-filter" onchange="_filterGlobal()">
+          <option value="">Все темы</option>
         </select>
       </div>
       <div class="sf-group">
@@ -1505,6 +1573,10 @@
           </div>
         </div>
       </div>
+      <div class="fc-hint-bar" id="st-fc-hint-bar" style="display:none">
+        <button type="button" class="btn-secondary" style="font-size:0.82rem;padding:6px 12px" onclick="toggleStFcHint()">Подсказка</button>
+        <div class="fc-hint-text" id="st-fc-hint-text"></div>
+      </div>
       <div class="flashcard-actions flashcard-actions-hidden" id="st-fc-actions">
         <button class="fc-btn-no" onclick="stMarkCard(false)">✗ Не знал</button>
         <button class="fc-btn-knew" onclick="stMarkCard(true)">✓ Знал!</button>
@@ -1527,9 +1599,14 @@
                  onkeydown="if(event.key==='Enter')stCheckOpen()">
           <button class="btn-primary" onclick="stCheckOpen()">Проверить</button>
         </div>
+        <div id="st-quiz-match-block" style="display:none">
+          <div id="st-quiz-match-rows"></div>
+          <button type="button" class="btn-primary" onclick="stCheckMatch()" style="margin-top:8px">Проверить</button>
+        </div>
         <div class="quiz-feedback" id="st-feedback"></div>
         <div class="quiz-next-btn" id="st-next-btn">
-          <button class="btn-primary" onclick="stNextQ()">Следующий вопрос →</button>
+          <button class="btn-primary" id="st-next-btn-inner" onclick="stNextQ()">Следующий вопрос →</button>
+          <button class="btn-secondary" id="st-prev-btn" style="display:none;margin-top:8px" onclick="stPrevQ()">← Предыдущий</button>
         </div>
       </div>
     </div>
@@ -2112,8 +2189,22 @@ async function repeatQuiz(deckId) {
     document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
     if (currentUserData?.name) {
       studentName = currentUserData.name;
+      document.getElementById('st-name-label').textContent  = studentName;
+      document.getElementById('st-name-label2').textContent = studentName;
+      document.getElementById('student-step-name').style.display = 'none';
+      document.getElementById('student-step-quiz').style.display = 'block';
+      if (_db && currentUser && studentDeck.maxAttempts) {
+        const snap = await _db.collection('results').where('deckId', '==', studentDeck.id).where('studentId', '==', currentUser.uid).get();
+        if (snap.size >= studentDeck.maxAttempts) {
+          toast('Исчерпан лимит попыток для этого задания');
+          document.getElementById('student-step-quiz').style.display = 'none';
+          document.getElementById('student-step-name').style.display = 'block';
+          showLoadingOverlay(false);
+          return;
+        }
+      }
+      _beginStudentQuizAfterChecks();
       showLoadingOverlay(false);
-      startStudentQuiz();
     } else {
       document.getElementById('st-name-section').style.display = '';
       document.getElementById('st-quiz-section').style.display = 'none';
@@ -2160,16 +2251,17 @@ async function openQuizByCode(code) {
       document.getElementById('st-name-label2').textContent = studentName;
       document.getElementById('student-step-name').style.display = 'none';
       document.getElementById('student-step-quiz').style.display = 'block';
-      const cards = shouldShuffle ? shuffle([...studentDeck.cards]) : [...studentDeck.cards];
-      if (studentDeck.mode === 'flashcard') {
-        stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false, answers: [] };
-        document.getElementById('st-fc-play').classList.add('active');
-        stRenderFlashcard();
-      } else {
-        stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false, answers: [] };
-        document.getElementById('st-quiz-play').classList.add('active');
-        stRenderQuestion();
+      if (_db && currentUser && studentDeck.maxAttempts) {
+        const snap = await _db.collection('results').where('deckId', '==', studentDeck.id).where('studentId', '==', currentUser.uid).get();
+        if (snap.size >= studentDeck.maxAttempts) {
+          toast('Исчерпан лимит попыток для этого задания');
+          document.getElementById('student-step-quiz').style.display = 'none';
+          document.getElementById('student-step-name').style.display = 'block';
+          showLoadingOverlay(false);
+          return;
+        }
       }
+      _beginStudentQuizAfterChecks();
     } else {
       document.getElementById('student-step-name').style.display = 'block';
       document.getElementById('student-step-quiz').style.display = 'none';
@@ -2473,6 +2565,7 @@ function renderLibrarySidePanel(visibleDecks = null) {
   panel.innerHTML = `
     <div class="side-head">${esc(d.name)}</div>
     <div class="side-sub">${esc(d.desc || 'Без описания')}</div>
+    ${d.tags && d.tags.length ? `<div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">🏷 ${d.tags.map(t => esc(t)).join(', ')}</div>` : ''}
     <div class="side-stat-grid">
       <div class="side-stat"><div class="v">${d.cards?.length || 0}</div><div class="l">Карточек</div></div>
       <div class="side-stat"><div class="v">${d.mode === 'flashcard' ? '🃏' : '🧠'}</div><div class="l">Режим</div></div>
@@ -2523,7 +2616,9 @@ async function createNewSetInline() {
     history: [],
     timeLimit: null,
     shortCode: generateShortCode(),
-    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+    tags: [], feedbackMode: 'immediate', shufflePolicy: 'student',
+    maxAttempts: null, noBack: false, fcWrongToEnd: false
   };
   try {
     if (_db && currentUser) {
@@ -2569,8 +2664,21 @@ function renderDecks() {
     if (prev !== 'all' && !subjects.includes(prev)) subjSel.value = 'all';
   }
   const subjectVal = document.getElementById('library-subject-filter')?.value || 'all';
+  const tagSelLib = document.getElementById('library-tag-filter');
+  if (tagSelLib) {
+    const prevTag = tagSelLib.value || '';
+    const allTags = [...new Set(decks.flatMap(d => Array.isArray(d.tags) ? d.tags : []))].sort();
+    tagSelLib.innerHTML = '<option value="">Все темы</option>' +
+      allTags.map(t => `<option value="${esc(t)}"${prevTag === t ? ' selected' : ''}>${esc(t)}</option>`).join('');
+    if (prevTag && !allTags.includes(prevTag)) tagSelLib.value = '';
+  }
+  const tagLibVal = document.getElementById('library-tag-filter')?.value || '';
   renderFoldersBar(decks, filteredBySearch);
-  const visibleDecks = poolByFolder.filter(d => subjectVal === 'all' ? true : _guessSubjectLabel(d.name) === subjectVal);
+  const visibleDecks = poolByFolder.filter(d => {
+    const subOk = subjectVal === 'all' || _guessSubjectLabel(d.name) === subjectVal;
+    const tagOk = !tagLibVal || (Array.isArray(d.tags) && d.tags.includes(tagLibVal));
+    return subOk && tagOk;
+  });
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
@@ -2692,6 +2800,19 @@ function renderSetHeader(d) {
   setEditMode(d.mode || 'test');
   // play tab title
   document.getElementById('play-setup-title').textContent = `Готовы пройти «${d.name}»?`;
+  const tagsEl = document.getElementById('edit-tags');
+  if (tagsEl) tagsEl.value = Array.isArray(d.tags) ? d.tags.join(', ') : '';
+  const fbEl = document.getElementById('edit-feedback-mode');
+  if (fbEl) fbEl.value = d.feedbackMode === 'end' ? 'end' : 'immediate';
+  const spEl = document.getElementById('edit-shuffle-policy');
+  if (spEl) spEl.value = ['shuffle', 'ordered', 'student'].includes(d.shufflePolicy) ? d.shufflePolicy : 'student';
+  const maEl = document.getElementById('edit-max-attempts');
+  if (maEl) maEl.value = d.maxAttempts != null && d.maxAttempts > 0 ? d.maxAttempts : '';
+  const nbEl = document.getElementById('edit-no-back');
+  if (nbEl) nbEl.checked = !!d.noBack;
+  const fcwe = document.getElementById('edit-fc-wrong-end');
+  if (fcwe) fcwe.checked = !!d.fcWrongToEnd;
+  syncPlaySetupUI(d);
 }
 
 function setSetTab(tab) {
@@ -2724,6 +2845,13 @@ function saveSetSettings() {
   d.name = name;
   d.desc = document.getElementById('edit-desc').value.trim();
   d.mode = currentSetMode;
+  d.tags = _parseTagsInput(document.getElementById('edit-tags')?.value);
+  d.feedbackMode = document.getElementById('edit-feedback-mode')?.value === 'end' ? 'end' : 'immediate';
+  d.shufflePolicy = document.getElementById('edit-shuffle-policy')?.value || 'student';
+  const maRaw = parseInt(document.getElementById('edit-max-attempts')?.value, 10);
+  d.maxAttempts = (!isNaN(maRaw) && maRaw > 0) ? maRaw : null;
+  d.noBack = !!document.getElementById('edit-no-back')?.checked;
+  d.fcWrongToEnd = !!document.getElementById('edit-fc-wrong-end')?.checked;
   // if mode changed, warn about incompatible cards? For now just save
   save();
   renderSetHeader(d);
@@ -2767,7 +2895,9 @@ function renderQuestionType() {
   if (currentSetMode === 'flashcard') {
     typeRow.style.display = 'none';
     block.innerHTML = `<div class="form-row"><label>Ответ</label>
-      <input type="text" id="q-open-answer" placeholder="Введите ответ на карточке"></div>`;
+      <input type="text" id="q-open-answer" placeholder="Введите ответ на карточке"></div>
+      <div class="form-row"><label>Подсказка <span style="font-weight:400;font-size:0.78rem">(необязательно)</span></label>
+      <input type="text" id="q-flash-hint" placeholder="По кнопке при прохождении"></div>`;
     return;
   }
 
@@ -2776,6 +2906,18 @@ function renderQuestionType() {
   if (type === 'open') {
     block.innerHTML = `<div class="form-row"><label>Правильный ответ</label>
       <input type="text" id="q-open-answer" placeholder="Введите правильный ответ"></div>`;
+  } else if (type === 'tf') {
+    block.innerHTML = `<div class="form-row"><label>Утверждение верно?</label>
+      <div style="display:flex;gap:22px;flex-wrap:wrap">
+        <label><input type="radio" name="tf-correct" value="true" checked> Да, верно</label>
+        <label><input type="radio" name="tf-correct" value="false"> Нет, неверно</label>
+      </div></div>`;
+  } else if (type === 'match') {
+    block.innerHTML = `<div class="form-row"><label>Пары «термин — ответ»</label>
+      <div id="match-pairs-list"></div>
+      <button type="button" class="btn-add-option" onclick="addMatchPairRow()">+ Пара</button></div>`;
+    const list = document.getElementById('match-pairs-list');
+    if (list && !list.children.length) { addMatchPairRow(); addMatchPairRow(); }
   } else {
     block.innerHTML = `<div class="form-row">
       <label>Варианты ответа</label>
@@ -2786,6 +2928,28 @@ function renderQuestionType() {
       addOption(); addOption(); addOption();
     }
   }
+}
+
+function addMatchPairRow(left = '', right = '') {
+  const list = document.getElementById('match-pairs-list');
+  if (!list) return;
+  const row = document.createElement('div');
+  row.className = 'match-pair-row';
+  row.innerHTML = `<input type="text" class="match-left" placeholder="Термин" value="${esc(left)}">
+    <input type="text" class="match-right" placeholder="Ответ / определение" value="${esc(right)}">
+    <button type="button" class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;
+  list.appendChild(row);
+}
+
+function _matchPairsFromEditor() {
+  const rows = document.querySelectorAll('#match-pairs-list .match-pair-row');
+  const pairs = [];
+  rows.forEach(r => {
+    const L = r.querySelector('.match-left')?.value?.trim() || '';
+    const R = r.querySelector('.match-right')?.value?.trim() || '';
+    if (L && R) pairs.push({ left: L, right: R });
+  });
+  return pairs;
 }
 
 let optCount = 0;
@@ -2813,7 +2977,8 @@ function getCardFromForm(existing) {
   if (currentSetMode === 'flashcard') {
     const ans = document.getElementById('q-open-answer').value.trim();
     if (!ans) { toast('Введите ответ'); return null; }
-    return { id: existing?.id || uid(), type: 'flashcard', question, answer: ans, options: [], image: currentImageData };
+    const hint = document.getElementById('q-flash-hint')?.value?.trim() || '';
+    return { id: existing?.id || uid(), type: 'flashcard', question, answer: ans, options: [], image: currentImageData, hint: hint || undefined };
   }
 
   const type = document.getElementById('q-type').value;
@@ -2822,6 +2987,17 @@ function getCardFromForm(existing) {
     const ans = document.getElementById('q-open-answer').value.trim();
     if (!ans) { toast('Введите правильный ответ'); return null; }
     card.answer = ans;
+  } else if (type === 'tf') {
+    const v = document.querySelector('input[name="tf-correct"]:checked')?.value;
+    card.tfCorrect = v === 'true';
+    card.answer = card.tfCorrect ? 'Верно' : 'Неверно';
+    card.options = [];
+  } else if (type === 'match') {
+    const pairs = _matchPairsFromEditor();
+    if (pairs.length < 2) { toast('Добавьте минимум 2 пары'); return null; }
+    card.pairs = pairs;
+    card.answer = pairs.map(p => `${p.left} → ${p.right}`).join('; ');
+    card.options = [];
   } else {
     const rows = document.getElementById('options-list').querySelectorAll('.option-row');
     if (rows.length < 2) { toast('Добавьте минимум 2 варианта'); return null; }
@@ -2870,8 +3046,19 @@ function editCard(id) {
   if (card.type !== 'flashcard') document.getElementById('q-type').value = card.type;
   renderQuestionType();
   setTimeout(() => {
-    if (card.type === 'flashcard' || card.type === 'open') {
+    if (card.type === 'flashcard') {
       document.getElementById('q-open-answer').value = card.answer;
+      const h = document.getElementById('q-flash-hint');
+      if (h) h.value = card.hint || '';
+    } else if (card.type === 'open') {
+      document.getElementById('q-open-answer').value = card.answer;
+    } else if (card.type === 'tf') {
+      const v = card.tfCorrect === false ? 'false' : 'true';
+      const r = document.querySelector(`input[name="tf-correct"][value="${v}"]`);
+      if (r) r.checked = true;
+    } else if (card.type === 'match') {
+      const list = document.getElementById('match-pairs-list');
+      if (list) { list.innerHTML = ''; (card.pairs || []).forEach(p => addMatchPairRow(p.left, p.right)); }
     } else {
       const list = document.getElementById('options-list');
       list.innerHTML = ''; optCount = 0;
@@ -2993,8 +3180,12 @@ function renderSetCards() {
   empty.style.display = 'none';
   if (countEl) countEl.textContent = `(${setCards.length})`;
   grid.innerHTML = setCards.map((c, idx) => {
-    const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый', flashcard: 'Карточка' }[c.type] || c.type;
-    const answer = (c.type === 'flashcard' || c.type === 'open') ? c.answer : c.options.filter(o => o.correct).map(o => o.text).join(', ');
+    const typeLabel = { single: 'Один ответ', multi: 'Несколько', open: 'Открытый', flashcard: 'Карточка', tf: 'Верно/неверно', match: 'Пары' }[c.type] || c.type;
+    let answer = '';
+    if (c.type === 'flashcard' || c.type === 'open') answer = c.answer;
+    else if (c.type === 'tf') answer = c.tfCorrect ? 'Верно' : 'Неверно';
+    else if (c.type === 'match') answer = (c.pairs || []).map(p => `${p.left} → ${p.right}`).join('; ');
+    else answer = c.options.filter(o => o.correct).map(o => o.text).join(', ');
     const badgeClass = c.type === 'flashcard' ? 'open' : c.type;
     const thumbHtml = c.image ? `<img src="${c.image}" class="qcard-thumb" alt="">` : '';
     return `<div class="qcard" id="qcard-${c.id}" draggable="true" data-id="${c.id}">
@@ -3055,10 +3246,11 @@ async function downloadResultsXLSX() {
         const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
         return tb - ta;
       });
-    const header = ['Ученик', 'Класс', 'Задание', 'Дата', 'Правильно', 'Всего', '%'];
+    const header = ['Ученик', 'Класс', 'Задание', 'Темы', 'Дата', 'Правильно', 'Всего', '%'];
     const rows   = results.map(r => {
       const dt = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
-      return [r.studentName || '', r.group || '', r.deckName || '', dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
+      const tags = Array.isArray(r.deckTags) ? r.deckTags.join(', ') : '';
+      return [r.studentName || '', r.group || '', r.deckName || '', tags, dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
     });
     const deck = decks.find(x => x.id === currentSetId);
     const safe = (deck?.name || 'задание').replace(/[\\/:*?"<>|]/g, '_');
@@ -3076,11 +3268,12 @@ async function downloadGlobalXLSX() {
         const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
         return tb - ta;
       });
-    const header = ['Ученик', 'Класс', 'Задание', 'Режим', 'Дата', 'Правильно', 'Всего', '%'];
+    const header = ['Ученик', 'Класс', 'Задание', 'Темы', 'Режим', 'Дата', 'Правильно', 'Всего', '%'];
     const rows   = results.map(r => {
       const dt   = r.date?.toDate ? r.date.toDate() : new Date(r.date || 0);
       const mode = r.mode === 'flashcard' ? 'Карточки' : 'Тест';
-      return [r.studentName || '', r.group || '', r.deckName || '', mode, dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
+      const tags = Array.isArray(r.deckTags) ? r.deckTags.join(', ') : '';
+      return [r.studentName || '', r.group || '', r.deckName || '', tags, mode, dt.toLocaleString('ru-RU'), r.correct, r.total, r.pct];
     });
     _downloadXLSX([header, ...rows], 'Все результаты', 'все_результаты.xlsx');
   } catch(e) { toast('Ошибка экспорта: ' + (e.message || e.code)); }
@@ -3151,6 +3344,7 @@ function _renderGlobalClassCharts() {
   if (!mount) return;
   const group = document.getElementById('global-group-filter')?.value || '';
   const deck  = document.getElementById('global-deck-filter')?.value || '';
+  const tag   = document.getElementById('global-tag-filter')?.value || '';
 
   let data = [..._globalStatsAllResults];
   if (group) data = data.filter(r => (r.group || '') === group);
@@ -3158,6 +3352,7 @@ function _renderGlobalClassCharts() {
   if (_gScoreFilter === 'mid') data = data.filter(r => Number(r.pct || 0) >= 50 && Number(r.pct || 0) < 80);
   if (_gScoreFilter === 'low') data = data.filter(r => Number(r.pct || 0) < 50);
   if (deck) data = data.filter(r => (r.deckName || '') === deck);
+  if (tag) data = data.filter(r => Array.isArray(r.deckTags) && r.deckTags.includes(tag));
 
   const byDeck = {};
   data.forEach(r => {
@@ -3278,7 +3473,9 @@ async function createNewSet() {
     mode: newSetMode, cards: [], history: [],
     timeLimit: timeLimit || null,
     shortCode: generateShortCode(),
-    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+    tags: [], feedbackMode: 'immediate', shufflePolicy: 'student',
+    maxAttempts: null, noBack: false, fcWrongToEnd: false
   };
   closeNewSetModal();
   if (_db && currentUser) {
@@ -3357,7 +3554,13 @@ async function duplicateDeck(id) {
     cards: src.cards.map(c => ({ ...c, id: uid() })),
     history: [],
     shortCode: generateShortCode(),
-    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+    tags: Array.isArray(src.tags) ? [...src.tags] : [],
+    feedbackMode: src.feedbackMode === 'end' ? 'end' : 'immediate',
+    shufflePolicy: src.shufflePolicy || 'student',
+    maxAttempts: src.maxAttempts != null ? src.maxAttempts : null,
+    noBack: !!src.noBack,
+    fcWrongToEnd: !!src.fcWrongToEnd
   };
   if (_db && currentUser) {
     try {
@@ -3376,14 +3579,61 @@ async function duplicateDeck(id) {
 }
 
 // ─── QUIZ ─────────────────────────────────────────────────────────────────────
-function toggleShuffle() {
-  shouldShuffle = !shouldShuffle;
+function setShuffleState(val) {
+  shouldShuffle = !!val;
   const wrap = document.getElementById('shuffle-toggle-wrap');
   const knob = document.getElementById('shuffle-knob');
   const label = document.getElementById('shuffle-label');
+  if (!wrap || !knob || !label) return;
   wrap.style.background = shouldShuffle ? 'var(--accent)' : 'var(--border)';
   knob.style.left = shouldShuffle ? '21px' : '3px';
-  label.textContent = shouldShuffle ? 'Перемешать карточки' : 'По порядку';
+  label.textContent = shouldShuffle ? 'Перемешать вопросы' : 'По порядку';
+}
+
+function toggleShuffle() {
+  const d = decks.find(x => x.id === currentSetId);
+  if (d && (d.shufflePolicy === 'shuffle' || d.shufflePolicy === 'ordered')) return;
+  setShuffleState(!shouldShuffle);
+}
+
+function syncPlaySetupUI(d) {
+  const row = document.querySelector('#tab-play .shuffle-row');
+  const wrap = document.getElementById('shuffle-toggle-wrap');
+  const label = document.getElementById('shuffle-label');
+  if (!row || !wrap || !label) return;
+  const pol = d.shufflePolicy || 'student';
+  if (pol === 'shuffle') {
+    setShuffleState(true);
+    row.style.opacity = '0.65';
+    wrap.style.pointerEvents = 'none';
+    label.textContent = 'Случайный порядок (задано в задании)';
+  } else if (pol === 'ordered') {
+    setShuffleState(false);
+    row.style.opacity = '0.65';
+    wrap.style.pointerEvents = 'none';
+    label.textContent = 'Как в редакторе (задано в задании)';
+  } else {
+    row.style.opacity = '1';
+    wrap.style.pointerEvents = '';
+    setShuffleState(shouldShuffle);
+    label.textContent = shouldShuffle ? 'Перемешать вопросы' : 'По порядку';
+  }
+}
+
+function getTeacherPlayCards(d) {
+  const pol = d.shufflePolicy || 'student';
+  const base = [...(d.cards || [])];
+  if (pol === 'shuffle') return shuffle(base);
+  if (pol === 'ordered') return base;
+  return shouldShuffle ? shuffle(base) : base;
+}
+
+function getStudentPlayCards(d) {
+  const pol = d.shufflePolicy || 'student';
+  const base = [...(d.cards || [])];
+  if (pol === 'shuffle') return shuffle(base);
+  if (pol === 'ordered') return base;
+  return shuffle(base);
 }
 
 function startQuizFromSet() {
@@ -3397,15 +3647,22 @@ function startQuizFromSet() {
   document.getElementById('fc-play').classList.remove('active');
   document.getElementById('quiz-play').classList.remove('active');
 
-  const cards = shouldShuffle ? shuffle([...d.cards]) : [...d.cards];
+  const cards = getTeacherPlayCards(d);
 
   if ((d.mode || 'test') === 'flashcard') {
-    fcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false };
+    fcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false, wrongToEnd: !!d.fcWrongToEnd };
     document.getElementById('fc-play').classList.add('active');
     renderFlashcard();
   } else {
-    quizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false };
+    quizState = {
+      cards, idx: 0, correct: 0, wrong: 0, answered: false,
+      feedbackMode: d.feedbackMode === 'end' ? 'end' : 'immediate',
+      noBack: !!d.noBack,
+      answerLog: [],
+      lastAnswerCorrect: undefined
+    };
     document.getElementById('quiz-play').classList.add('active');
+    _updateQuizNavButtons();
     renderQuizQuestion();
   }
 }
@@ -3419,6 +3676,16 @@ function exitQuiz() {
 }
 
 // ─── FLASHCARD MODE ───────────────────────────────────────────────────────────
+function toggleFcHint() {
+  const el = document.getElementById('fc-hint-text');
+  if (el) el.classList.add('show');
+}
+
+function toggleStFcHint() {
+  const el = document.getElementById('st-fc-hint-text');
+  if (el) el.classList.add('show');
+}
+
 function renderFlashcard() {
   const { cards, idx } = fcState;
   const card = cards[idx];
@@ -3430,6 +3697,13 @@ function renderFlashcard() {
   document.getElementById('fc-card').classList.remove('flipped');
   fcState.flipped = false;
   document.getElementById('fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
+  const hBar = document.getElementById('fc-hint-bar');
+  const hTxt = document.getElementById('fc-hint-text');
+  if (card.hint && hBar && hTxt) {
+    hBar.style.display = 'block';
+    hTxt.textContent = card.hint;
+    hTxt.classList.remove('show');
+  } else if (hBar) hBar.style.display = 'none';
   const wrap = document.getElementById('fc-img-wrap');
   if (card.image) { document.getElementById('fc-img').src = card.image; wrap.style.display = 'block'; }
   else { wrap.style.display = 'none'; }
@@ -3443,8 +3717,18 @@ function flipCurrentCard() {
 
 function markCard(knew) {
   if (!fcState.flipped) return;
-  if (knew) fcState.knew++; else fcState.didnt++;
-  fcState.idx++;
+  if (knew) {
+    fcState.knew++;
+    fcState.idx++;
+  } else {
+    fcState.didnt++;
+    if (fcState.wrongToEnd && fcState.cards.length > 1) {
+      const cur = fcState.cards.splice(fcState.idx, 1)[0];
+      fcState.cards.push(cur);
+    } else {
+      fcState.idx++;
+    }
+  }
   if (fcState.idx >= fcState.cards.length) {
     document.getElementById('fc-play').classList.remove('active');
     document.getElementById('fc-results').style.display = 'block';
@@ -3461,6 +3745,12 @@ function markCard(knew) {
 }
 
 // ─── TEST MODE ────────────────────────────────────────────────────────────────
+function _updateQuizNavButtons() {
+  const prev = document.getElementById('quiz-prev-btn');
+  if (!prev || !quizState) return;
+  prev.style.display = (!quizState.noBack && quizState.idx > 0) ? 'block' : 'none';
+}
+
 function renderQuizQuestion() {
   const { cards, idx } = quizState;
   const card = cards[idx];
@@ -3477,15 +3767,37 @@ function renderQuizQuestion() {
 
   const optsCont = document.getElementById('quiz-options');
   const openCont = document.getElementById('quiz-open-input');
+  const matchBlk = document.getElementById('quiz-match-block');
+  if (matchBlk) matchBlk.style.display = 'none';
+  optsCont.style.display = 'none';
+  openCont.style.display = 'none';
 
   if (card.type === 'open') {
-    optsCont.style.display = 'none';
     openCont.style.display = 'block';
     document.getElementById('quiz-open-answer').value = '';
     document.getElementById('quiz-open-answer').disabled = false;
+  } else if (card.type === 'tf') {
+    optsCont.style.display = 'flex';
+    optsCont.style.flexDirection = 'column';
+    optsCont.style.gap = '10px';
+    optsCont.innerHTML = `
+      <button type="button" class="quiz-opt" onclick="checkTfAnswer(true)">Верно</button>
+      <button type="button" class="quiz-opt" onclick="checkTfAnswer(false)">Неверно</button>`;
+  } else if (card.type === 'match' && card.pairs && card.pairs.length) {
+    matchBlk.style.display = 'block';
+    const rights = shuffle(card.pairs.map(p => p.right));
+    const rows = card.pairs.map((p, i) => {
+      const opts = rights.map(r => `<option value="${escAttr(r)}">${esc(r)}</option>`).join('');
+      return `<div class="match-play-row" data-i="${i}">
+        <label>${esc(p.left)}</label>
+        <select class="match-select" aria-label="Ответ для ${escAttr(p.left)}">${opts}</select>
+      </div>`;
+    }).join('');
+    document.getElementById('quiz-match-rows').innerHTML = rows;
   } else {
     optsCont.style.display = 'grid';
-    openCont.style.display = 'none';
+    optsCont.style.flexDirection = '';
+    optsCont.style.gap = '';
     const shuffled = shuffle([...card.options]);
     optsCont.innerHTML = shuffled.map(o => {
       if (card.type === 'multi') {
@@ -3497,14 +3809,61 @@ function renderQuizQuestion() {
       optsCont.innerHTML += `<button class="btn-primary" id="multi-submit" onclick="checkMulti()" style="margin-top:8px">Проверить</button>`;
     }
   }
+  _updateQuizNavButtons();
+}
+
+function checkTfAnswer(pickedTrue) {
+  if (quizState.answered) return;
+  const card = quizState.cards[quizState.idx];
+  const correct = !!pickedTrue === !!card.tfCorrect;
+  quizState.answered = true;
+  const buttons = document.querySelectorAll('#quiz-options .quiz-opt');
+  buttons.forEach(b => { b.disabled = true; });
+  if (quizState.feedbackMode !== 'end') {
+    buttons.forEach(b => {
+      const isTrueBtn = b.textContent.trim() === 'Верно';
+      if (isTrueBtn === !!card.tfCorrect) b.classList.add('correct');
+      else if (isTrueBtn === pickedTrue) b.classList.add('wrong');
+    });
+  }
+  showFeedback(correct, card.tfCorrect ? 'Верно' : 'Неверно');
+}
+
+function checkMatchAnswer() {
+  if (quizState.answered) return;
+  const card = quizState.cards[quizState.idx];
+  const rows = document.querySelectorAll('#quiz-match-rows .match-play-row');
+  let allOk = true;
+  const given = [];
+  rows.forEach((row, i) => {
+    const sel = row.querySelector('.match-select');
+    const v = sel ? sel.value : '';
+    given.push(`${card.pairs[i].left} → ${v}`);
+    if (v !== card.pairs[i].right) allOk = false;
+  });
+  quizState.answered = true;
+  rows.forEach((row, i) => {
+    const sel = row.querySelector('.match-select');
+    if (sel) sel.disabled = true;
+    if (quizState.feedbackMode !== 'end') {
+      const ok = sel && sel.value === card.pairs[i].right;
+      row.style.outline = ok ? '2px solid var(--green)' : '2px solid var(--accent2)';
+      row.style.borderRadius = '8px';
+    }
+  });
+  const correctText = card.pairs.map(p => `${p.left} → ${p.right}`).join('; ');
+  quizState._matchGiven = given.join('; ');
+  showFeedback(allOk, correctText);
 }
 
 function checkSingle(btn, correct, correctText) {
   if (quizState.answered) return;
   quizState.answered = true;
   document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
-  btn.classList.add(correct ? 'correct' : 'wrong');
-  if (!correct) document.querySelectorAll('.quiz-opt').forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
+  if (quizState.feedbackMode !== 'end') {
+    btn.classList.add(correct ? 'correct' : 'wrong');
+    if (!correct) document.querySelectorAll('.quiz-opt').forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
+  }
   showFeedback(correct, correctText);
 }
 
@@ -3525,9 +3884,12 @@ function checkMulti() {
     const selected = b.classList.contains('selected-multi');
     const isCorrect = b.dataset.correct === 'true';
     b.style.borderColor = '';
-    if (isCorrect) b.classList.add('correct');
-    if (selected && !isCorrect) { b.classList.add('wrong'); allRight = false; }
+    if (selected && !isCorrect) allRight = false;
     if (!selected && isCorrect) allRight = false;
+    if (quizState.feedbackMode !== 'end') {
+      if (isCorrect) b.classList.add('correct');
+      if (selected && !isCorrect) b.classList.add('wrong');
+    }
   });
   document.getElementById('multi-submit')?.remove();
   showFeedback(allRight, card.options.filter(o => o.correct).map(o => o.text).join(', '));
@@ -3544,15 +3906,27 @@ function checkOpenAnswer() {
 }
 
 function showFeedback(correct, correctText) {
+  quizState.lastAnswerCorrect = !!correct;
   if (correct) quizState.correct++; else quizState.wrong++;
   const fb = document.getElementById('quiz-feedback');
-  fb.textContent = correct ? '✓ Правильно!' : `✗ Неверно. Правильный ответ: ${correctText}`;
-  fb.className = 'quiz-feedback show ' + (correct ? 'correct' : 'wrong');
+  const end = quizState.feedbackMode === 'end';
+  if (end) {
+    fb.textContent = 'Ответ сохранён. Итог — после последнего вопроса.';
+    fb.className = 'quiz-feedback show';
+  } else {
+    fb.textContent = correct ? '✓ Правильно!' : `✗ Неверно. Правильный ответ: ${correctText}`;
+    fb.className = 'quiz-feedback show ' + (correct ? 'correct' : 'wrong');
+  }
   document.getElementById('quiz-next-btn').className = 'quiz-next-btn show';
 }
 
 function nextQuestion() {
+  if (typeof quizState.lastAnswerCorrect === 'boolean') {
+    quizState.answerLog.push(!!quizState.lastAnswerCorrect);
+  }
+  quizState.lastAnswerCorrect = undefined;
   quizState.idx++;
+  _updateQuizNavButtons();
   if (quizState.idx >= quizState.cards.length) {
     document.getElementById('quiz-play').classList.remove('active');
     const r = document.getElementById('quiz-results');
@@ -3566,6 +3940,18 @@ function nextQuestion() {
     recordResult('test', quizState.correct, quizState.cards.length);
     return;
   }
+  renderQuizQuestion();
+}
+
+function prevQuestion() {
+  if (!quizState || quizState.noBack || quizState.idx <= 0 || !quizState.answerLog.length) return;
+  const wasCorrect = quizState.answerLog.pop();
+  quizState.idx--;
+  if (wasCorrect) quizState.correct--;
+  else quizState.wrong--;
+  quizState.lastAnswerCorrect = undefined;
+  quizState.answered = false;
+  _updateQuizNavButtons();
   renderQuizQuestion();
 }
 
@@ -3590,6 +3976,7 @@ async function saveStudentResult(deckId, deckName, teacherId, studentName, corre
     date: firebase.firestore.FieldValue.serverTimestamp()
   };
   if (group) doc.group = group;
+  if (studentDeck?.tags && studentDeck.tags.length) doc.deckTags = studentDeck.tags;
   await _db.collection('results').add(doc);
 }
 
@@ -3598,20 +3985,34 @@ async function saveStudentResult(deckId, deckName, teacherId, studentName, corre
 function packDeck(d) {
   return {
     i: d.id, n: d.name, d: d.desc || '', m: d.mode,
+    fm: d.feedbackMode === 'end' ? 'e' : '',
+    sp: d.shufflePolicy && d.shufflePolicy !== 'student' ? d.shufflePolicy[0] : '',
     c: d.cards.map(c => {
       const p = { q: c.question, a: c.answer || '', t: c.type };
       if (c.options && c.options.length) p.o = c.options.map(o => ({ t: o.text, c: o.correct }));
+      if (c.tfCorrect === true || c.tfCorrect === false) p.tf = c.tfCorrect;
+      if (c.pairs && c.pairs.length) p.ps = c.pairs.map(x => ({ l: x.left, r: x.right }));
+      if (c.hint) p.h = c.hint;
       return p;
     })
   };
 }
 function unpackDeck(p) {
+  const spMap = { s: 'shuffle', o: 'ordered' };
   return {
     id: p.i, name: p.n, desc: p.d || '', mode: p.m,
-    cards: (p.c || []).map((c, i) => ({
-      id: 'c' + i, type: c.t, question: c.q, answer: c.a || '',
-      options: (c.o || []).map(o => ({ text: o.t, correct: o.c }))
-    }))
+    feedbackMode: p.fm === 'e' ? 'end' : 'immediate',
+    shufflePolicy: spMap[p.sp] || 'student',
+    cards: (p.c || []).map((c, i) => {
+      const card = {
+        id: 'c' + i, type: c.t, question: c.q, answer: c.a || '',
+        options: (c.o || []).map(o => ({ text: o.t, correct: o.c }))
+      };
+      if (c.tf === true || c.tf === false) card.tfCorrect = c.tf;
+      if (c.ps && c.ps.length) card.pairs = c.ps.map(x => ({ left: x.l, right: x.r }));
+      if (c.h) card.hint = c.h;
+      return card;
+    })
   };
 }
 function urlEncode(obj) {
@@ -3715,24 +4116,58 @@ function _stopTimer() {
   if (bar) bar.style.display = 'none';
 }
 
-function startStudentQuiz() {
-  const last  = document.getElementById('st-lastname').value.trim();
-  const first = document.getElementById('st-firstname').value.trim();
-  if (!last || !first) { toast('Введите фамилию и имя'); return; }
-  studentName  = last + ' ' + first;
-  studentGroup = document.getElementById('st-group').value.trim();
+async function startStudentQuiz() {
+  const last  = document.getElementById('st-lastname')?.value?.trim() || '';
+  const first = document.getElementById('st-firstname')?.value?.trim() || '';
+  if (last && first) {
+    studentName  = last + ' ' + first;
+    studentGroup = document.getElementById('st-group')?.value?.trim() || '';
+  } else if (studentName && studentName.trim()) {
+    studentGroup = document.getElementById('st-group')?.value?.trim() || studentGroup || '';
+  } else if (currentUserData?.name) {
+    studentName = currentUserData.name;
+    studentGroup = document.getElementById('st-group')?.value?.trim() || studentGroup || '';
+  } else {
+    toast('Введите фамилию и имя');
+    return;
+  }
   document.getElementById('st-name-label').textContent  = studentName;
   document.getElementById('st-name-label2').textContent = studentName;
   document.getElementById('student-step-name').style.display = 'none';
   document.getElementById('student-step-quiz').style.display = 'block';
-  const cards = shuffle([...studentDeck.cards]);
+  if (_db && currentUser && studentDeck.maxAttempts) {
+    try {
+      const snap = await _db.collection('results')
+        .where('deckId', '==', studentDeck.id)
+        .where('studentId', '==', currentUser.uid)
+        .get();
+      if (snap.size >= studentDeck.maxAttempts) {
+        toast('Исчерпан лимит попыток для этого задания');
+        document.getElementById('student-step-quiz').style.display = 'none';
+        document.getElementById('student-step-name').style.display = 'block';
+        return;
+      }
+    } catch (e) { console.warn('attempts check', e); }
+  }
+  _beginStudentQuizAfterChecks();
+}
+
+function _beginStudentQuizAfterChecks() {
+  const cards = getStudentPlayCards(studentDeck);
   if (studentDeck.mode === 'flashcard') {
-    stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false, answers: [] };
+    stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false, answers: [], wrongToEnd: !!studentDeck.fcWrongToEnd };
     document.getElementById('st-fc-play').classList.add('active');
     stRenderFlashcard();
   } else {
-    stQuizState = { cards, idx: 0, correct: 0, wrong: 0, answered: false, answers: [] };
+    stQuizState = {
+      cards, idx: 0, correct: 0, wrong: 0, answered: false, answers: [],
+      feedbackMode: studentDeck.feedbackMode === 'end' ? 'end' : 'immediate',
+      noBack: !!studentDeck.noBack,
+      answerLog: [],
+      lastAnswerCorrect: undefined
+    };
     document.getElementById('st-quiz-play').classList.add('active');
+    _updateStQuizNavButtons();
     stRenderQuestion();
   }
   _stopTimer();
@@ -3752,6 +4187,13 @@ function stRenderFlashcard() {
   document.getElementById('st-fc-answer').textContent = ans;
   document.getElementById('st-fc-card').classList.remove('flipped');
   document.getElementById('st-fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
+  const hBar = document.getElementById('st-fc-hint-bar');
+  const hTxt = document.getElementById('st-fc-hint-text');
+  if (card.hint && hBar && hTxt) {
+    hBar.style.display = 'block';
+    hTxt.textContent = card.hint;
+    hTxt.classList.remove('show');
+  } else if (hBar) hBar.style.display = 'none';
   const stWrap = document.getElementById('st-fc-img-wrap');
   if (card.image) { document.getElementById('st-fc-img').src = card.image; stWrap.style.display = 'block'; }
   else { stWrap.style.display = 'none'; }
@@ -3767,19 +4209,34 @@ function stFlipCard() {
 function stMarkCard(knew) {
   if (!stFcState.flipped) return;
   stFcState.answers.push({ idx: stFcState.idx, correct: knew, given: knew ? 'Знал' : 'Не знал' });
-  if (knew) stFcState.knew++; else stFcState.didnt++;
-  // Close current card first to avoid showing next answer during flip animation
+  if (knew) {
+    stFcState.knew++;
+    stFcState.idx++;
+  } else {
+    stFcState.didnt++;
+    if (stFcState.wrongToEnd && stFcState.cards.length > 1) {
+      const cur = stFcState.cards.splice(stFcState.idx, 1)[0];
+      stFcState.cards.push(cur);
+    } else {
+      stFcState.idx++;
+    }
+  }
   document.getElementById('st-fc-actions').className = 'flashcard-actions flashcard-actions-hidden';
   document.getElementById('st-fc-card').classList.remove('flipped');
   stFcState.flipped = false;
   setTimeout(() => {
-    stFcState.idx++;
     if (stFcState.idx >= stFcState.cards.length) {
       stFinish('flashcard', stFcState.knew, stFcState.cards.length, stFcState.answers);
       return;
     }
     stRenderFlashcard();
   }, 220);
+}
+
+function _updateStQuizNavButtons() {
+  const prev = document.getElementById('st-prev-btn');
+  if (!prev || !stQuizState) return;
+  prev.style.display = (!stQuizState.noBack && stQuizState.idx > 0) ? 'block' : 'none';
 }
 
 function stRenderQuestion() {
@@ -3796,13 +4253,35 @@ function stRenderQuestion() {
   else { stQImg.style.display = 'none'; }
   const opts = document.getElementById('st-quiz-opts');
   const open = document.getElementById('st-quiz-open');
+  const matchBlk = document.getElementById('st-quiz-match-block');
+  if (matchBlk) matchBlk.style.display = 'none';
+  opts.style.display = 'none';
+  open.style.display = 'none';
   if (card.type === 'open') {
-    opts.style.display = 'none'; open.style.display = 'block';
+    open.style.display = 'block';
     const inp = document.getElementById('st-open-ans');
     inp.value = ''; inp.disabled = false;
     setTimeout(() => inp.focus(), 50);
+  } else if (card.type === 'tf') {
+    opts.style.display = 'flex';
+    opts.style.flexDirection = 'column';
+    opts.style.gap = '10px';
+    opts.innerHTML = `
+      <button type="button" class="quiz-opt" onclick="stCheckTf(true)">Верно</button>
+      <button type="button" class="quiz-opt" onclick="stCheckTf(false)">Неверно</button>`;
+  } else if (card.type === 'match' && card.pairs && card.pairs.length) {
+    matchBlk.style.display = 'block';
+    const rights = shuffle(card.pairs.map(p => p.right));
+    document.getElementById('st-quiz-match-rows').innerHTML = card.pairs.map((p, i) => {
+      const optHtml = rights.map(r => `<option value="${escAttr(r)}">${esc(r)}</option>`).join('');
+      return `<div class="match-play-row" data-i="${i}"><label>${esc(p.left)}</label>
+        <select class="match-select-st">${optHtml}</select></div>`;
+    }).join('');
   } else {
-    open.style.display = 'none'; opts.style.display = 'grid';
+    opts.style.display = 'grid';
+    opts.style.flexDirection = '';
+    opts.style.gap = '';
+    open.style.display = 'none';
     if (card.type === 'multi') {
       opts.innerHTML = card.options.map((o, i) =>
         `<button class="quiz-opt" onclick="stToggleMulti(this,${i})">${esc(o.text)}</button>`
@@ -3813,6 +4292,7 @@ function stRenderQuestion() {
       ).join('');
     }
   }
+  _updateStQuizNavButtons();
 }
 
 function stToggleMulti(btn) {
@@ -3820,6 +4300,53 @@ function stToggleMulti(btn) {
   btn.classList.toggle('selected');
   btn.style.borderColor = btn.classList.contains('selected') ? 'var(--accent)' : '';
   btn.style.background  = btn.classList.contains('selected') ? 'rgba(108,99,255,0.1)' : '';
+}
+
+function stCheckTf(pickedTrue) {
+  if (stQuizState.answered) return;
+  stQuizState.answered = true;
+  const card = stQuizState.cards[stQuizState.idx];
+  const correct = !!pickedTrue === !!card.tfCorrect;
+  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: pickedTrue ? 'Верно' : 'Неверно' });
+  if (correct) stQuizState.correct++; else stQuizState.wrong++;
+  document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach(b => { b.disabled = true; });
+  if (stQuizState.feedbackMode !== 'end') {
+    document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach(b => {
+      const isTrueBtn = b.textContent.trim() === 'Верно';
+      if (isTrueBtn === !!card.tfCorrect) b.classList.add('correct');
+      else if (isTrueBtn === pickedTrue) b.classList.add('wrong');
+    });
+  }
+  stQuizState.lastAnswerCorrect = correct;
+  stFeedback(correct, card.tfCorrect ? 'Верно' : 'Неверно');
+}
+
+function stCheckMatch() {
+  if (stQuizState.answered) return;
+  const card = stQuizState.cards[stQuizState.idx];
+  const rows = document.querySelectorAll('#st-quiz-match-rows .match-play-row');
+  let allOk = true;
+  const given = [];
+  rows.forEach((row, i) => {
+    const sel = row.querySelector('.match-select-st');
+    const v = sel ? sel.value : '';
+    given.push(`${card.pairs[i].left} → ${v}`);
+    if (v !== card.pairs[i].right) allOk = false;
+  });
+  stQuizState.answered = true;
+  stQuizState.answers.push({ idx: stQuizState.idx, correct: allOk, given: given.join('; ') });
+  if (allOk) stQuizState.correct++; else stQuizState.wrong++;
+  rows.forEach((row, i) => {
+    const sel = row.querySelector('.match-select-st');
+    if (sel) sel.disabled = true;
+    if (stQuizState.feedbackMode !== 'end') {
+      const ok = sel && sel.value === card.pairs[i].right;
+      row.style.outline = ok ? '2px solid var(--green)' : '2px solid var(--accent2)';
+      row.style.borderRadius = '8px';
+    }
+  });
+  stQuizState.lastAnswerCorrect = allOk;
+  stFeedback(allOk, card.pairs.map(p => `${p.left} → ${p.right}`).join('; '));
 }
 
 function stCheckSingle(btn, idx) {
@@ -3831,9 +4358,12 @@ function stCheckSingle(btn, idx) {
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
-    if (card.options[i].correct) b.classList.add('correct');
-    else if (i === idx && !correct) b.classList.add('wrong');
+    if (stQuizState.feedbackMode !== 'end') {
+      if (card.options[i].correct) b.classList.add('correct');
+      else if (i === idx && !correct) b.classList.add('wrong');
+    }
   });
+  stQuizState.lastAnswerCorrect = correct;
   stFeedback(correct, card.options.filter(o => o.correct).map(o => o.text).join(', '));
 }
 
@@ -3848,9 +4378,14 @@ function stCheckMulti() {
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
-    if (card.options[i].correct) b.classList.add('correct');
-    else if (b.classList.contains('selected') && !card.options[i].correct) b.classList.add('wrong');
+    const sel = b.classList.contains('selected');
+    const isCorrect = card.options[i].correct;
+    if (stQuizState.feedbackMode !== 'end') {
+      if (isCorrect) b.classList.add('correct');
+      if (sel && !isCorrect) b.classList.add('wrong');
+    }
   });
+  stQuizState.lastAnswerCorrect = correct;
   stFeedback(correct, correctOpts.join(', '));
 }
 
@@ -3865,21 +4400,45 @@ function stCheckOpen() {
   const correct = val.toLowerCase() === card.answer.toLowerCase();
   stQuizState.answers.push({ idx: stQuizState.idx, correct, given: val });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
+  stQuizState.lastAnswerCorrect = correct;
   stFeedback(correct, card.answer);
 }
 
 function stFeedback(correct, correctText) {
   const fb = document.getElementById('st-feedback');
-  fb.textContent = correct ? '✓ Правильно!' : `✗ Неверно. Правильный ответ: ${correctText}`;
-  fb.className = 'quiz-feedback show ' + (correct ? 'correct' : 'wrong');
+  const end = stQuizState.feedbackMode === 'end';
+  if (end) {
+    fb.textContent = 'Ответ сохранён. Итог — после последнего вопроса.';
+    fb.className = 'quiz-feedback show';
+  } else {
+    fb.textContent = correct ? '✓ Правильно!' : `✗ Неверно. Правильный ответ: ${correctText}`;
+    fb.className = 'quiz-feedback show ' + (correct ? 'correct' : 'wrong');
+  }
   document.getElementById('st-next-btn').className = 'quiz-next-btn show';
 }
 
 function stNextQ() {
+  if (typeof stQuizState.lastAnswerCorrect === 'boolean') {
+    stQuizState.answerLog.push(!!stQuizState.lastAnswerCorrect);
+  }
+  stQuizState.lastAnswerCorrect = undefined;
   stQuizState.idx++;
+  _updateStQuizNavButtons();
   if (stQuizState.idx >= stQuizState.cards.length) {
     stFinish('test', stQuizState.correct, stQuizState.cards.length, stQuizState.answers); return;
   }
+  stRenderQuestion();
+}
+
+function stPrevQ() {
+  if (!stQuizState || stQuizState.noBack || stQuizState.idx <= 0 || !stQuizState.answerLog.length) return;
+  const wasCorrect = stQuizState.answerLog.pop();
+  stQuizState.idx--;
+  stQuizState.answers.pop();
+  if (wasCorrect) stQuizState.correct--; else stQuizState.wrong--;
+  stQuizState.lastAnswerCorrect = undefined;
+  stQuizState.answered = false;
+  _updateStQuizNavButtons();
   stRenderQuestion();
 }
 
@@ -4291,6 +4850,13 @@ async function renderGlobalStats() {
       dSel.innerHTML = '<option value="">Все задания</option>' +
         deckNames.map(n => `<option value="${esc(n)}"${prev===n?' selected':''}>${esc(n)}</option>`).join('');
     }
+    const allResultTags = [...new Set(results.flatMap(r => Array.isArray(r.deckTags) ? r.deckTags : []))].sort();
+    const tSel = document.getElementById('global-tag-filter');
+    if (tSel) {
+      const prevT = tSel.value;
+      tSel.innerHTML = '<option value="">Все темы</option>' +
+        allResultTags.map(t => `<option value="${esc(t)}"${prevT === t ? ' selected' : ''}>${esc(t)}</option>`).join('');
+    }
 
     const total  = results.length;
     const best   = Math.max(...results.map(r => r.pct));
@@ -4313,7 +4879,8 @@ async function renderGlobalStats() {
       const t  = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       const c  = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
       const ml = r.mode === 'flashcard' ? '🃏' : '🧠';
-      return `<div class="stat-row" data-group="${esc(r.group||'')}" data-deck="${esc(r.deckName||'')}" data-pct="${r.pct}" data-student="${esc(r.studentId || r.studentName || '')}">
+      const tagsEnc = encodeURIComponent(JSON.stringify(r.deckTags || []));
+      return `<div class="stat-row" data-group="${esc(r.group||'')}" data-deck="${esc(r.deckName||'')}" data-pct="${r.pct}" data-student="${esc(r.studentId || r.studentName || '')}" data-tags-enc="${tagsEnc}">
         <div class="stat-row-header" onclick="_toggleResultDetail(this,'${rid}')">
           <div class="results-row-name">${esc(r.studentName || '—')}</div>
           <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap;flex-shrink:0">${ml} ${esc(r.deckName || '—')}</div>
@@ -4342,6 +4909,7 @@ let _gScoreFilter = '';
 function _filterGlobal() {
   const group = document.getElementById('global-group-filter')?.value || '';
   const deck  = document.getElementById('global-deck-filter')?.value || '';
+  const tag   = document.getElementById('global-tag-filter')?.value || '';
   const rows  = document.querySelectorAll('#global-history .stat-row');
   let visible = 0;
   let best = 0;
@@ -4351,11 +4919,18 @@ function _filterGlobal() {
     const pct = parseInt(row.dataset.pct || '0');
     const matchGroup = !group || row.dataset.group === group;
     const matchDeck  = !deck  || row.dataset.deck  === deck;
+    let matchTag = true;
+    if (tag) {
+      try {
+        const arr = JSON.parse(decodeURIComponent(row.getAttribute('data-tags-enc') || '%5B%5D'));
+        matchTag = Array.isArray(arr) && arr.includes(tag);
+      } catch (e) { matchTag = false; }
+    }
     const matchScore = !_gScoreFilter
       || (_gScoreFilter === 'high' && pct >= 80)
       || (_gScoreFilter === 'mid'  && pct >= 50 && pct < 80)
       || (_gScoreFilter === 'low'  && pct < 50);
-    const show = matchGroup && matchDeck && matchScore;
+    const show = matchGroup && matchDeck && matchScore && matchTag;
     row.style.display = show ? '' : 'none';
     if (show) {
       visible++;
@@ -4394,8 +4969,10 @@ function _resetGlobalFilters() {
   _gScoreFilter = '';
   const gSel = document.getElementById('global-group-filter');
   const dSel = document.getElementById('global-deck-filter');
+  const tSel = document.getElementById('global-tag-filter');
   if (gSel) gSel.value = '';
   if (dSel) dSel.value = '';
+  if (tSel) tSel.value = '';
   document.querySelectorAll('#global-sidebar .sf-pill').forEach((b, i) => {
     b.classList.toggle('active', i === 0);
   });
@@ -4467,6 +5044,10 @@ function resetImageForm() {
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
+function _parseTagsInput(str) {
+  return String(str || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+}
+
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function ruPlural(n, one, few, many) {
@@ -4907,6 +5488,15 @@ function _fallbackGivenForAnswer(card, answerObj) {
     return s.length > 4 ? `не ${s}` : `не ${s}`;
   }
 
+  if (card.type === 'tf') {
+    return card.tfCorrect ? 'Неверно' : 'Верно';
+  }
+  if (card.type === 'match') {
+    if (card.pairs && card.pairs.length > 1) {
+      return `${card.pairs[0].left} → ${card.pairs[1].right}`;
+    }
+    return 'перепутаны пары';
+  }
   if (card.type === 'single') {
     const wrong = (card.options || []).find(o => !o.correct);
     return wrong?.text || 'Неверный вариант';
@@ -4940,6 +5530,8 @@ function _shouldRewriteGiven(existingGiven, card, answerObj) {
 function _expectedAnswerForCard(card) {
   if (!card) return '';
   if (card.type === 'open' || card.type === 'flashcard') return (card.answer || '').trim();
+  if (card.type === 'tf') return card.tfCorrect ? 'Верно' : 'Неверно';
+  if (card.type === 'match' && card.pairs) return card.pairs.map(p => `${p.left} → ${p.right}`).join('; ');
   const opts = card.options || [];
   return opts.filter(o => o.correct).map(o => o.text).join(', ');
 }
