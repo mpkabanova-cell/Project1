@@ -61,6 +61,8 @@
 
     /* ── LAYOUT ── */
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+    /* Экраны вне main (создание задания, статистика) */
+    .view-page-wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
     .view { display: none; }
     .view.active { display: block; }
 
@@ -964,7 +966,7 @@
 
     /* ── Планшет (≤ 860px) ── */
     @media (max-width: 860px) {
-      main { padding: 24px 16px; }
+      main, .view-page-wrap { padding: 24px 16px; }
       .library-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .library-hub { grid-template-columns: 1fr; }
       .library-right { position: static; }
@@ -990,7 +992,7 @@
       .btn-signout { padding: 6px 10px; font-size: 0.78rem; }
 
       /* Контент */
-      main { padding: 16px 12px; }
+      main, .view-page-wrap { padding: 16px 12px; }
       .page-title { font-size: 1.3rem; }
       .page-sub { font-size: 0.88rem; margin-bottom: 18px; }
 
@@ -1094,7 +1096,7 @@
     @media (max-width: 380px) {
       header { padding: 8px 10px; }
       .logo { font-size: 1rem; }
-      main { padding: 12px 10px; }
+      main, .view-page-wrap { padding: 12px 10px; }
       .btn-new-set { padding: 6px 10px; font-size: 0.78rem; }
       .stats-summary { grid-template-columns: 1fr 1fr; }
       .stats-layout { flex-direction:column; }
@@ -1238,47 +1240,6 @@
         <button id="btn-library-top" class="btn-scroll-top" onclick="scrollLibraryTop()">↑ Наверх</button>
       </div>
       <div class="library-right" id="library-side-panel"></div>
-    </div>
-  </div>
-
-  <!-- ═══ CREATE SET (отдельный экран) ═══ -->
-  <div class="view" id="view-create">
-    <button type="button" class="back-btn" onclick="cancelCreateSetPage()">← Библиотека</button>
-    <div class="create-set-screen">
-      <div class="page-title" style="margin-bottom:10px">Новое задание</div>
-      <p class="create-set-lead">
-        После сохранения откроется редактор вопросов и карточек. Дополнительно: обратная связь в тесте, лимит попыток, порядок вопросов, режим карточек — в задании кнопка «✏️ Изменить», блок «Дополнительно».
-      </p>
-      <div class="create-set-form-card">
-        <div class="form-row">
-          <label>Тип задания</label>
-          <div class="mode-toggle">
-            <button type="button" class="mode-btn active" id="lib-create-mode-test" onclick="setLibCreateMode('test')">🧠 Тест</button>
-            <button type="button" class="mode-btn" id="lib-create-mode-fc" onclick="setLibCreateMode('flashcard')">🃏 Карточки</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label>Название</label>
-          <input type="text" id="lib-create-name" placeholder="Например: История России, Биология 8 кл." autocomplete="off"
-                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitLibraryCreate();}">
-        </div>
-        <div class="form-row">
-          <label>Описание <span style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
-          <textarea id="lib-create-desc" placeholder="О чём это задание?" rows="4"></textarea>
-        </div>
-        <div class="form-row">
-          <label>Темы / теги <span style="font-weight:400;color:var(--muted)">(через запятую)</span></label>
-          <input type="text" id="lib-create-tags" placeholder="биология, контрольная" autocomplete="off">
-        </div>
-        <div class="form-row" style="margin-bottom:0">
-          <label>Лимит времени <span style="font-weight:400;color:var(--muted)">(мин., необязательно)</span></label>
-          <input type="number" id="lib-create-timelimit" placeholder="Без ограничений" min="1" max="180" style="max-width:220px">
-        </div>
-        <div class="create-set-actions">
-          <button type="button" class="btn-primary" id="lib-create-submit-btn" onclick="submitLibraryCreate()">Создать и открыть редактор →</button>
-          <button type="button" class="btn-secondary" onclick="cancelCreateSetPage()">Отмена</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1535,6 +1496,49 @@
   </div><!-- /view-set -->
 
 </main>
+
+<!-- ═══ CREATE SET (вне main — как статистика; иначе при ошибке id легко получить пустой экран) ═══ -->
+<div class="view" id="view-create">
+  <div class="view-page-wrap">
+    <button type="button" class="back-btn" onclick="cancelCreateSetPage()">← Библиотека</button>
+    <div class="create-set-screen">
+      <div class="page-title" style="margin-bottom:10px">Новое задание</div>
+      <p class="create-set-lead">
+        После сохранения откроется редактор вопросов и карточек. Дополнительно: обратная связь в тесте, лимит попыток, порядок вопросов, режим карточек — в задании кнопка «✏️ Изменить», блок «Дополнительно».
+      </p>
+      <div class="create-set-form-card">
+        <div class="form-row">
+          <label>Тип задания</label>
+          <div class="mode-toggle">
+            <button type="button" class="mode-btn active" id="lib-create-mode-test" onclick="setLibCreateMode('test')">🧠 Тест</button>
+            <button type="button" class="mode-btn" id="lib-create-mode-fc" onclick="setLibCreateMode('flashcard')">🃏 Карточки</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Название</label>
+          <input type="text" id="lib-create-name" placeholder="Например: История России, Биология 8 кл." autocomplete="off"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitLibraryCreate();}">
+        </div>
+        <div class="form-row">
+          <label>Описание <span style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
+          <textarea id="lib-create-desc" placeholder="О чём это задание?" rows="4"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Темы / теги <span style="font-weight:400;color:var(--muted)">(через запятую)</span></label>
+          <input type="text" id="lib-create-tags" placeholder="биология, контрольная" autocomplete="off">
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Лимит времени <span style="font-weight:400;color:var(--muted)">(мин., необязательно)</span></label>
+          <input type="number" id="lib-create-timelimit" placeholder="Без ограничений" min="1" max="180" style="max-width:220px">
+        </div>
+        <div class="create-set-actions">
+          <button type="button" class="btn-primary" id="lib-create-submit-btn" onclick="submitLibraryCreate()">Создать и открыть редактор →</button>
+          <button type="button" class="btn-secondary" onclick="cancelCreateSetPage()">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ GLOBAL STATS VIEW ═══ -->
 <div class="view" id="view-stats">
@@ -2425,12 +2429,21 @@ function closeModal2() { document.getElementById('firebase-help-modal').classLis
 // ─── NAVIGATION ─────────────────────────────────────────────────────────────
 function showPage(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const el = document.getElementById('view-' + name);
+  let el = document.getElementById('view-' + name);
+  let navName = name;
+  if (!el) {
+    console.warn('showPage: нет элемента #view-' + name);
+    if (name === 'create') {
+      toast('На сайте старая версия страницы: сделайте жёсткое обновление (Ctrl+F5) или загрузите актуальный index.html в репозиторий.', 7000);
+    }
+    el = document.getElementById('view-decks');
+    navName = 'decks';
+  }
   if (el) el.classList.add('active');
   const nh = document.getElementById('nav-home');
-  if (nh) nh.classList.toggle('active', name === 'decks' || name === 'create');
+  if (nh) nh.classList.toggle('active', navName === 'decks' || navName === 'create');
   const ns = document.getElementById('nav-stats');
-  if (ns) ns.classList.toggle('active', name === 'stats');
+  if (ns) ns.classList.toggle('active', navName === 'stats');
 }
 
 function goHome() {
