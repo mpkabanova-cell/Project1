@@ -186,6 +186,31 @@
       padding:14px; position: sticky; top: 16px;
       box-shadow: var(--shadow);
     }
+    .library-create-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px 30px 30px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .library-create-panel h2 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 800; line-height: 1.2; }
+    .library-create-panel .lc-sub { color: var(--muted); font-size: 0.92rem; margin-bottom: 22px; line-height: 1.45; }
+    .library-create-panel .form-row { margin-bottom: 16px; }
+    .library-create-panel .form-row label { font-size: 0.88rem; font-weight: 600; }
+    .library-create-panel input[type="text"],
+    .library-create-panel input[type="number"],
+    .library-create-panel textarea {
+      font-size: 1rem;
+      padding: 12px 14px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+    }
+    .library-create-panel textarea { min-height: 96px; line-height: 1.45; resize: vertical; }
+    .library-create-panel .lc-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; align-items: center; }
+    .library-create-panel .lc-actions .btn-primary { padding: 14px 24px; font-size: 1rem; }
     .library-search-row { margin-bottom:10px; }
     .library-search-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .library-search-row input, .library-search-row select {
@@ -1088,7 +1113,7 @@
     <div id="header-user-info" style="display:none;align-items:center;gap:8px">
       <span id="header-user-role-badge"></span>
     </div>
-    <button class="btn-new-set" id="btn-create-new" onclick="showNewSetModal()" style="display:none">+ Создать</button>
+    <button class="btn-new-set" id="btn-create-new" onclick="openLibraryCreateFlow()" style="display:none">+ Создать</button>
     <button class="btn-signout" id="btn-signout" onclick="doSignOut()" style="display:none">↩ Выйти</button>
   </div>
 </header>
@@ -1191,7 +1216,7 @@
         <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
         <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
           <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="showStatsPage()">📊 Статистика</button>
-          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="showNewSetModal()">+ Создать</button>
+          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="openLibraryCreateFlow()">+ Создать</button>
         </div>
       </div>
     </div>
@@ -1199,6 +1224,38 @@
     <div id="library-folders" class="library-folders"></div>
     <div class="library-hub">
       <div class="library-left">
+        <div class="library-create-panel" id="library-create-panel">
+          <h2>Новое задание</h2>
+          <p class="lc-sub">Заполните поля ниже — после сохранения откроется редактор, где можно добавить вопросы и карточки. Расширенные опции (обратная связь, лимит попыток, порядок) — в задании кнопка «✏️ Изменить» → блок «Дополнительно».</p>
+          <div class="form-row">
+            <label>Тип задания</label>
+            <div class="mode-toggle">
+              <button type="button" class="mode-btn active" id="lib-create-mode-test" onclick="setLibCreateMode('test')">🧠 Тест</button>
+              <button type="button" class="mode-btn" id="lib-create-mode-fc" onclick="setLibCreateMode('flashcard')">🃏 Карточки</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Название</label>
+            <input type="text" id="lib-create-name" placeholder="Например: История России, Биология 8 кл." autocomplete="off"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();submitLibraryCreate();}">
+          </div>
+          <div class="form-row">
+            <label>Описание <span style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
+            <textarea id="lib-create-desc" placeholder="О чём это задание?" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <label>Темы / теги <span style="font-weight:400;color:var(--muted)">(через запятую)</span></label>
+            <input type="text" id="lib-create-tags" placeholder="биология, контрольная" autocomplete="off">
+          </div>
+          <div class="form-row" style="margin-bottom:0">
+            <label>Лимит времени <span style="font-weight:400;color:var(--muted)">(мин., необязательно)</span></label>
+            <input type="number" id="lib-create-timelimit" placeholder="Без ограничений" min="1" max="180" style="max-width:200px">
+          </div>
+          <div class="lc-actions">
+            <button type="button" class="btn-primary" id="lib-create-submit-btn" onclick="submitLibraryCreate()">Создать и открыть редактор →</button>
+            <button type="button" class="btn-secondary" onclick="cancelLibraryCreate()">Отмена</button>
+          </div>
+        </div>
         <div class="library-search-row">
           <input id="library-search" placeholder="Поиск по названию задания..." oninput="renderDecks()">
           <select id="library-subject-filter" onchange="renderDecks()">
@@ -1805,37 +1862,6 @@
   </div>
 </div>
 
-<!-- ═══ NEW SET MODAL ═══ -->
-<div class="modal-overlay" id="new-set-modal">
-  <div class="modal">
-    <h3>Создать задание</h3>
-    <div class="modal-sub">Выберите тип и задайте название</div>
-    <div class="form-row">
-      <label>Тип задания</label>
-      <div class="mode-toggle">
-        <button class="mode-btn active" id="new-mode-test" onclick="setNewMode('test')">🧠 Тест</button>
-        <button class="mode-btn" id="new-mode-flashcard" onclick="setNewMode('flashcard')">🃏 Карточки</button>
-      </div>
-    </div>
-    <div class="form-row">
-      <label>Название</label>
-      <input type="text" id="new-set-name" placeholder="Например: История России, Биология 8 кл." onkeydown="if(event.key==='Enter')createNewSet()">
-    </div>
-    <div class="form-row">
-      <label>Описание (необязательно)</label>
-      <textarea id="new-set-desc" placeholder="О чём это задание?" rows="2"></textarea>
-    </div>
-    <div class="form-row" style="margin-bottom:0">
-      <label>Лимит времени (минут, необязательно)</label>
-      <input type="number" id="new-set-timelimit" placeholder="Без ограничений" min="1" max="180" style="max-width:180px">
-    </div>
-    <div class="modal-actions" style="margin-top:20px">
-      <button class="btn-secondary" onclick="closeNewSetModal()">Отмена</button>
-      <button class="btn-primary" onclick="createNewSet()">Создать задание →</button>
-    </div>
-  </div>
-</div>
-
 <!-- ═══ CONFIRM MODAL ═══ -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
@@ -1884,10 +1910,11 @@ let currentImageData = null;
 let quizState = null;
 let fcState   = null;
 let shouldShuffle = true;
-let newSetMode = 'test';
 let regRole    = 'teacher';
 let pendingQuizCode = null;
-let isCreatingInlineSet = false;
+let libraryCreateOpen = false;
+let libCreateMode = 'test';
+let _libraryCreateSubmitting = false;
 
 // ─── FIREBASE HELPERS ────────────────────────────────────────────────────────
 function showLoadingOverlay(on) {
@@ -2557,24 +2584,13 @@ function _openShareInline(id) {
 function renderLibrarySidePanel(visibleDecks = null) {
   const panel = document.getElementById('library-side-panel');
   if (!panel) return;
-  if (libraryPanelMode === 'create') {
+  if (libraryCreateOpen) {
     panel.innerHTML = `
-      <div class="side-head">Новое задание</div>
-      <div class="side-sub">Создание без перехода на другой экран</div>
-      <div class="form-row"><label>Название</label><input id="inline-new-name" placeholder="Например: Биология 7"></div>
-      <div class="form-row"><label>Описание</label><textarea id="inline-new-desc" rows="2" placeholder="Кратко опишите задание"></textarea></div>
-      <div class="form-row"><label>Тип задания</label>
-        <div class="mode-toggle">
-          <button class="mode-btn active" id="inline-mode-test" onclick="setInlineNewMode('test')">🧠 Тест</button>
-          <button class="mode-btn" id="inline-mode-fc" onclick="setInlineNewMode('flashcard')">🃏 Карточки</button>
-        </div>
-      </div>
+      <div class="side-head">Создание задания</div>
+      <div class="side-sub">Форма открыта вверху списка. После создания вы попадёте в редактор карточек.</div>
       <div class="side-actions">
-        <button class="btn-primary" onclick="createNewSetInline()">Создать</button>
-        <button class="btn-secondary" onclick="libraryPanelMode='details';renderLibrarySidePanel()">Отмена</button>
-      </div>
-    `;
-    setTimeout(() => document.getElementById('inline-new-name')?.focus(), 30);
+        <button class="btn-secondary" onclick="cancelLibraryCreate()">Отменить</button>
+      </div>`;
     return;
   }
   if (!decks.length) {
@@ -2621,55 +2637,103 @@ function assignDeckFolder(deckId, folder) {
   renderDecks();
 }
 
-let inlineNewMode = 'test';
-function setInlineNewMode(mode) {
-  inlineNewMode = mode;
-  document.getElementById('inline-mode-test')?.classList.toggle('active', mode === 'test');
-  document.getElementById('inline-mode-fc')?.classList.toggle('active', mode === 'flashcard');
+function setLibCreateMode(mode) {
+  libCreateMode = mode;
+  document.getElementById('lib-create-mode-test')?.classList.toggle('active', mode === 'test');
+  document.getElementById('lib-create-mode-fc')?.classList.toggle('active', mode === 'flashcard');
 }
 
-async function createNewSetInline() {
-  if (isCreatingInlineSet) return;
-  const name = document.getElementById('inline-new-name')?.value?.trim();
+function openLibraryCreateFlow() {
+  libraryCreateOpen = true;
+  libraryPanelMode = 'details';
+  libCreateMode = 'test';
+  showPage('library');
+  const n = document.getElementById('lib-create-name');
+  const d = document.getElementById('lib-create-desc');
+  const tg = document.getElementById('lib-create-tags');
+  const tl = document.getElementById('lib-create-timelimit');
+  if (n) n.value = '';
+  if (d) d.value = '';
+  if (tg) tg.value = '';
+  if (tl) tl.value = '';
+  setLibCreateMode('test');
+  renderDecks();
+  requestAnimationFrame(() => {
+    document.getElementById('library-create-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById('lib-create-name')?.focus();
+  });
+}
+
+function cancelLibraryCreate() {
+  libraryCreateOpen = false;
+  renderDecks();
+}
+
+async function submitLibraryCreate() {
+  if (_libraryCreateSubmitting) return;
+  const name = document.getElementById('lib-create-name')?.value?.trim();
   if (!name) { toast('Введите название задания'); return; }
-  isCreatingInlineSet = true;
+  const btn = document.getElementById('lib-create-submit-btn');
+  _libraryCreateSubmitting = true;
+  if (btn) { btn.textContent = 'Создаю…'; btn.disabled = true; }
+  const tlRaw = parseInt(document.getElementById('lib-create-timelimit')?.value, 10);
+  const timeLimit = (!isNaN(tlRaw) && tlRaw > 0) ? tlRaw : null;
+  const tags = _parseTagsInput(document.getElementById('lib-create-tags')?.value || '');
   const data = {
     teacherId: currentUser?.uid || 'local',
     name,
-    desc: document.getElementById('inline-new-desc')?.value?.trim() || '',
-    mode: inlineNewMode,
+    desc: document.getElementById('lib-create-desc')?.value?.trim() || '',
+    mode: libCreateMode,
     cards: [],
     history: [],
-    timeLimit: null,
+    timeLimit: timeLimit || null,
     shortCode: generateShortCode(),
     createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
-    tags: [], feedbackMode: 'immediate', shufflePolicy: 'student',
-    maxAttempts: null, noBack: false, fcWrongToEnd: false
+    tags,
+    feedbackMode: 'immediate',
+    shufflePolicy: 'student',
+    maxAttempts: null,
+    noBack: false,
+    fcWrongToEnd: false
   };
   try {
     if (_db && currentUser) {
       const ref = await _db.collection('decks').add(data);
-      decks.unshift({ id: ref.id, ...data, createdAt: new Date() });
-      selectedDeckId = ref.id;
+      const dNew = { id: ref.id, ...data, createdAt: new Date() };
+      decks.unshift(dNew);
+      libraryCreateOpen = false;
+      renderDecks();
+      openSet(ref.id, 'cards');
+      toast('Задание создано! Добавляйте карточки');
     } else {
       const id = uid();
       decks.unshift({ id, ...data });
-      selectedDeckId = id;
+      libraryCreateOpen = false;
+      renderDecks();
+      openSet(id, 'cards');
+      toast('Задание создано! (локально — настройте Firebase для синхронизации)');
     }
-    libraryPanelMode = 'details';
-    renderDecks();
-    toast('Задание создано');
-  } catch(e) { toast('Ошибка создания: ' + (e.message || e.code)); }
-  finally { isCreatingInlineSet = false; }
+  } catch (e) {
+    console.error('submitLibraryCreate:', e);
+    const msg = e.code === 'permission-denied' || (e.message && e.message.includes('permission'))
+      ? 'Нет доступа к базе. Проверьте правила Firestore (Rules) в Firebase Console.'
+      : 'Ошибка сохранения: ' + (e.message || e.code || 'неизвестная');
+    toast(msg, 6000);
+  } finally {
+    _libraryCreateSubmitting = false;
+    if (btn) { btn.textContent = 'Создать и открыть редактор →'; btn.disabled = false; }
+  }
 }
 
 function renderDecks() {
+  const lcp = document.getElementById('library-create-panel');
+  if (lcp) lcp.style.display = libraryCreateOpen ? 'block' : 'none';
   _bindLibraryScrollTop();
   if (!libraryFolders.length && localStorage.getItem(_foldersKey())) _loadFolders();
   const qa = document.getElementById('library-quick-actions');
   if (qa) {
     qa.innerHTML = `
-      <button class="btn-primary" onclick="libraryPanelMode='create';renderLibrarySidePanel()">+ Создать задание</button>
+      <button class="btn-primary" onclick="openLibraryCreateFlow()">+ Создать задание</button>
       <button class="btn-secondary" onclick="showImportModal()" ${!currentSetId ? 'disabled' : ''}>⬆ Импортировать</button>
       <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : `toast('Сначала выберите задание')`}">🔗 Выдать</button>
     `;
@@ -3529,67 +3593,6 @@ function doImportCards() {
   renderSetCards();
   closeImportModal();
   toast(`Добавлено карточек: ${newCards.length}`);
-}
-
-// ─── NEW SET MODAL ───────────────────────────────────────────────────────────
-function showNewSetModal() {
-  document.getElementById('new-set-name').value = '';
-  document.getElementById('new-set-desc').value = '';
-  document.getElementById('new-set-timelimit').value = '';
-  setNewMode('test');
-  document.getElementById('new-set-modal').classList.add('show');
-  setTimeout(() => document.getElementById('new-set-name').focus(), 100);
-}
-
-function closeNewSetModal() {
-  document.getElementById('new-set-modal').classList.remove('show');
-}
-
-function setNewMode(mode) {
-  newSetMode = mode;
-  document.getElementById('new-mode-test').classList.toggle('active', mode === 'test');
-  document.getElementById('new-mode-flashcard').classList.toggle('active', mode === 'flashcard');
-}
-
-async function createNewSet() {
-  const name = document.getElementById('new-set-name').value.trim();
-  if (!name) { toast('Введите название задания'); return; }
-  const btn = document.querySelector('#new-set-modal .btn-primary');
-  if (btn) { btn.textContent = 'Создаю…'; btn.disabled = true; }
-  const tlRaw = parseInt(document.getElementById('new-set-timelimit').value, 10);
-  const timeLimit = (!isNaN(tlRaw) && tlRaw > 0) ? tlRaw : null;
-  const data = {
-    teacherId: currentUser?.uid || 'local',
-    name, desc: document.getElementById('new-set-desc').value.trim(),
-    mode: newSetMode, cards: [], history: [],
-    timeLimit: timeLimit || null,
-    shortCode: generateShortCode(),
-    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
-    tags: [], feedbackMode: 'immediate', shufflePolicy: 'student',
-    maxAttempts: null, noBack: false, fcWrongToEnd: false
-  };
-  closeNewSetModal();
-  if (_db && currentUser) {
-    try {
-      const ref = await _db.collection('decks').add(data);
-      const d = { id: ref.id, ...data, createdAt: new Date() };
-      decks.unshift(d);
-      openSet(ref.id, 'cards');
-      toast('Задание создано! Добавляйте карточки');
-    } catch(e) {
-      console.error('createNewSet error:', e);
-      const msg = e.code === 'permission-denied' || (e.message && e.message.includes('permission'))
-        ? 'Нет доступа к базе данных. Обновите правила Firestore (Rules) в Firebase Console: allow read, write: if request.auth != null'
-        : 'Ошибка сохранения: ' + (e.message || e.code || 'неизвестная');
-      toast(msg, 6000);
-    }
-  } else {
-    const d = { id: uid(), ...data };
-    decks.unshift(d);
-    openSet(d.id, 'cards');
-    toast('Задание создано! (локально — настройте Firebase для синхронизации)');
-  }
-  if (btn) { btn.textContent = 'Создать задание →'; btn.disabled = false; }
 }
 
 // ─── DELETE ──────────────────────────────────────────────────────────────────
