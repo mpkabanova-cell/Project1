@@ -257,7 +257,13 @@
       transition: border-color 0.2s, transform 0.15s; position: relative;
       display: flex; flex-direction: column; gap: 8px;
     }
-    .deck-card:hover { border-color: #d7dcf0; transform: translateY(-1px); }
+    /* Карточка с открытым ⋯ должна быть выше соседних, иначе меню уходит «под» следующую карточку */
+    .deck-card.menu-open {
+      z-index: 50;
+      transform: translateY(-1px);
+      border-color: #d7dcf0;
+    }
+    .deck-card:hover:not(.menu-open) { border-color: #d7dcf0; transform: translateY(-1px); }
     .deck-badges { display: flex; gap: 6px; flex-wrap: wrap; }
     .deck-badge {
       display: inline-block; background: #eceff6; color: #6f7591;
@@ -274,7 +280,7 @@
     }
     .deck-menu-btn:hover { color: var(--text); border-color: #cfd5ea; }
     .deck-menu {
-      position: absolute; right: 0; top: 32px; z-index: 20;
+      position: absolute; right: 0; top: 32px; z-index: 60;
       min-width: 190px; background: var(--surface); border: 1px solid var(--border);
       border-radius: 10px; box-shadow: 0 12px 24px rgba(48,64,122,.16); padding: 6px;
       display: none;
@@ -2795,7 +2801,7 @@ function renderDecks() {
     const dateStr = _formatDeckDate(d);
     const menuOpen = openDeckMenuId === d.id ? 'open' : '';
     return `
-    <div class="deck-card ${selectedDeckId===d.id?'active':''}" onclick="selectedDeckId='${d.id}';currentSetId='${d.id}';libraryPanelMode='details';renderDecks()">
+    <div class="deck-card ${selectedDeckId===d.id?'active':''}${openDeckMenuId===d.id?' menu-open':''}" onclick="selectedDeckId='${d.id}';currentSetId='${d.id}';libraryPanelMode='details';renderDecks()">
       <button class="btn-del-deck" onclick="event.stopPropagation();confirmDelete('deck','${d.id}')">✕</button>
       <div class="deck-top-row">
         <div>
