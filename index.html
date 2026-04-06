@@ -1784,6 +1784,7 @@ let shouldShuffle = true;
 let newSetMode = 'test';
 let regRole    = 'teacher';
 let pendingQuizCode = null;
+let isCreatingInlineSet = false;
 
 // ─── FIREBASE HELPERS ────────────────────────────────────────────────────────
 function showLoadingOverlay(on) {
@@ -2509,8 +2510,10 @@ function setInlineNewMode(mode) {
 }
 
 async function createNewSetInline() {
+  if (isCreatingInlineSet) return;
   const name = document.getElementById('inline-new-name')?.value?.trim();
   if (!name) { toast('Введите название задания'); return; }
+  isCreatingInlineSet = true;
   const data = {
     teacherId: currentUser?.uid || 'local',
     name,
@@ -2536,6 +2539,7 @@ async function createNewSetInline() {
     renderDecks();
     toast('Задание создано');
   } catch(e) { toast('Ошибка создания: ' + (e.message || e.code)); }
+  finally { isCreatingInlineSet = false; }
 }
 
 function renderDecks() {
@@ -4730,13 +4734,22 @@ async function _seedDataForTeacher(tid) {
         continue;
       }
       const { _key, ...data } = d;
-      const ref = await _db.collection('decks').add({
+      const stableId = `demo_${tid}_${_key}`.replace(/[^\w-]/g, '_');
+      const ref = _db.collection('decks').doc(stableId);
+      const refSnap = await ref.get();
+      if (refSnap.exists) {
+        deckIds[_key] = ref.id;
+        console.log('[seed] deck exists by stable id:', d.name, ref.id);
+        continue;
+      }
+      await ref.set({
         ...data,
         teacherId: tid,
+        demoKey: _key,
         shortCode: generateShortCode(),
         history: [],
         createdAt: serverTS()
-      });
+      }, { merge: false });
       deckIds[_key] = ref.id;
       console.log('[seed] deck created:', d.name, ref.id);
     }
