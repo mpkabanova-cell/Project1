@@ -186,31 +186,32 @@
       padding:14px; position: sticky; top: 16px;
       box-shadow: var(--shadow);
     }
-    .library-create-panel {
-      display: none;
+    /* Полноэкранное создание задания (отдельный экран, не список библиотеки) */
+    .create-set-screen { max-width: 720px; margin: 0 auto; padding: 0 4px 56px; }
+    .create-set-lead {
+      color: var(--muted); font-size: 0.95rem; margin: 0 0 26px; line-height: 1.55; max-width: 52em;
+    }
+    .create-set-form-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 26px 30px 30px;
-      margin-bottom: 20px;
+      padding: 28px 32px 34px;
       box-shadow: var(--shadow);
     }
-    .library-create-panel h2 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 800; line-height: 1.2; }
-    .library-create-panel .lc-sub { color: var(--muted); font-size: 0.92rem; margin-bottom: 22px; line-height: 1.45; }
-    .library-create-panel .form-row { margin-bottom: 16px; }
-    .library-create-panel .form-row label { font-size: 0.88rem; font-weight: 600; }
-    .library-create-panel input[type="text"],
-    .library-create-panel input[type="number"],
-    .library-create-panel textarea {
-      font-size: 1rem;
-      padding: 12px 14px;
+    .create-set-form-card .form-row { margin-bottom: 18px; }
+    .create-set-form-card .form-row label { font-size: 0.9rem; font-weight: 600; }
+    .create-set-form-card input[type="text"],
+    .create-set-form-card input[type="number"],
+    .create-set-form-card textarea {
+      font-size: 1.02rem;
+      padding: 13px 15px;
       width: 100%;
       box-sizing: border-box;
-      border-radius: 10px;
+      border-radius: 11px;
     }
-    .library-create-panel textarea { min-height: 96px; line-height: 1.45; resize: vertical; }
-    .library-create-panel .lc-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; align-items: center; }
-    .library-create-panel .lc-actions .btn-primary { padding: 14px 24px; font-size: 1rem; }
+    .create-set-form-card textarea { min-height: 110px; line-height: 1.45; resize: vertical; }
+    .create-set-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; align-items: center; }
+    .create-set-actions .btn-primary { padding: 15px 26px; font-size: 1.02rem; }
     .library-search-row { margin-bottom:10px; }
     .library-search-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .library-search-row input, .library-search-row select {
@@ -1113,7 +1114,7 @@
     <div id="header-user-info" style="display:none;align-items:center;gap:8px">
       <span id="header-user-role-badge"></span>
     </div>
-    <button class="btn-new-set" id="btn-create-new" onclick="openLibraryCreateFlow()" style="display:none">+ Создать</button>
+    <button class="btn-new-set" id="btn-create-new" onclick="openCreateSetPage()" style="display:none">+ Создать</button>
     <button class="btn-signout" id="btn-signout" onclick="doSignOut()" style="display:none">↩ Выйти</button>
   </div>
 </header>
@@ -1216,7 +1217,7 @@
         <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
         <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
           <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="showStatsPage()">📊 Статистика</button>
-          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="openLibraryCreateFlow()">+ Создать</button>
+          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="openCreateSetPage()">+ Создать</button>
         </div>
       </div>
     </div>
@@ -1224,38 +1225,6 @@
     <div id="library-folders" class="library-folders"></div>
     <div class="library-hub">
       <div class="library-left">
-        <div class="library-create-panel" id="library-create-panel">
-          <h2>Новое задание</h2>
-          <p class="lc-sub">Заполните поля ниже — после сохранения откроется редактор, где можно добавить вопросы и карточки. Расширенные опции (обратная связь, лимит попыток, порядок) — в задании кнопка «✏️ Изменить» → блок «Дополнительно».</p>
-          <div class="form-row">
-            <label>Тип задания</label>
-            <div class="mode-toggle">
-              <button type="button" class="mode-btn active" id="lib-create-mode-test" onclick="setLibCreateMode('test')">🧠 Тест</button>
-              <button type="button" class="mode-btn" id="lib-create-mode-fc" onclick="setLibCreateMode('flashcard')">🃏 Карточки</button>
-            </div>
-          </div>
-          <div class="form-row">
-            <label>Название</label>
-            <input type="text" id="lib-create-name" placeholder="Например: История России, Биология 8 кл." autocomplete="off"
-                   onkeydown="if(event.key==='Enter'){event.preventDefault();submitLibraryCreate();}">
-          </div>
-          <div class="form-row">
-            <label>Описание <span style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
-            <textarea id="lib-create-desc" placeholder="О чём это задание?" rows="3"></textarea>
-          </div>
-          <div class="form-row">
-            <label>Темы / теги <span style="font-weight:400;color:var(--muted)">(через запятую)</span></label>
-            <input type="text" id="lib-create-tags" placeholder="биология, контрольная" autocomplete="off">
-          </div>
-          <div class="form-row" style="margin-bottom:0">
-            <label>Лимит времени <span style="font-weight:400;color:var(--muted)">(мин., необязательно)</span></label>
-            <input type="number" id="lib-create-timelimit" placeholder="Без ограничений" min="1" max="180" style="max-width:200px">
-          </div>
-          <div class="lc-actions">
-            <button type="button" class="btn-primary" id="lib-create-submit-btn" onclick="submitLibraryCreate()">Создать и открыть редактор →</button>
-            <button type="button" class="btn-secondary" onclick="cancelLibraryCreate()">Отмена</button>
-          </div>
-        </div>
         <div class="library-search-row">
           <input id="library-search" placeholder="Поиск по названию задания..." oninput="renderDecks()">
           <select id="library-subject-filter" onchange="renderDecks()">
@@ -1269,6 +1238,47 @@
         <button id="btn-library-top" class="btn-scroll-top" onclick="scrollLibraryTop()">↑ Наверх</button>
       </div>
       <div class="library-right" id="library-side-panel"></div>
+    </div>
+  </div>
+
+  <!-- ═══ CREATE SET (отдельный экран) ═══ -->
+  <div class="view" id="view-create">
+    <button type="button" class="back-btn" onclick="cancelCreateSetPage()">← Библиотека</button>
+    <div class="create-set-screen">
+      <div class="page-title" style="margin-bottom:10px">Новое задание</div>
+      <p class="create-set-lead">
+        После сохранения откроется редактор вопросов и карточек. Дополнительно: обратная связь в тесте, лимит попыток, порядок вопросов, режим карточек — в задании кнопка «✏️ Изменить», блок «Дополнительно».
+      </p>
+      <div class="create-set-form-card">
+        <div class="form-row">
+          <label>Тип задания</label>
+          <div class="mode-toggle">
+            <button type="button" class="mode-btn active" id="lib-create-mode-test" onclick="setLibCreateMode('test')">🧠 Тест</button>
+            <button type="button" class="mode-btn" id="lib-create-mode-fc" onclick="setLibCreateMode('flashcard')">🃏 Карточки</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Название</label>
+          <input type="text" id="lib-create-name" placeholder="Например: История России, Биология 8 кл." autocomplete="off"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();submitLibraryCreate();}">
+        </div>
+        <div class="form-row">
+          <label>Описание <span style="font-weight:400;color:var(--muted)">(необязательно)</span></label>
+          <textarea id="lib-create-desc" placeholder="О чём это задание?" rows="4"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Темы / теги <span style="font-weight:400;color:var(--muted)">(через запятую)</span></label>
+          <input type="text" id="lib-create-tags" placeholder="биология, контрольная" autocomplete="off">
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Лимит времени <span style="font-weight:400;color:var(--muted)">(мин., необязательно)</span></label>
+          <input type="number" id="lib-create-timelimit" placeholder="Без ограничений" min="1" max="180" style="max-width:220px">
+        </div>
+        <div class="create-set-actions">
+          <button type="button" class="btn-primary" id="lib-create-submit-btn" onclick="submitLibraryCreate()">Создать и открыть редактор →</button>
+          <button type="button" class="btn-secondary" onclick="cancelCreateSetPage()">Отмена</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1912,7 +1922,6 @@ let fcState   = null;
 let shouldShuffle = true;
 let regRole    = 'teacher';
 let pendingQuizCode = null;
-let libraryCreateOpen = false;
 let libCreateMode = 'test';
 let _libraryCreateSubmitting = false;
 
@@ -2416,9 +2425,10 @@ function closeModal2() { document.getElementById('firebase-help-modal').classLis
 // ─── NAVIGATION ─────────────────────────────────────────────────────────────
 function showPage(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
+  const el = document.getElementById('view-' + name);
+  if (el) el.classList.add('active');
   const nh = document.getElementById('nav-home');
-  if (nh) nh.classList.toggle('active', name === 'decks');
+  if (nh) nh.classList.toggle('active', name === 'decks' || name === 'create');
   const ns = document.getElementById('nav-stats');
   if (ns) ns.classList.toggle('active', name === 'stats');
 }
@@ -2584,15 +2594,6 @@ function _openShareInline(id) {
 function renderLibrarySidePanel(visibleDecks = null) {
   const panel = document.getElementById('library-side-panel');
   if (!panel) return;
-  if (libraryCreateOpen) {
-    panel.innerHTML = `
-      <div class="side-head">Создание задания</div>
-      <div class="side-sub">Форма открыта вверху списка. После создания вы попадёте в редактор карточек.</div>
-      <div class="side-actions">
-        <button class="btn-secondary" onclick="cancelLibraryCreate()">Отменить</button>
-      </div>`;
-    return;
-  }
   if (!decks.length) {
     panel.innerHTML = '<div class="side-sub">Создайте первое задание, чтобы увидеть предпросмотр и быстро выдать ученикам.</div>';
     return;
@@ -2643,11 +2644,9 @@ function setLibCreateMode(mode) {
   document.getElementById('lib-create-mode-fc')?.classList.toggle('active', mode === 'flashcard');
 }
 
-function openLibraryCreateFlow() {
-  libraryCreateOpen = true;
+function openCreateSetPage() {
   libraryPanelMode = 'details';
   libCreateMode = 'test';
-  showPage('library');
   const n = document.getElementById('lib-create-name');
   const d = document.getElementById('lib-create-desc');
   const tg = document.getElementById('lib-create-tags');
@@ -2657,15 +2656,15 @@ function openLibraryCreateFlow() {
   if (tg) tg.value = '';
   if (tl) tl.value = '';
   setLibCreateMode('test');
-  renderDecks();
+  showPage('create');
   requestAnimationFrame(() => {
-    document.getElementById('library-create-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    window.scrollTo(0, 0);
     document.getElementById('lib-create-name')?.focus();
   });
 }
 
-function cancelLibraryCreate() {
-  libraryCreateOpen = false;
+function cancelCreateSetPage() {
+  showPage('decks');
   renderDecks();
 }
 
@@ -2701,14 +2700,12 @@ async function submitLibraryCreate() {
       const ref = await _db.collection('decks').add(data);
       const dNew = { id: ref.id, ...data, createdAt: new Date() };
       decks.unshift(dNew);
-      libraryCreateOpen = false;
       renderDecks();
       openSet(ref.id, 'cards');
       toast('Задание создано! Добавляйте карточки');
     } else {
       const id = uid();
       decks.unshift({ id, ...data });
-      libraryCreateOpen = false;
       renderDecks();
       openSet(id, 'cards');
       toast('Задание создано! (локально — настройте Firebase для синхронизации)');
@@ -2726,14 +2723,12 @@ async function submitLibraryCreate() {
 }
 
 function renderDecks() {
-  const lcp = document.getElementById('library-create-panel');
-  if (lcp) lcp.style.display = libraryCreateOpen ? 'block' : 'none';
   _bindLibraryScrollTop();
   if (!libraryFolders.length && localStorage.getItem(_foldersKey())) _loadFolders();
   const qa = document.getElementById('library-quick-actions');
   if (qa) {
     qa.innerHTML = `
-      <button class="btn-primary" onclick="openLibraryCreateFlow()">+ Создать задание</button>
+      <button class="btn-primary" onclick="openCreateSetPage()">+ Создать задание</button>
       <button class="btn-secondary" onclick="showImportModal()" ${!currentSetId ? 'disabled' : ''}>⬆ Импортировать</button>
       <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : `toast('Сначала выберите задание')`}">🔗 Выдать</button>
     `;
