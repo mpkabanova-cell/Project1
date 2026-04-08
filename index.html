@@ -145,7 +145,11 @@
     }
     .ws-post-publish { margin-top: 18px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
     /* Прокрутка страницы (main), а не «коробки» списка — иначе на части экранов скролл не срабатывает */
-    .ws-card-list { display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
+    .ws-card-list { display: flex; flex-direction: column; gap: 0; padding-right: 4px; }
+    .ws-after-card {
+      display: flex; justify-content: center; margin: 0 0 14px 0; padding-top: 2px;
+    }
+    .ws-after-card .ws-add-below-btn { font-size: 0.82rem; font-weight: 600; padding: 8px 16px; }
     .ws-card-item {
       border: 1px solid var(--border); border-radius: 12px; padding: 0; background: #ffffff;
       box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); overflow: visible;
@@ -1352,7 +1356,6 @@
     <input type="text" id="ws-deck-title" placeholder="Название подборки" autocomplete="off">
     <div class="ws-toolbar">
       <div class="ws-toolbar-left">
-        <button type="button" class="btn-primary" onclick="wsAddEmptyCard()">+ Добавить карточку</button>
         <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Создать из текста</button>
         <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Показать подборку так, как её увидит ученик при прохождении">Предпросмотр</button>
       </div>
@@ -2878,6 +2881,9 @@ function renderWorkspaceCards() {
       <div class="ws-card-body">
         ${body}
       </div>
+    </div>
+    <div class="ws-after-card">
+      <button type="button" class="btn-secondary ws-add-below-btn" onclick="wsAddEmptyCardAfter(${i})">+ Добавить карточку ниже</button>
     </div>`;
   }).join('');
   wsRenderCardNav();
@@ -2951,6 +2957,24 @@ function wsAddEmptyCard() {
   wsCards.push({ id: uid(), type: 'flashcard', question: '', answer: '', accepted: null, options: null, correctIndex: 0, pairs: null });
   renderWorkspaceCards();
   wsFocusLastQuestion();
+}
+
+/** Новая карточка сразу под текущей (без прокрутки к панели сверху). */
+function wsAddEmptyCardAfter(i) {
+  wsGenerateOpen = false;
+  const at = Math.min(Math.max(0, i + 1), wsCards.length);
+  wsCards.splice(at, 0, {
+    id: uid(),
+    type: 'flashcard',
+    question: '',
+    answer: '',
+    accepted: null,
+    options: null,
+    correctIndex: 0,
+    pairs: null
+  });
+  renderWorkspaceCards();
+  wsJumpToCard(at);
 }
 
 function wsShuffleCards() {
