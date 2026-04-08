@@ -637,6 +637,32 @@
     #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 0.88rem; opacity: 0; pointer-events: none; transform: translateY(10px); transition: all 0.3s; z-index: 999; }
     #toast.show { opacity: 1; transform: translateY(0); }
 
+    /* ── EXTERNAL FEEDBACK (fab + modal) ── */
+    .feedback-fab {
+      position: fixed; bottom: 96px; right: 24px; z-index: 998;
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 12px 22px; border: none; border-radius: 999px;
+      background: #5d3fd3; color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; box-shadow: 0 6px 22px rgba(93, 63, 211, 0.42);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feedback-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(93, 63, 211, 0.5); }
+    .feedback-fab:active { transform: translateY(0); }
+    .feedback-fab svg { width: 22px; height: 22px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
+    .feedback-fab--hidden { display: none !important; }
+    .feedback-modal-overlay { z-index: 1200; }
+    .feedback-modal { max-width: 420px; }
+    .feedback-modal .feedback-useful-row { display: flex; gap: 20px; margin-bottom: 16px; font-size: 0.92rem; font-weight: 600; }
+    .feedback-modal .feedback-useful-row label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .feedback-modal textarea#feedback-comment {
+      width: 100%; margin-top: 8px; margin-bottom: 8px; min-height: 100px; padding: 12px;
+      border-radius: 10px; border: 1.5px solid var(--border); font-family: inherit; font-size: 0.9rem; resize: vertical; box-sizing: border-box;
+    }
+    .feedback-modal textarea#feedback-comment:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+    @media (max-width: 600px) {
+      .feedback-fab { bottom: 88px; right: 16px; padding: 10px 16px; font-size: 0.88rem; }
+    }
+
     /* ── MODAL ── */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(30,33,64,0.45); z-index: 200; align-items: center; justify-content: center; }
     .modal-overlay.show { display: flex; }
@@ -2052,6 +2078,29 @@
 </div>
 
 <div id="toast"></div>
+
+<button type="button" id="feedback-fab" class="feedback-fab" onclick="openExternalFeedbackModal()" aria-label="Оставить отзыв">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" d="M12 2.5l2.9 6.9h7.4l-5.8 4.5 2.2 7.1L12 17.9 5.3 21l2.2-7.1L1.7 9.4h7.4L12 2.5z"/></svg>
+  Оставить отзыв
+</button>
+
+<div class="modal-overlay feedback-modal-overlay" id="feedback-modal-overlay" onclick="if(event.target===this)closeExternalFeedbackModal()">
+  <div class="modal feedback-modal" role="dialog" aria-labelledby="feedback-modal-title" aria-modal="true" onclick="event.stopPropagation()">
+    <h3 id="feedback-modal-title">Обратная связь</h3>
+    <p class="modal-sub">Поделитесь впечатлением — это поможет улучшить сервис.</p>
+    <div class="modal-sub" style="margin-bottom:10px;font-weight:600;color:var(--text)">Сервис был полезен?</div>
+    <div class="feedback-useful-row">
+      <label><input type="radio" name="fb-useful" value="true" checked> Да</label>
+      <label><input type="radio" name="fb-useful" value="false"> Нет</label>
+    </div>
+    <label for="feedback-comment" class="modal-sub" style="display:block;margin-bottom:0">Комментарий</label>
+    <textarea id="feedback-comment" placeholder="Текст отзыва (необязательно)"></textarea>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" onclick="closeExternalFeedbackModal()">Закрыть</button>
+      <button type="button" class="btn-primary" id="feedback-submit-btn" onclick="submitExternalFeedback()">Отправить</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
@@ -7096,7 +7145,123 @@ async function _toggleResultDetail(header, rid) {
   detail.style.maxHeight = detail.scrollHeight + 'px';
 }
 
+// ─── EXTERNAL FEEDBACK (ap-experiment-zone) ──────────────────────────────────
+const FEEDBACK_API_URL = 'https://ap-experiment-zone.onrender.com/api/external/feedback';
+const FEEDBACK_API_KEY = 'fyI2K26aTOeIJkw_m_vBaoHm7Y8B3J5EjunFJZCepmY';
+const FEEDBACK_LS_SENT = 'oprosy_ext_feedback_sent';
+const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
+const _feedbackMoveOpts = { passive: true };
+
+function getFeedbackSessionId() {
+  let id = sessionStorage.getItem('oprosy_feedback_sid');
+  if (!id) {
+    id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : ('s' + Date.now() + Math.random().toString(36).slice(2));
+    sessionStorage.setItem('oprosy_feedback_sid', id);
+  }
+  return id;
+}
+
+function openExternalFeedbackModal() {
+  if (localStorage.getItem(FEEDBACK_LS_SENT)) return;
+  document.getElementById('feedback-modal-overlay')?.classList.add('show');
+}
+
+function closeExternalFeedbackModal() {
+  document.getElementById('feedback-modal-overlay')?.classList.remove('show');
+}
+
+async function submitExternalFeedback() {
+  const btn = document.getElementById('feedback-submit-btn');
+  const commentEl = document.getElementById('feedback-comment');
+  const useful = document.querySelector('input[name="fb-useful"]:checked');
+  const is_useful = useful ? useful.value === 'true' : true;
+  const comment = (commentEl?.value || '').trim();
+  btn.disabled = true;
+  try {
+    const res = await fetch(FEEDBACK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-API-Key': FEEDBACK_API_KEY
+      },
+      body: JSON.stringify({
+        session_id: getFeedbackSessionId(),
+        is_useful,
+        comment: comment || ''
+      })
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(t.slice(0, 120) || ('HTTP ' + res.status));
+    }
+    localStorage.setItem(FEEDBACK_LS_SENT, '1');
+    closeExternalFeedbackModal();
+    document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
+    if (window._feedbackExitMove) {
+      window.removeEventListener('mousemove', window._feedbackExitMove, _feedbackMoveOpts);
+      window._feedbackExitMove = null;
+    }
+    if (window._feedbackEscHandler) {
+      document.removeEventListener('keydown', window._feedbackEscHandler);
+      window._feedbackEscHandler = null;
+    }
+    toast('Спасибо за отзыв!');
+  } catch (err) {
+    toast('Не удалось отправить. ' + (err.message || 'Проверьте сеть'));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function initExternalFeedbackWidget() {
+  if (localStorage.getItem(FEEDBACK_LS_SENT)) {
+    document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
+    return;
+  }
+  const onMove = function feedbackExitIntentMove(e) {
+    if (localStorage.getItem(FEEDBACK_LS_SENT)) return;
+    if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
+    if (typeof e.clientY !== 'number' || e.clientY > 18) {
+      if (onMove._fbTimer) {
+        clearTimeout(onMove._fbTimer);
+        onMove._fbTimer = null;
+      }
+      return;
+    }
+    if (onMove._fbTimer) return;
+    onMove._fbTimer = setTimeout(() => {
+      onMove._fbTimer = null;
+      if (localStorage.getItem(FEEDBACK_LS_SENT) || sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
+      if (document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
+      sessionStorage.setItem(FEEDBACK_SS_AUTO, '1');
+      openExternalFeedbackModal();
+    }, 300);
+  };
+  window._feedbackExitMove = onMove;
+  window.addEventListener('mousemove', onMove, _feedbackMoveOpts);
+
+  // Дополнительно: курсор уходит за верхнюю границу документа (к зоне вкладок браузера).
+  document.documentElement.addEventListener('mouseleave', (e) => {
+    if (localStorage.getItem(FEEDBACK_LS_SENT)) return;
+    if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
+    if (typeof e.clientY !== 'number' || e.clientY > 24) return;
+    if (document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
+    sessionStorage.setItem(FEEDBACK_SS_AUTO, '1');
+    openExternalFeedbackModal();
+  });
+
+  const onEsc = (e) => {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
+    closeExternalFeedbackModal();
+  };
+  window._feedbackEscHandler = onEsc;
+  document.addEventListener('keydown', onEsc);
+}
+
 initApp();
+initExternalFeedbackWidget();
 </script>
 </body>
 </html>
