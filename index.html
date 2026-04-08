@@ -72,6 +72,10 @@
     body.teacher-workspace-active main { max-width: 1320px; }
 
     /* ── TEACHER WORKSPACE (центр + панель сверху) ── */
+    .ws-session-banner {
+      font-size: 0.8rem; color: var(--muted); line-height: 1.45; padding: 10px 12px; margin-bottom: 12px;
+      background: rgba(202, 138, 4, 0.1); border: 1px solid rgba(202, 138, 4, 0.35); border-radius: 10px;
+    }
     .ws-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; justify-content: space-between; }
     .ws-toolbar-left { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .ws-toolbar-right { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -1256,11 +1260,7 @@
 <header id="main-header" style="display:none">
   <div class="logo" onclick="workspaceNewDraftConfirm()">Опросы<span> и карточки</span></div>
   <div style="display:flex;align-items:center;gap:10px">
-    <div id="header-user-info" style="display:none;align-items:center;gap:8px">
-      <span id="header-user-role-badge"></span>
-    </div>
     <button class="btn-new-set" id="btn-create-new" onclick="workspaceNewDraftConfirm()" style="display:none">Новая подборка</button>
-    <button class="btn-signout" id="btn-signout" onclick="doSignOut()" style="display:none">↩ Выйти</button>
   </div>
 </header>
 
@@ -1268,94 +1268,17 @@
 
 <main>
 
-  <!-- ═══ AUTH VIEW ═══ -->
-  <div class="view" id="view-auth">
-    <div class="auth-wrap">
-      <div class="auth-box">
-        <div class="auth-logo">Опросы<span> и карточки</span></div>
-        <div class="form-card">
-          <div class="auth-tab-row">
-            <button class="auth-tab-btn active" id="at-login" onclick="switchAuthTab('login')">Войти</button>
-            <button class="auth-tab-btn" id="at-register" onclick="switchAuthTab('register')">Регистрация</button>
-          </div>
-
-          <!-- Войти -->
-          <div id="auth-login-form">
-            <div class="form-row">
-              <label>Email</label>
-              <input type="email" id="login-email" placeholder="teacher@school.ru" autocomplete="email">
-            </div>
-            <div class="form-row" style="margin-bottom:20px">
-              <label>Пароль</label>
-              <input type="password" id="login-password" placeholder="••••••••"
-                     autocomplete="current-password"
-                     onkeydown="if(event.key==='Enter')doLogin()">
-            </div>
-            <button class="btn-primary" id="btn-login" style="width:100%;padding:13px;font-size:1rem" onclick="doLogin()">Войти</button>
-            <div class="auth-err" id="login-err"></div>
-          </div>
-
-          <!-- Регистрация -->
-          <div id="auth-register-form" style="display:none">
-            <div class="form-row">
-              <label>Роль</label>
-              <div class="mode-toggle">
-                <button class="mode-btn active" id="rrole-teacher" onclick="setRegRole('teacher')">👩‍🏫 Учитель</button>
-                <button class="mode-btn" id="rrole-student" onclick="setRegRole('student')">🎓 Ученик</button>
-              </div>
-            </div>
-            <div class="form-row">
-              <label>Имя и фамилия</label>
-              <input type="text" id="reg-name" placeholder="Иванова Мария Петровна" autocomplete="name">
-            </div>
-            <div class="form-row">
-              <label>Email</label>
-              <input type="email" id="reg-email" placeholder="student@school.ru" autocomplete="email">
-            </div>
-            <div class="form-row" style="margin-bottom:20px">
-              <label>Пароль</label>
-              <input type="password" id="reg-password" placeholder="Минимум 6 символов"
-                     autocomplete="new-password"
-                     onkeydown="if(event.key==='Enter')doRegister()">
-            </div>
-            <button class="btn-primary" id="btn-register" style="width:100%;padding:13px;font-size:1rem" onclick="doRegister()">Создать аккаунт</button>
-            <div class="auth-err" id="reg-err"></div>
-          </div>
-        </div>
-
-        <!-- Demo accounts -->
-        <div style="margin-top:16px;border:1.5px dashed var(--border);border-radius:12px;padding:14px 16px;background:var(--card)">
-          <div style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
-            🧪 Тестовые аккаунты
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:10px">
-            <button onclick="fillDemo('teacher')" style="flex:1;padding:8px;border:1.5px solid rgba(124,58,237,0.3);background:rgba(124,58,237,0.06);color:var(--accent);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.2s"
-              onmouseover="this.style.background='rgba(124,58,237,0.12)'" onmouseout="this.style.background='rgba(124,58,237,0.06)'">
-              👩‍🏫 Учитель
-            </button>
-            <button onclick="fillDemo('student')" style="flex:1;padding:8px;border:1.5px solid rgba(5,150,105,0.3);background:rgba(5,150,105,0.06);color:var(--green);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.2s"
-              onmouseover="this.style.background='rgba(5,150,105,0.14)'" onmouseout="this.style.background='rgba(5,150,105,0.06)'">
-              🎓 Ученик
-            </button>
-          </div>
-          <div id="demo-creds" style="font-size:0.78rem;color:var(--muted);line-height:1.7;display:none"></div>
-          <button onclick="createDemoAccounts()" id="btn-create-demo"
-            style="width:100%;margin-top:6px;padding:7px;border:1.5px solid var(--border);background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;font-size:0.78rem;transition:all 0.2s"
-            onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
-            Создать демо-аккаунты автоматически
-          </button>
-          <div id="demo-msg" style="font-size:0.78rem;margin-top:6px;text-align:center;display:none"></div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
   <!-- ═══ TEACHER WORKSPACE ═══ -->
   <div class="view" id="view-workspace">
     <input type="text" id="ws-deck-title" placeholder="Название подборки" autocomplete="off">
+    <div class="ws-session-banner" id="ws-session-banner">
+      Подборка в браузере не сохраняется автоматически. Перед закрытием вкладки скачайте файл — позже его можно снова загрузить кнопкой «Импорт подборки».
+    </div>
+    <input type="file" id="ws-import-file" accept="application/json,.json" style="display:none" onchange="wsOnWorkspaceImportFileChange(event)">
     <div class="ws-toolbar">
       <div class="ws-toolbar-left">
+        <button type="button" class="btn-secondary" onclick="workspaceExportDownload()">Скачать подборку</button>
+        <button type="button" class="btn-secondary" onclick="wsPickWorkspaceImportFile()">Импорт подборки</button>
         <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Создать из текста</button>
         <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Показать подборку так, как её увидит ученик при прохождении">Предпросмотр</button>
       </div>
@@ -1997,7 +1920,7 @@
       <div class="student-profile-name" id="student-profile-name">—</div>
       <div class="student-profile-role">Ученик</div>
     </div>
-    <button class="btn-signout" onclick="doSignOut()" title="Выйти">Выйти</button>
+    <button type="button" class="btn-secondary" onclick="goStudentHomeExitToWorkspace()" title="Закрыть">На рабочий стол</button>
   </div>
 
   <!-- Summary stats -->
@@ -2086,15 +2009,28 @@
   </div>
 </div>
 
+<!-- ═══ WORKSPACE NEW DRAFT (dirty guard) ═══ -->
+<div class="modal-overlay" id="modal-ws-new-draft">
+  <div class="modal" style="max-width:440px;text-align:center">
+    <h3>Начать новую подборку?</h3>
+    <div class="modal-sub" style="margin-bottom:20px">Черновик на сервере не сохраняется сам. При необходимости скачайте JSON — иначе данные пропадут.</div>
+    <div class="modal-actions" style="flex-direction:column;gap:10px;align-items:stretch;margin-top:8px">
+      <button type="button" class="btn-primary" onclick="wsNewDraftModalExport()">Скачать подборку</button>
+      <button type="button" class="btn-secondary" onclick="wsNewDraftModalDiscard()">Начать заново без сохранения</button>
+      <button type="button" class="btn-secondary" onclick="wsNewDraftModalCancel()">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ FIREBASE HELP MODAL ═══ -->
 <div class="modal-overlay" id="firebase-help-modal">
   <div class="modal" style="max-width:560px">
     <h3>Как подключить Firebase</h3>
-    <div class="modal-sub">Без настройки Firebase авторизация не работает</div>
+    <div class="modal-sub">Без настройки Firebase выдача по ссылке и облако не работают</div>
     <ol style="font-size:0.88rem;line-height:1.9;color:var(--text);padding-left:20px">
       <li>Зайдите на <strong>console.firebase.google.com</strong> и создайте проект</li>
       <li>В проекте: <strong>Build → Firestore Database</strong> → создайте базу (Start in test mode)</li>
-      <li><strong>Build → Authentication</strong> → Sign-in method → включите <strong>Email/Password</strong></li>
+      <li><strong>Build → Authentication</strong> → Sign-in method → включите <strong>Anonymous</strong> (нужно для записи подборок и прохождения без логина в интерфейсе). По желанию оставьте <strong>Email/Password</strong> для старых сценариев</li>
       <li>В настройках проекта (<code>⚙️ → Project settings</code>) найдите раздел <strong>Your apps → Web app</strong>, скопируйте конфигурацию</li>
       <li>В этом файле найдите строку <code>REPLACE_API_KEY</code> и замените все REPLACE_* на свои значения</li>
     </ol>
@@ -2558,6 +2494,96 @@ function mvpCardToFirestore(c) {
   return base;
 }
 
+/** Переносимый архив подборки (без статистики и без id выдачи). Версионируйте при изменении схемы. */
+const WS_DECK_EXPORT_FORMAT = 'oprosy-kartochki-deck';
+const WS_DECK_EXPORT_VERSION = 1;
+
+function wsWorkspaceDirty() {
+  const title = (document.getElementById('ws-deck-title')?.value || '').trim();
+  if (title) return true;
+  return wsCards.length > 0;
+}
+
+function workspaceExportDownload() {
+  const name = (document.getElementById('ws-deck-title')?.value || '').trim() || 'Подборка без названия';
+  const shuffleOnPublish = !!document.getElementById('ws-shuffle-publish')?.checked;
+  const deck = {
+    name,
+    schemaVersion: 2,
+    mode: 'mixed',
+    shuffleOnPublish,
+    cards: wsCards.map(mvpCardToFirestore)
+  };
+  const payload = {
+    format: WS_DECK_EXPORT_FORMAT,
+    exportVersion: WS_DECK_EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    deck
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `podborka-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Файл скачан');
+}
+
+function workspaceImportApplyPayload(obj) {
+  if (!obj || obj.format !== WS_DECK_EXPORT_FORMAT || typeof obj.exportVersion !== 'number') {
+    toast('Неверный формат файла');
+    return false;
+  }
+  if (obj.exportVersion < 1 || obj.exportVersion > WS_DECK_EXPORT_VERSION) {
+    toast('Неподдерживаемая версия экспорта');
+    return false;
+  }
+  const deck = obj.deck;
+  if (!deck || !Array.isArray(deck.cards)) {
+    toast('В файле нет списка карточек');
+    return false;
+  }
+  wsCards = deck.cards.map((c, i) => legacyCardToMvp(c, i)).filter(Boolean);
+  const t = document.getElementById('ws-deck-title');
+  if (t) t.value = String(deck.name || '').trim();
+  const sh = document.getElementById('ws-shuffle-publish');
+  if (sh && typeof deck.shuffleOnPublish === 'boolean') sh.checked = deck.shuffleOnPublish;
+  wsPublishedId = null;
+  wsGenerateOpen = false;
+  wsPreviewMode = false;
+  const sp = document.getElementById('ws-share-panel');
+  const ap = document.getElementById('ws-analytics-panel');
+  if (sp) sp.style.display = 'none';
+  if (ap) ap.style.display = 'none';
+  if (_wsAnalyticsTimer) { clearInterval(_wsAnalyticsTimer); _wsAnalyticsTimer = null; }
+  renderWorkspaceCards();
+  toast('Подборка импортирована');
+  return true;
+}
+
+function wsPickWorkspaceImportFile() {
+  document.getElementById('ws-import-file')?.click();
+}
+
+function wsOnWorkspaceImportFileChange(ev) {
+  const input = ev.target;
+  const f = input?.files?.[0];
+  if (input) input.value = '';
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(String(reader.result || ''));
+      workspaceImportApplyPayload(obj);
+    } catch (err) {
+      toast('Не удалось прочитать JSON');
+    }
+  };
+  reader.readAsText(f, 'UTF-8');
+}
+
 function _wsClip(s, max) {
   const t = String(s || '').trim();
   if (t.length <= max) return t;
@@ -2983,8 +3009,15 @@ function wsShuffleCards() {
   toast('Порядок карточек изменён');
 }
 
-function workspaceNewDraftConfirm() {
-  if (wsCards.length && !confirm('Очистить экран и начать новую подборку?')) return;
+function wsNewDraftModalClose() {
+  document.getElementById('modal-ws-new-draft')?.classList.remove('show');
+}
+
+function wsNewDraftModalCancel() {
+  wsNewDraftModalClose();
+}
+
+function wsNewDraftExecuteReset() {
   wsCards = [];
   wsPublishedId = null;
   wsGenerateOpen = false;
@@ -3000,6 +3033,25 @@ function workspaceNewDraftConfirm() {
   if (_wsAnalyticsTimer) { clearInterval(_wsAnalyticsTimer); _wsAnalyticsTimer = null; }
   renderWorkspaceCards();
   goHome();
+}
+
+function wsNewDraftModalExport() {
+  workspaceExportDownload();
+  wsNewDraftModalClose();
+  wsNewDraftExecuteReset();
+}
+
+function wsNewDraftModalDiscard() {
+  wsNewDraftModalClose();
+  wsNewDraftExecuteReset();
+}
+
+function workspaceNewDraftConfirm() {
+  if (!wsWorkspaceDirty()) {
+    wsNewDraftExecuteReset();
+    return;
+  }
+  document.getElementById('modal-ws-new-draft')?.classList.add('show');
 }
 
 function wsCopyShare() {
@@ -3044,7 +3096,6 @@ async function workspacePublish() {
       const d = { id: wsPublishedId, ...data, cards: cardsFs };
       const ix = decks.findIndex(x => x.id === wsPublishedId);
       if (ix >= 0) decks[ix] = d; else decks.unshift(d);
-      localStorage.setItem('qf_decks', JSON.stringify(decks));
     }
     const base = location.href.split('#')[0];
     const url = base + '#q=' + wsPublishedId;
@@ -3109,6 +3160,8 @@ async function wsRefreshAnalytics() {
   }
 }
 
+let _wsBeforeUnloadAttached = false;
+
 function initWorkspaceAfterLogin() {
   wsCards = [];
   wsPublishedId = null;
@@ -3124,6 +3177,14 @@ function initWorkspaceAfterLogin() {
   if (ap) ap.style.display = 'none';
   if (_wsAnalyticsTimer) { clearInterval(_wsAnalyticsTimer); _wsAnalyticsTimer = null; }
   renderWorkspaceCards();
+  if (!_wsBeforeUnloadAttached) {
+    _wsBeforeUnloadAttached = true;
+    window.addEventListener('beforeunload', (e) => {
+      if (!wsWorkspaceDirty()) return;
+      e.preventDefault();
+      e.returnValue = '';
+    });
+  }
 }
 
 // ─── FIREBASE HELPERS ────────────────────────────────────────────────────────
@@ -3146,9 +3207,6 @@ function save(deckId) {
   if (el) { el.textContent = '✓ Сохранено'; clearTimeout(el._t); el._t = setTimeout(() => el.textContent = '', 2000); }
   if (_db && currentUser) {
     if (id) persistDeck(id);
-  } else {
-    // Fallback: localStorage
-    localStorage.setItem('qf_decks', JSON.stringify(decks));
   }
 }
 
@@ -3163,8 +3221,16 @@ function getFirstName(fullName) {
 
 function goStudentHome() {
   isStudentMode = false;
-  document.getElementById('main-header').style.display = 'none';
-  _showStudentHome();
+  document.getElementById('main-header').style.display = '';
+  showPage('workspace');
+  renderWorkspaceCards();
+}
+
+function goStudentHomeExitToWorkspace() {
+  isStudentMode = false;
+  document.getElementById('main-header').style.display = '';
+  showPage('workspace');
+  renderWorkspaceCards();
 }
 
 function generateShortCode() {
@@ -3180,36 +3246,75 @@ if (_auth) {
     showLoadingOverlay(true);
     if (user) {
       currentUser = user;
-      try {
-        const doc = await _db.collection('users').doc(user.uid).get();
-        if (doc.exists) {
-          currentUserData = doc.data();
-        } else {
-          // User document missing — ask for role
-          showLoadingOverlay(false);
-          _showRoleSetup(user);
-          return;
+      if (user.isAnonymous) {
+        currentUserData = { name: '', role: 'teacher' };
+      } else {
+        try {
+          const doc = await _db.collection('users').doc(user.uid).get();
+          if (doc.exists) {
+            currentUserData = doc.data();
+          } else {
+            showLoadingOverlay(false);
+            _showRoleSetup(user);
+            return;
+          }
+        } catch (e) {
+          currentUserData = { name: user.email || '', role: 'teacher' };
         }
-      } catch(e) { currentUserData = { name: user.email, role: 'teacher' }; }
+      }
       _applyUserUI();
+      if (location.hash.startsWith('#quiz=')) {
+        try {
+          studentDeck = unpackDeck(urlDecode(location.hash.slice(6)));
+          isStudentMode = true;
+          history.replaceState(null, '', location.pathname);
+          document.getElementById('main-header').style.display = 'none';
+          showPage('student');
+          const fcOnly = studentDeck.mode === 'flashcard';
+          const mixed = studentDeck.mode === 'mixed' || studentDeck.schemaVersion === 2;
+          const modeLabel = fcOnly ? '🃏 Карточки' : (mixed ? '📚 Подборка' : '🧠 Тест');
+          const modeBg = fcOnly ? 'rgba(5,150,105,0.15)' : 'rgba(124,58,237,0.2)';
+          const modeColor = fcOnly ? 'var(--green)' : 'var(--accent)';
+          document.getElementById('st-set-badge').innerHTML =
+            `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
+          document.getElementById('st-set-name').textContent = studentDeck.name;
+          document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
+          document.getElementById('student-step-name').style.display = 'block';
+          document.getElementById('student-step-quiz').style.display = 'none';
+          showLoadingOverlay(false);
+          return;
+        } catch (e) {
+          history.replaceState(null, '', location.pathname);
+        }
+      }
       const code = pendingQuizCode || (location.hash.startsWith('#q=') ? location.hash.slice(3) : null);
       if (code) {
         pendingQuizCode = null;
         history.replaceState(null, '', location.pathname);
         await openQuizByCode(code);
       } else if (currentUserData.role === 'teacher') {
-        await _loadTeacherDecks();
+        decks = [];
+        showPage('workspace');
+        initWorkspaceAfterLogin();
       } else {
         await _showStudentHome();
       }
     } else {
-      currentUser = null; currentUserData = null;
+      currentUser = null;
+      currentUserData = null;
       if (location.hash.startsWith('#q=')) {
         pendingQuizCode = location.hash.slice(3);
         history.replaceState(null, '', location.pathname);
       }
-      document.getElementById('main-header').style.display = 'none';
-      showPage('auth');
+      try {
+        await _auth.signInAnonymously();
+      } catch (e) {
+        console.warn('signInAnonymously:', e?.code || e?.message || e);
+        document.getElementById('main-header').style.display = '';
+        decks = [];
+        showPage('workspace');
+        initWorkspaceAfterLogin();
+      }
     }
     showLoadingOverlay(false);
   });
@@ -3217,15 +3322,9 @@ if (_auth) {
 
 function _applyUserUI() {
   const isTeacher = currentUserData?.role === 'teacher';
-  // Students use their own inline header — hide the global header for them
   document.getElementById('main-header').style.display = isTeacher ? '' : 'none';
   if (isTeacher) {
-    document.getElementById('header-user-info').style.display = 'flex';
-    const roleLabel = '👩‍🏫 Учитель';
-    document.getElementById('header-user-role-badge').innerHTML =
-      `<span class="deck-badge" style="background:rgba(124,58,237,0.1);color:var(--accent)">${roleLabel}</span>`;
     document.getElementById('btn-create-new').style.display = '';
-    document.getElementById('btn-signout').style.display    = '';
     const mba = document.getElementById('mobile-decks-actions');
     if (mba) mba.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
   }
@@ -3295,8 +3394,6 @@ async function _loadTeacherDecks() {
     console.error('[decks] load error:', e.code, e.message);
     decks = [];
   }
-  showPage('workspace');
-  initWorkspaceAfterLogin();
 }
 
 async function _dedupeTeacherDecksInDb(tid) {
@@ -3372,64 +3469,17 @@ async function _dedupeTeacherDecksInDb(tid) {
 
 async function _showStudentHome() {
   showPage('student-home');
-
-  // Fill profile header
-  const fullName = currentUserData?.name || '';
-  const firstName = getFirstName(fullName);
-  const initials = fullName.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
-  document.getElementById('student-profile-avatar').textContent = initials;
-  document.getElementById('student-profile-name').textContent = fullName || firstName;
-
-  // Load student's past results
-  try {
-    const snap = await _db.collection('results')
-      .where('studentId', '==', currentUser.uid).get();
-    const results = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => {
-        const ta = a.date?.toDate ? a.date.toDate().getTime() : (a.date || 0);
-        const tb = b.date?.toDate ? b.date.toDate().getTime() : (b.date || 0);
-        return tb - ta;
-      });
-
-    // Compute summary stats
-    const count = results.length;
-    const avg  = count ? Math.round(results.reduce((s, r) => s + (r.pct || 0), 0) / count) : 0;
-    const best = count ? Math.max(...results.map(r => r.pct || 0)) : 0;
-    const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
-    const weekCount = results.filter(r => {
-      const t = r.date?.toDate ? r.date.toDate().getTime() : (r.date || 0);
-      return t >= weekAgo;
-    }).length;
-
-    document.getElementById('sstat-count').textContent = count || '0';
-    document.getElementById('sstat-avg').textContent   = count ? avg + '%' : '—';
-    document.getElementById('sstat-best').textContent  = count ? best + '%' : '—';
-    document.getElementById('sstat-week').textContent  = weekCount || '0';
-
-    const el = document.getElementById('student-home-results');
-    if (!results.length) return;
-    el.innerHTML = results.slice(0, 30).map(r => {
-      const dt     = r.date?.toDate ? r.date.toDate() : new Date(r.date);
-      const d      = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-      const t      = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      const c      = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
-      const isFC   = r.mode === 'flashcard';
-      const modeLbl = isFC ? '🃏 Карточки' : '🧠 Тест';
-      const modeCls = isFC ? 'fc' : 'test';
-      const correctTxt = (r.correct !== undefined && r.total) ? `${r.correct}/${r.total} · ` : '';
-      const repeatBtn = r.deckId
-        ? `<button class="srr-repeat" onclick="repeatQuiz('${r.deckId}')">Повторить</button>`
-        : '';
-      return `<div class="student-result-row">
-        <div class="srr-name">${esc(r.deckName || '—')}</div>
-        <span class="srr-mode ${modeCls}">${modeLbl}</span>
-        <div class="srr-date">${d}, ${t}</div>
-        <div class="srr-bar-wrap"><div class="srr-bar" style="width:${r.pct}%;background:${c}"></div></div>
-        <div class="srr-score" style="color:${c}">${correctTxt}${r.pct}%</div>
-        ${repeatBtn}
-      </div>`;
-    }).join('');
-  } catch(e) { console.error('_showStudentHome error', e); }
+  document.getElementById('main-header').style.display = 'none';
+  document.getElementById('student-profile-avatar').textContent = '🎓';
+  document.getElementById('student-profile-name').textContent = 'Ученик';
+  document.getElementById('sstat-count').textContent = '—';
+  document.getElementById('sstat-avg').textContent = '—';
+  document.getElementById('sstat-best').textContent = '—';
+  document.getElementById('sstat-week').textContent = '—';
+  const el = document.getElementById('student-home-results');
+  if (el) {
+    el.innerHTML = '<p class="modal-sub" style="padding:12px 0;line-height:1.6">Вход ученика по email в интерфейсе отключён. Откройте задание по ссылке или коду, которые дал учитель.</p>';
+  }
 }
 
 async function repeatQuiz(deckId) {
@@ -3634,14 +3684,13 @@ function showPage(name) {
   let el = document.getElementById('view-' + resolved);
   if (!el) {
     console.warn('showPage: нет элемента #view-' + resolved);
-    el = document.getElementById('view-workspace') || document.getElementById('view-auth');
+    el = document.getElementById('view-workspace');
   }
   if (el) el.classList.add('active');
   document.body.classList.toggle('teacher-workspace-active', resolved === 'workspace');
 }
 
 function goHome() {
-  if (currentUserData?.role === 'student') { _showStudentHome(); return; }
   showPage('workspace');
   renderWorkspaceCards();
 }
@@ -5364,8 +5413,7 @@ function initApp() {
   if (!_auth) {
     document.getElementById('main-header').style.display = '';
     document.getElementById('btn-create-new').style.display = '';
-    // Load from localStorage as fallback
-    decks = JSON.parse(localStorage.getItem('qf_decks') || '[]');
+    decks = [];
     const hash = location.hash;
     if (hash.startsWith('#quiz=')) {
       try {
@@ -6527,6 +6575,8 @@ async function confirmRoleSetup() {
     _applyUserUI();
     if (_pendingRole === 'teacher') {
       await _loadTeacherDecks();
+      showPage('workspace');
+      initWorkspaceAfterLogin();
     } else {
       await _showStudentHome();
     }
