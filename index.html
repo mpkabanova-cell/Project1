@@ -93,9 +93,64 @@
     .ws-gen-controls select { padding: 7px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; color: var(--text); font-size: 0.88rem; }
     .ws-generate-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
     .ws-card-list-wrap { margin-top: 4px; }
+    .ws-card-nav {
+      position: sticky;
+      top: 56px;
+      z-index: 90;
+      margin: 0 0 12px 0;
+      padding: 10px 0 12px;
+      background: linear-gradient(to bottom, var(--surface) 88%, rgba(255,255,255,0));
+      border-bottom: 1px solid var(--border);
+    }
+    .ws-card-nav-inner {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+    .ws-card-nav-prefix {
+      flex-shrink: 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding-right: 4px;
+    }
+    .ws-card-nav-btn {
+      flex-shrink: 0;
+      min-width: 38px;
+      height: 38px;
+      padding: 0 10px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .ws-card-nav-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .ws-card-nav-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+    }
     .ws-post-publish { margin-top: 18px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
-    .ws-card-list { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 260px); overflow: auto; padding-right: 4px; }
-    .ws-card-item { border: 1px solid var(--border); border-radius: 12px; padding: 0; background: #ffffff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); overflow: hidden; }
+    /* Прокрутка страницы (main), а не «коробки» списка — иначе на части экранов скролл не срабатывает */
+    .ws-card-list { display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
+    .ws-card-item {
+      border: 1px solid var(--border); border-radius: 12px; padding: 0; background: #ffffff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); overflow: visible;
+      scroll-margin-top: 120px;
+    }
     .ws-card-item.ws-dragging { opacity: 0.55; }
     .ws-card-item.ws-drop-target { outline: 2px dashed rgba(var(--accent-rgb), 0.45); outline-offset: 2px; }
     .ws-card-head {
@@ -117,13 +172,16 @@
     .ws-card-head-actions button:disabled { opacity: 0.35; cursor: not-allowed; }
     .ws-card-head-actions button.danger:hover { color: var(--accent2); border-color: rgba(225,29,72,0.35); }
     .ws-card-body { padding: 14px; }
-    .ws-preview-line {
-      padding: 8px 12px 12px; font-size: 0.86rem; color: var(--muted); cursor: pointer; border-top: 1px solid transparent;
+    .ws-student-preview-wrap { margin-top: 4px; }
+    .ws-student-preview-head {
+      margin-bottom: 16px; padding: 12px 14px; background: var(--accent-soft); border-radius: 12px;
+      border: 1px solid rgba(var(--accent-rgb), 0.22);
     }
-    .ws-preview-line:hover { color: var(--text); background: rgba(15,23,42,0.02); }
-    .ws-card-item.ws-preview .ws-card-body { display: none; }
-    .ws-card-item.ws-preview.ws-preview-open .ws-card-body { display: block; }
-    .ws-card-item.ws-preview:not(.ws-preview-open) .ws-preview-line { border-top-color: var(--border); }
+    .ws-student-preview-title { font-size: 0.95rem; font-weight: 800; color: var(--accent); margin: 0 0 6px 0; }
+    .ws-student-preview-note { font-size: 0.82rem; color: var(--muted); margin: 0; line-height: 1.45; }
+    .ws-student-preview-slide { margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+    .ws-student-preview-slide:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .ws-preview-hint { font-size: 0.78rem; color: var(--muted); margin: 0 0 8px 0; line-height: 1.4; }
     .ws-type-switch { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; margin-bottom: 10px; }
     .ws-type-switch button {
       font-size: 0.68rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
@@ -134,7 +192,7 @@
     .ws-card-item label.wl { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; }
     .ws-card-item input[type=text], .ws-card-item textarea { width: 100%; box-sizing: border-box; font-size: 0.9rem; padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: #ffffff; }
     .ws-card-item input[type=text]:focus, .ws-card-item textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
-    .ws-card-item textarea { min-height: 52px; resize: vertical; }
+    .ws-card-item textarea { min-height: 52px; max-height: 280px; resize: vertical; overflow-y: auto; }
     .ws-actions-row { display: none; }
     .ws-stat-line { font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
     .ws-stat-line strong { color: var(--text); }
@@ -142,10 +200,6 @@
     .ws-top-errors li { margin-bottom: 4px; }
     #ws-deck-title { width: 100%; font-size: 1rem; font-weight: 700; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border); margin-bottom: 12px; box-sizing: border-box; background: #ffffff; }
     #ws-deck-title:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
-    @media (max-width: 1024px) {
-      .ws-card-list { max-height: none; }
-    }
-
     /* ── TYPOGRAPHY ── */
     .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
     .page-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 28px; }
@@ -1300,10 +1354,10 @@
       <div class="ws-toolbar-left">
         <button type="button" class="btn-primary" onclick="wsAddEmptyCard()">+ Добавить карточку</button>
         <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Создать из текста</button>
-        <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Карточки свёрнуты до одной строки; нажмите строку, чтобы открыть правку">Предпросмотр</button>
+        <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Показать подборку так, как её увидит ученик при прохождении">Предпросмотр</button>
       </div>
       <div class="ws-toolbar-right">
-        <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish"> Случайный порядок при выдаче</label>
+        <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish" onchange="wsOnShufflePreviewRefresh()"> Случайный порядок карточек</label>
         <button type="button" class="btn-primary" id="ws-btn-publish" disabled onclick="workspacePublish()">Выдать ученикам</button>
       </div>
     </div>
@@ -1343,7 +1397,17 @@
         </div>
       </div>
       <div id="ws-card-list-wrap" class="ws-card-list-wrap" style="display:none">
+        <nav id="ws-card-nav" class="ws-card-nav" style="display:none" aria-label="Быстрый переход к карточке">
+          <div class="ws-card-nav-inner" id="ws-card-nav-inner"></div>
+        </nav>
         <div id="ws-card-list" class="ws-card-list"></div>
+      </div>
+      <div id="ws-student-preview-wrap" class="ws-student-preview-wrap" style="display:none">
+        <div class="ws-student-preview-head">
+          <div class="ws-student-preview-title">Как у ученика при прохождении</div>
+          <p class="ws-student-preview-note" id="ws-student-preview-note"></p>
+        </div>
+        <div id="ws-student-preview-list"></div>
       </div>
     </div>
     <div id="ws-share-panel" class="ws-post-publish" style="display:none">
@@ -2096,41 +2160,211 @@ let wsPublishedId = null;
 let _wsAnalyticsTimer = null;
 let wsGenerateOpen = false;
 let wsPreviewMode = false;
-const wsPreviewExpandedIds = new Set();
 
 function wsTypeLabel(type) {
   const m = { input: 'Короткий ответ', choice: 'Выбор ответа', flashcard: 'Переворот', matching: 'Соответствие' };
   return m[type] || type;
 }
 
-function wsPreviewLine(c) {
-  let t = String(c.question || '').replace(/\s+/g, ' ').trim();
-  if (!t && c.type === 'choice') t = String((c.options || [])[0] || '').trim();
-  if (!t) t = '…';
-  if (t.length > 80) t = t.slice(0, 78) + '…';
-  return t;
-}
-
-function wsTogglePreviewCardExpanded(cardId) {
-  if (wsPreviewExpandedIds.has(cardId)) wsPreviewExpandedIds.delete(cardId);
-  else wsPreviewExpandedIds.add(cardId);
-  renderWorkspaceCards();
-}
-
 function wsTogglePreviewMode() {
   wsPreviewMode = !wsPreviewMode;
-  if (!wsPreviewMode) wsPreviewExpandedIds.clear();
   renderWorkspaceCards();
+}
+
+/** Панель «как у ученика»: видимость и перерисовка. */
+function wsSyncStudentPreviewPanel() {
+  const b = document.getElementById('ws-toggle-preview');
+  if (b) b.classList.toggle('active', wsPreviewMode);
+  const listWrap = document.getElementById('ws-card-list-wrap');
+  const prevWrap = document.getElementById('ws-student-preview-wrap');
+  const showStudent = wsPreviewMode && wsCards.length > 0 && !wsGenerateOpen;
+  if (listWrap) listWrap.style.display = wsCards.length && !showStudent ? 'block' : 'none';
+  if (prevWrap) {
+    prevWrap.style.display = showStudent ? 'block' : 'none';
+    if (showStudent) wsRenderStudentPreview();
+  }
+}
+
+function wsOnShufflePreviewRefresh() {
+  if (wsPreviewMode && wsCards.length > 0 && !wsGenerateOpen) wsRenderStudentPreview();
+}
+
+function wsRefreshStudentPreviewIfVisible() {
+  if (wsPreviewMode && wsCards.length > 0 && !wsGenerateOpen) wsRenderStudentPreview();
+}
+
+let _wsCardNavObserver = null;
+
+function wsRenderCardNav() {
+  const inner = document.getElementById('ws-card-nav-inner');
+  const nav = document.getElementById('ws-card-nav');
+  if (!inner || !nav) return;
+  if (!wsCards.length) {
+    inner.innerHTML = '';
+    nav.style.display = 'none';
+    if (_wsCardNavObserver) {
+      _wsCardNavObserver.disconnect();
+      _wsCardNavObserver = null;
+    }
+    return;
+  }
+  nav.style.display = '';
+  inner.innerHTML =
+    '<span class="ws-card-nav-prefix">Карточки</span>' +
+    wsCards
+      .map(
+        (_, i) =>
+          `<button type="button" class="ws-card-nav-btn" data-ws-nav="${i}" onclick="wsJumpToCard(${i})" title="К карточке ${i + 1}">${i + 1}</button>`
+      )
+      .join('');
+}
+
+function wsSetActiveCardNavIndex(i) {
+  document.querySelectorAll('.ws-card-nav-btn').forEach((b) => {
+    const j = parseInt(b.getAttribute('data-ws-nav'), 10);
+    b.classList.toggle('active', j === i);
+  });
+}
+
+/** Фокус: переворот — «Ответ»; короткий ответ — одно поле ответа; иначе первый ввод. */
+function wsFocusCardEditorField(cardEl) {
+  if (!cardEl) return;
+  const body = cardEl.querySelector('.ws-card-body');
+  if (!body) return;
+  const tas = body.querySelectorAll('textarea');
+  const inps = body.querySelectorAll('input[type="text"]');
+  if (tas.length >= 2) {
+    tas[tas.length - 1].focus();
+    return;
+  }
+  if (tas.length === 1 && inps.length === 1) {
+    inps[0].focus();
+    return;
+  }
+  if (tas.length === 1) {
+    tas[0].focus();
+    return;
+  }
+  if (inps.length) inps[0].focus();
+}
+
+function wsJumpToCard(i) {
+  if (i < 0 || i >= wsCards.length) return;
+  const list = document.getElementById('ws-card-list');
+  if (!list) return;
+  const el = list.querySelector(`.ws-card-item[data-wsid="${i}"]`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  wsSetActiveCardNavIndex(i);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => wsFocusCardEditorField(el));
+  });
+}
+
+function wsSetupCardNavObserver() {
+  if (_wsCardNavObserver) {
+    _wsCardNavObserver.disconnect();
+    _wsCardNavObserver = null;
+  }
+  const list = document.getElementById('ws-card-list');
+  if (!list || wsCards.length < 2) return;
+  const items = list.querySelectorAll('.ws-card-item');
+  if (!items.length) return;
+  _wsCardNavObserver = new IntersectionObserver(
+    (entries) => {
+      const vis = entries.filter((e) => e.isIntersecting && e.intersectionRatio > 0.12);
+      if (!vis.length) return;
+      vis.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      const idx = parseInt(vis[0].target.getAttribute('data-wsid'), 10);
+      if (!Number.isNaN(idx)) wsSetActiveCardNavIndex(idx);
+    },
+    { root: null, rootMargin: '-14% 0px -48% 0px', threshold: [0.12, 0.25, 0.45] }
+  );
+  items.forEach((node) => _wsCardNavObserver.observe(node));
+}
+
+function _wsHtmlStudentPreviewOneMixed(card) {
+  const q = esc(card.question || '—');
+  let inner = `<div class="quiz-question-card"><div class="quiz-q-text">${q}</div>`;
+  if (card.type === 'flashcard') {
+    inner += `<div style="margin-top:14px">
+      <p class="ws-preview-hint">У ученика сначала кнопка «Показать ответ», затем оценка «Знаю» / «Не знаю».</p>
+      <button type="button" class="btn-secondary" disabled style="opacity:0.72">Показать ответ</button>
+    </div>`;
+  } else if (card.type === 'input') {
+    inner += `<div class="quiz-open-input" style="display:block;margin-top:14px">
+      <input type="text" disabled placeholder="Введите ответ..." style="width:100%;max-width:360px;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border)">
+      <button type="button" class="btn-primary" disabled style="opacity:0.72;margin-top:8px">Проверить</button>
+    </div>`;
+  } else if (card.type === 'choice' && (card.options || []).length) {
+    const opts = (card.options || []).slice(0, 4);
+    inner += `<div class="quiz-options" style="display:grid;margin-top:14px">${
+      opts.map((t) => `<button type="button" class="quiz-opt" disabled style="opacity:0.9;text-align:left">${esc(t)}</button>`).join('')
+    }</div>`;
+  } else if (card.type === 'matching' && card.pairs && card.pairs.length) {
+    const rights = shuffle(card.pairs.map((p) => p.right));
+    inner += `<div style="margin-top:14px">${
+      card.pairs.map((p) => {
+        const optHtml = rights.map((r) => `<option>${esc(r)}</option>`).join('');
+        return `<div class="match-play-row"><label>${esc(p.left)}</label><select class="match-select-st" disabled>${optHtml}</select></div>`;
+      }).join('')
+    }<button type="button" class="btn-primary" disabled style="margin-top:10px;opacity:0.72">Проверить</button></div>`;
+  }
+  inner += '</div>';
+  return inner;
+}
+
+function wsRenderStudentPreview() {
+  const host = document.getElementById('ws-student-preview-list');
+  const note = document.getElementById('ws-student-preview-note');
+  if (!host) return;
+  let raw = JSON.parse(JSON.stringify(wsCards));
+  const shuffled = !!document.getElementById('ws-shuffle-publish')?.checked;
+  if (shuffled) raw = shuffle(raw);
+  const norm = raw.map((c, i) => legacyCardToMvp(c, i)).filter(Boolean);
+  if (note) {
+    note.textContent = shuffled
+      ? 'Порядок соответствует включённому «Случайному порядку карточек» при выдаче.'
+      : 'Порядок такой же, как в списке при редактировании.';
+  }
+  const n = norm.length;
+  const allFlash = n > 0 && norm.every((c) => c.type === 'flashcard');
+  host.innerHTML = norm.map((card, idx) => {
+    const counter = `<div class="quiz-counter" style="margin-bottom:8px"><span>Карточка ${idx + 1} из ${n}</span></div>`;
+    const barW = n <= 1 ? 0 : (idx / n) * 100;
+    const bar = `<div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" style="width:${barW}%"></div></div>`;
+    if (allFlash) {
+      const fq = esc(card.question || '');
+      const fa = esc(card.answer || '');
+      return `<div class="ws-student-preview-slide">${counter}${bar}
+        <p class="ws-preview-hint">Нажмите карточку, чтобы перевернуть — так же у ученика.</p>
+        <div class="flashcard-wrap" onclick="this.querySelector('.flashcard').classList.toggle('flipped')">
+          <div class="flashcard">
+            <div class="flashcard-face flashcard-front">
+              <div class="flashcard-label">Вопрос</div>
+              <div class="flashcard-text">${fq}</div>
+              <div class="flashcard-hint">Нажмите, чтобы увидеть ответ</div>
+            </div>
+            <div class="flashcard-face flashcard-back">
+              <div class="flashcard-label">Ответ</div>
+              <div class="flashcard-text">${fa}</div>
+              <div class="flashcard-hint">Вы знали этот ответ?</div>
+            </div>
+          </div>
+        </div>
+        <div class="flashcard-actions" style="margin-top:12px;opacity:0.55;pointer-events:none;justify-content:center">
+          <span class="fc-btn-no" style="padding:8px 14px;border-radius:10px;border:2px solid var(--border)">✗ Не знал</span>
+          <span class="fc-btn-knew" style="padding:8px 14px;border-radius:10px;background:var(--green);color:#fff">✓ Знал!</span>
+        </div>
+      </div>`;
+    }
+    return `<div class="ws-student-preview-slide">${counter}${bar}${_wsHtmlStudentPreviewOneMixed(card)}</div>`;
+  }).join('');
 }
 
 function wsUpdatePublishButton() {
   const btn = document.getElementById('ws-btn-publish');
   if (btn) btn.disabled = !wsCards.length;
-}
-
-function wsSyncPreviewModeButton() {
-  const b = document.getElementById('ws-toggle-preview');
-  if (b) b.classList.toggle('active', wsPreviewMode);
 }
 
 function wsDragStartFromHandle(ev, i) {
@@ -2182,10 +2416,9 @@ function wsMoveDown(i) {
 function syncWorkspaceLayout() {
   const genEl = document.getElementById('ws-generate-block');
   const emptyEl = document.getElementById('ws-empty-cta');
-  const listWrap = document.getElementById('ws-card-list-wrap');
   if (genEl) genEl.style.display = wsGenerateOpen ? 'block' : 'none';
   if (emptyEl) emptyEl.style.display = (!wsCards.length && !wsGenerateOpen) ? 'flex' : 'none';
-  if (listWrap) listWrap.style.display = wsCards.length ? 'block' : 'none';
+  wsSyncStudentPreviewPanel();
 }
 
 function wsOpenGeneratePanel() {
@@ -2217,35 +2450,45 @@ function wsGenerateFromPanel() {
     toast('Не получилось выделить пары «вопрос — короткий ответ». Попробуйте «Термин — определение», даты, числа или связный текст.');
     return;
   }
-  wsCards = wsCards.concat(gen);
+  wsCards = wsCards.filter((c) => !wsCardIsBlank(c)).concat(gen);
   if (ta) ta.value = '';
   wsGenerateOpen = false;
   renderWorkspaceCards();
-  toast(`Создано карточек из текста: ${gen.length}`);
+  let msg = `Создано карточек из текста: ${gen.length}`;
+  if (gen.length < count) msg += ` (уникальных фрагментов в тексте меньше, чем ${count})`;
+  toast(msg);
 }
 
 function wsFocusLastQuestion() {
-  requestAnimationFrame(() => {
-    const lastCard = wsCards[wsCards.length - 1];
-    let needRender = false;
-    if (lastCard && wsPreviewMode && !wsPreviewExpandedIds.has(lastCard.id)) {
-      wsPreviewExpandedIds.add(lastCard.id);
-      needRender = true;
-    }
-    if (needRender) renderWorkspaceCards();
-    requestAnimationFrame(() => {
-      const last = document.querySelector('#ws-card-list .ws-card-item:last-child');
-      if (!last) return;
-      const ta = last.querySelector('textarea');
-      if (ta) { ta.focus(); const L = ta.value.length; ta.setSelectionRange(L, L); }
-    });
-  });
+  if (!wsCards.length) return;
+  wsJumpToCard(wsCards.length - 1);
 }
 
 function wsPatchAnswerLine(i, val) {
   if (!wsCards[i] || wsCards[i].type !== 'input') return;
   const parts = String(val).split(/[,;]/).map(s => s.trim()).filter(Boolean);
   wsCards[i].accepted = parts.length ? parts : (String(val).trim() ? [String(val).trim()] : ['ответ']);
+  wsRefreshStudentPreviewIfVisible();
+}
+
+/** Пустая карточка-черновик (убираем перед генерацией из текста). */
+function wsCardIsBlank(c) {
+  if (!c) return true;
+  const q = String(c.question || '').trim();
+  if (c.type === 'flashcard') return !q && !String(c.answer || '').trim();
+  if (c.type === 'input') {
+    const acc = (c.accepted || []).map((x) => String(x).trim()).filter(Boolean).join('');
+    return !q && !acc;
+  }
+  if (c.type === 'choice') {
+    const opts = (c.options || []).map((x) => String(x).trim()).filter(Boolean);
+    return !q && opts.length === 0;
+  }
+  if (c.type === 'matching') {
+    const hasPair = (c.pairs || []).some((p) => String(p.left || '').trim() || String(p.right || '').trim());
+    return !q && !hasPair;
+  }
+  return !q;
 }
 
 function legacyCardToMvp(c, idx) {
@@ -2373,10 +2616,27 @@ function _wsPairFromNumberedLine(line, maxA) {
 function _wsSplitSentences(prose) {
   const norm = String(prose || '').replace(/\s+/g, ' ').trim();
   if (!norm) return [];
-  return norm
-    .split(/(?<=[\.!\?]|…)\s+/)
+  let parts = norm
+    .split(/(?<=[\.!\?]|…|[。．])\s+/)
     .map(s => s.trim())
     .filter(s => s.length > 14);
+  if (parts.length <= 1 && norm.length > 400) {
+    parts = norm.split(/(?<=[,;])\s+/).map(s => s.trim()).filter(s => s.length > 24);
+  }
+  if (parts.length <= 1 && norm.length > 400) {
+    const out = [];
+    let rest = norm;
+    while (rest.length > 24) {
+      let take = rest.slice(0, 380);
+      const sp = take.lastIndexOf(' ');
+      if (sp > 220) take = rest.slice(0, sp);
+      const chunk = take.trim();
+      if (chunk.length > 24) out.push(chunk);
+      rest = rest.slice(take.length).trim();
+    }
+    if (out.length) parts = out;
+  }
+  return parts;
 }
 
 function _wsDeclarativeToShortPair(sentence, maxA) {
@@ -2424,7 +2684,7 @@ function _wsDeclarativeToShortPair(sentence, maxA) {
   if (meaningful.length < 6) return null;
   const a = _wsClip(meaningful.split(/\s+/).pop() || '', maxA);
   if (a.length < 3) return null;
-  return { q: `Ключевой термин в формулировке:\n${_wsClip(s, 180)}`, a };
+  return { q: `Ключевой термин в формулировке:\n${_wsClip(s, 320)}`, a };
 }
 
 function _wsSentencesToShortPairs(sentences, maxA) {
@@ -2435,9 +2695,16 @@ function _wsSentencesToShortPairs(sentences, maxA) {
     if (/[?？]\s*$/.test(s)) {
       const next = sentences[i + 1];
       if (next && next.length > 10 && !/[?？]\s*$/.test(next)) {
-        const a = _wsShortToken(next, maxA);
-        pairs.push({ q: s.trim(), a: a || _wsClip(next.split(/\s+/)[0], maxA) });
-        i++;
+        let a = _wsShortToken(next, maxA);
+        if (!a) {
+          const cand = next.split(/\s+/).find((w) => w.replace(/[.,«»;:]+/g, '').length > 1);
+          a = _wsClip(cand || next.split(/\s+/)[0] || '', maxA);
+        }
+        a = String(a || '').trim();
+        if (a.length >= 2) {
+          pairs.push({ q: _wsClip(s.trim(), 480), a });
+          i++;
+        }
       }
       continue;
     }
@@ -2476,10 +2743,12 @@ function _wsCollectShortPairs(text, maxA) {
 
   const seen = new Set();
   const deduped = [];
+  const maxQ = 520;
   for (const p of pairs) {
     const a = String(p.a || '').trim();
-    const q = String(p.q || '').trim();
-    if (!a || !q) continue;
+    let q = String(p.q || '').trim();
+    if (!a || !q || a.length < 2) continue;
+    q = _wsClip(q, maxQ);
     const k = `${q}\n${a}`.toLowerCase().slice(0, 200);
     if (seen.has(k)) continue;
     seen.add(k);
@@ -2508,9 +2777,10 @@ function _wsChoiceOptionsForAnswer(correct, pool) {
 }
 
 function _wsAssembleCardFromPair(pair, type, answerPool) {
-  const q = String(pair.q || '').trim();
+  const q = _wsClip(String(pair.q || '').trim(), 520);
   const a = String(pair.a || '').trim();
   const id = uid();
+  if (!a) return null;
   if (type === 'flashcard') {
     return { id, type: 'flashcard', question: q, answer: a, accepted: null, options: null, correctIndex: 0, pairs: null };
   }
@@ -2539,17 +2809,17 @@ function generateCardsFromText(text, options) {
   const pairs = _wsCollectShortPairs(text, maxA);
   const slice = pairs.slice(0, count);
   const pool = pairs.map((p) => p.a);
-  return slice.map((p) => _wsAssembleCardFromPair(p, type, pool));
+  return slice.map((p) => _wsAssembleCardFromPair(p, type, pool)).filter(Boolean);
 }
 
 function renderWorkspaceCards() {
   syncWorkspaceLayout();
   wsUpdatePublishButton();
-  wsSyncPreviewModeButton();
   const list = document.getElementById('ws-card-list');
   if (!list) return;
   if (!wsCards.length) {
     list.innerHTML = '';
+    wsRenderCardNav();
     return;
   }
   const types = [
@@ -2594,35 +2864,31 @@ function renderWorkspaceCards() {
         <div class="ws-field"><label class="wl">Пары</label>${rows}<button type="button" class="btn-ghost" onclick="wsAddPair(${i})">+ пара</button></div>`;
     }
     const tl = wsTypeLabel(c.type);
-    const previewMode = wsPreviewMode;
-    const expanded = !previewMode || wsPreviewExpandedIds.has(c.id);
     const dupB = `<button type="button" onclick="event.stopPropagation();wsDup(${i})" title="Дублировать">⧉</button>`;
     const upB = `<button type="button" onclick="event.stopPropagation();wsMoveUp(${i})" title="Вверх"${i === 0 ? ' disabled' : ''}>↑</button>`;
     const dnB = `<button type="button" onclick="event.stopPropagation();wsMoveDown(${i})" title="Вниз"${i >= wsCards.length - 1 ? ' disabled' : ''}>↓</button>`;
     const delB = `<button type="button" class="danger" onclick="event.stopPropagation();wsDel(${i})" title="Удалить">✕</button>`;
-    const prev = previewMode
-      ? `<div class="ws-preview-line" onclick="wsTogglePreviewCardExpanded('${c.id}')">${esc(wsPreviewLine(c))}</div>`
-      : '';
-    const cls = `ws-card-item${previewMode ? ' ws-preview' : ''}${previewMode && expanded ? ' ws-preview-open' : ''}`;
-    return `<div class="${cls}" data-wsid="${i}" data-card-id="${esc(c.id)}"
+    return `<div class="ws-card-item" data-wsid="${i}" data-card-id="${esc(c.id)}"
       ondragover="wsDragOverCard(event)" ondragleave="wsDragLeaveCard(event)" ondrop="wsDropOnCard(event,${i})">
       <div class="ws-card-head">
         <span class="ws-drag-handle" draggable="true" ondragstart="wsDragStartFromHandle(event,${i})" ondragend="wsDragEnd(event)">⠿</span>
         <span class="ws-card-head-title">Карточка ${i + 1} · ${tl}</span>
         <div class="ws-card-head-actions">${dupB}${upB}${dnB}${delB}</div>
       </div>
-      ${prev}
       <div class="ws-card-body">
         ${body}
       </div>
     </div>`;
   }).join('');
+  wsRenderCardNav();
+  requestAnimationFrame(() => wsSetupCardNavObserver());
 }
 
 function wsPatch(i, field, val) {
   if (!wsCards[i]) return;
   if (field === 'correctIndex') wsCards[i].correctIndex = val;
   else wsCards[i][field] = val;
+  wsRefreshStudentPreviewIfVisible();
 }
 
 function wsPatchAccepted(i, str) {
@@ -2636,6 +2902,7 @@ function wsPatchOption(i, j, val) {
   while (o.length < 4) o.push('');
   o[j] = val;
   wsCards[i].options = o;
+  wsRefreshStudentPreviewIfVisible();
 }
 
 function wsPatchPair(i, pi, side, val) {
@@ -2644,6 +2911,7 @@ function wsPatchPair(i, pi, side, val) {
   if (!pairs[pi]) pairs[pi] = { left: '', right: '' };
   pairs[pi][side] = val;
   wsCards[i].pairs = pairs;
+  wsRefreshStudentPreviewIfVisible();
 }
 
 function wsAddPair(i) {
@@ -2674,8 +2942,6 @@ function wsDup(i) {
 }
 
 function wsDel(i) {
-  const id = wsCards[i]?.id;
-  if (id) wsPreviewExpandedIds.delete(id);
   wsCards.splice(i, 1);
   renderWorkspaceCards();
 }
@@ -2698,7 +2964,6 @@ function workspaceNewDraftConfirm() {
   wsCards = [];
   wsPublishedId = null;
   wsGenerateOpen = false;
-  wsPreviewExpandedIds.clear();
   wsPreviewMode = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
@@ -2824,7 +3089,6 @@ function initWorkspaceAfterLogin() {
   wsCards = [];
   wsPublishedId = null;
   wsGenerateOpen = false;
-  wsPreviewExpandedIds.clear();
   wsPreviewMode = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
@@ -3782,7 +4046,6 @@ function openSet(id, tab = 'cards') {
   setCards = [...(d.cards || [])];
   wsPublishedId = id;
   wsGenerateOpen = false;
-  wsPreviewExpandedIds.clear();
   wsPreviewMode = false;
   const _gt = document.getElementById('ws-generate-text');
   if (_gt) _gt.value = '';
