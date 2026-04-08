@@ -18,9 +18,10 @@
     :root {
       --bg: #f8fafc;
       --surface: #ffffff;
-      --card: #f1f5f9;
-      --accent: #4f46e5;
-      --accent-hover: #4338ca;
+      --card: #ffffff;
+      --accent: #7c3aed;
+      --accent-hover: #6d28d9;
+      --accent-soft: #ede9fe;
       --accent2: #e11d48;
       --green: #059669;
       --yellow: #ca8a04;
@@ -29,7 +30,7 @@
       --border: #e2e8f0;
       --radius: 16px;
       --shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
-      --accent-rgb: 79, 70, 229;
+      --accent-rgb: 124, 58, 237;
       --green-rgb: 5, 150, 105;
     }
 
@@ -51,10 +52,10 @@
     }
     .nav-tab:hover { color: var(--text); background: var(--card); }
     .nav-tab.active {
-      background: rgba(var(--accent-rgb), 0.08);
+      background: var(--accent-soft);
       color: var(--accent);
       font-weight: 700;
-      border: 1px solid rgba(var(--accent-rgb), 0.22);
+      border: 1px solid rgba(var(--accent-rgb), 0.25);
     }
     .btn-new-set {
       background: var(--accent); color: #fff; border: none; border-radius: 8px;
@@ -71,7 +72,11 @@
     body.teacher-workspace-active main { max-width: 1320px; }
 
     /* ── TEACHER WORKSPACE (центр + панель сверху) ── */
-    .ws-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
+    .ws-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; justify-content: space-between; }
+    .ws-toolbar-left { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .ws-toolbar-right { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .ws-shuffle-inline { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); user-select: none; }
+    .ws-shuffle-inline input { accent-color: var(--accent); }
     .ws-center { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; min-height: 260px; box-shadow: var(--shadow); }
     .ws-empty-cta { flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 220px; gap: 20px; }
     .ws-empty-title { font-size: 1.12rem; font-weight: 700; color: var(--text); }
@@ -79,29 +84,61 @@
     .ws-generate-block { margin-bottom: 16px; }
     .ws-generate-block textarea {
       width: 100%; min-height: 220px; font-size: 0.95rem; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border);
-      resize: vertical; box-sizing: border-box; background: var(--surface); color: var(--text);
+      resize: vertical; box-sizing: border-box; background: #ffffff; color: var(--text);
     }
+    .ws-generate-block textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+    #ws-toggle-compact.active { background: var(--accent-soft); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.35); }
     .ws-generate-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
     .ws-card-list-wrap { margin-top: 4px; }
     .ws-post-publish { margin-top: 18px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
     .ws-card-list { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 260px); overflow: auto; padding-right: 4px; }
-    .ws-card-item { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
+    .ws-card-item { border: 1px solid var(--border); border-radius: 12px; padding: 0; background: #ffffff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); overflow: hidden; }
+    .ws-card-item.ws-dragging { opacity: 0.55; }
+    .ws-card-item.ws-drop-target { outline: 2px dashed rgba(var(--accent-rgb), 0.45); outline-offset: 2px; }
+    .ws-card-head {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+    }
+    .ws-drag-handle {
+      cursor: grab; color: var(--muted); font-size: 1rem; line-height: 1; padding: 4px 2px; letter-spacing: -2px;
+      user-select: none; touch-action: none;
+    }
+    .ws-drag-handle:active { cursor: grabbing; }
+    .ws-card-head-title { flex: 1; min-width: 0; font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .ws-card-head-actions { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .ws-card-head-actions button {
+      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; padding: 4px 8px; font-size: 0.78rem; cursor: pointer; line-height: 1.2;
+    }
+    .ws-card-head-actions button:hover:not(:disabled) { color: var(--text); border-color: #cbd5e1; }
+    .ws-card-head-actions button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .ws-card-head-actions button.danger:hover { color: var(--accent2); border-color: rgba(225,29,72,0.35); }
+    .ws-card-body { padding: 14px; }
+    .ws-compact-preview {
+      padding: 8px 12px 12px; font-size: 0.86rem; color: var(--muted); cursor: pointer; border-top: 1px solid transparent;
+    }
+    .ws-compact-preview:hover { color: var(--text); background: rgba(15,23,42,0.02); }
+    .ws-card-item.ws-compact .ws-card-body { display: none; }
+    .ws-card-item.ws-compact.ws-card-expanded .ws-card-body { display: block; }
+    .ws-card-item.ws-compact:not(.ws-card-expanded) .ws-compact-preview { border-top-color: var(--border); }
     .ws-type-switch { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .ws-type-switch button {
-      font-size: 0.68rem; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--muted); cursor: pointer;
+      font-size: 0.68rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: #ffffff; color: var(--muted); cursor: pointer;
     }
-    .ws-type-switch button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .ws-type-switch button.active { background: var(--accent-soft); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.35); }
     .ws-card-item .ws-field { margin-bottom: 10px; }
-    .ws-card-item label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .ws-card-item input[type=text], .ws-card-item textarea { width: 100%; box-sizing: border-box; font-size: 0.9rem; padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--card); }
+    .ws-card-item label.wl { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; }
+    .ws-card-item input[type=text], .ws-card-item textarea { width: 100%; box-sizing: border-box; font-size: 0.9rem; padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: #ffffff; }
+    .ws-card-item input[type=text]:focus, .ws-card-item textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
     .ws-card-item textarea { min-height: 52px; resize: vertical; }
-    .ws-actions-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .ws-actions-row { display: none; }
     .ws-stat-line { font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
     .ws-stat-line strong { color: var(--text); }
     .ws-top-errors { font-size: 0.78rem; color: var(--muted); margin-top: 10px; max-height: 140px; overflow: auto; }
     .ws-top-errors li { margin-bottom: 4px; }
-    #ws-deck-title { width: 100%; font-size: 1rem; font-weight: 700; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border); margin-bottom: 12px; box-sizing: border-box; background: var(--surface); }
+    #ws-deck-title { width: 100%; font-size: 1rem; font-weight: 700; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border); margin-bottom: 12px; box-sizing: border-box; background: #ffffff; }
+    #ws-deck-title:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
     @media (max-width: 1024px) {
       .ws-card-list { max-height: none; }
     }
@@ -117,8 +154,12 @@
       padding: 11px 24px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
       transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
     }
-    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.3); }
-    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.3); }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled {
+      opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none;
+      background: var(--border); color: var(--muted);
+    }
     .btn-secondary {
       background: var(--surface); color: var(--muted); border: 1.5px solid var(--border);
       border-radius: 12px; padding: 11px 20px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
@@ -179,7 +220,7 @@
     .mode-toggle { display: flex; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); width: fit-content; }
     .mode-btn { padding: 9px 20px; border: none; background: transparent; color: var(--muted); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
     .mode-btn:hover { color: var(--text); }
-    .mode-btn.active { background: var(--accent); color: #fff; }
+    .mode-btn.active { background: var(--accent-soft); color: var(--accent); }
 
     /* ── DECKS LIST ── */
     .library-quick-actions {
@@ -204,7 +245,7 @@
       outline: 2px solid transparent;
     }
     .class-folder-card:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(71,88,150,.16); }
-    .class-folder-card.active { outline-color: rgba(79,70,229,.35); }
+    .class-folder-card.active { outline-color: rgba(124,58,237,.35); }
     .cfc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .cfc-icon { font-size: 1.6rem; line-height: 1; }
     .cfc-count { font-size:.72rem; font-weight:700; color:rgba(37,43,74,.72); background:rgba(255,255,255,.62); padding:2px 7px; border-radius:99px; }
@@ -279,7 +320,7 @@
       box-shadow: 0 8px 18px rgba(71,88,150,.14);
     }
     .btn-scroll-top.show { display: inline-flex; }
-    .deck-card.active { border-color: #c7d2fe; box-shadow: 0 0 0 2px rgba(79,70,229,.12); }
+    .deck-card.active { border-color: #c7d2fe; box-shadow: 0 0 0 2px rgba(124,58,237,.12); }
     .side-head { font-size:1.05rem; font-weight:800; margin-bottom:4px; }
     .side-sub { color:var(--muted); font-size:.82rem; margin-bottom:10px; }
     .side-actions { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 12px; }
@@ -364,12 +405,12 @@
       font-size: 0.72rem; font-weight: 600; padding: 4px 10px; border-radius: 99px;
       background: var(--card); border: 1px solid var(--border); color: var(--muted);
     }
-    .meta-chip.tag { background: rgba(79,70,229,0.12); border-color: rgba(79,70,229,0.25); color: var(--accent); }
+    .meta-chip.tag { background: rgba(124,58,237,0.12); border-color: rgba(124,58,237,0.25); color: var(--accent); }
     .meta-chip.warn { background: rgba(255,193,7,0.12); border-color: rgba(255,193,7,0.35); color: #b8860b; }
     .deck-tag-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
     .deck-tag-chips span {
       font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 6px;
-      background: rgba(79,70,229,0.1); color: var(--accent);
+      background: rgba(124,58,237,0.1); color: var(--accent);
     }
     .weak-topics-block {
       margin-top: 20px; padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius);
@@ -413,7 +454,7 @@
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
     .qcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, opacity 0.15s; }
     .qcard:hover { border-color: var(--accent); }
-    .qcard.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,70,229,0.25); }
+    .qcard.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(124,58,237,0.25); }
     .qcard.dragging  { opacity: 0.35; }
     .qcard-drag-handle {
       display: flex; align-items: center; padding: 0 6px 0 14px;
@@ -436,7 +477,7 @@
 
     /* Badges */
     .type-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 2px 8px; border-radius: 99px; }
-    .type-badge.single { background: rgba(79,70,229,0.1); color: var(--accent); }
+    .type-badge.single { background: rgba(124,58,237,0.1); color: var(--accent); }
     .type-badge.multi { background: rgba(217,119,6,0.1); color: var(--yellow); }
     .type-badge.open { background: rgba(5,150,105,0.12); color: var(--green); }
     .type-badge.tf { background: rgba(59,130,246,0.12); color: #2563eb; }
@@ -487,7 +528,7 @@
       padding: 13px 16px; background: var(--card); border: 2px solid var(--border);
       border-radius: 10px; cursor: pointer; font-size: 0.95rem; transition: all 0.18s; text-align: left; color: var(--text);
     }
-    .quiz-opt:hover:not(:disabled) { border-color: var(--accent); background: rgba(79,70,229,0.07); }
+    .quiz-opt:hover:not(:disabled) { border-color: var(--accent); background: rgba(124,58,237,0.07); }
     .quiz-opt.correct { border-color: var(--green); background: rgba(5,150,105,0.08); color: var(--green); }
     .quiz-opt.wrong { border-color: var(--accent2); background: rgba(244,63,94,0.07); color: var(--accent2); }
     .quiz-opt:disabled { cursor: default; }
@@ -625,10 +666,10 @@
       align-items: center; gap: 12px;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .student-result-row:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(79,70,229,0.08); }
+    .student-result-row:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(124,58,237,0.08); }
     .srr-name { font-weight: 600; font-size: 0.92rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .srr-mode { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
-    .srr-mode.test { background: rgba(79,70,229,0.1); color: var(--accent); }
+    .srr-mode.test { background: rgba(124,58,237,0.1); color: var(--accent); }
     .srr-mode.fc   { background: rgba(5,150,105,0.12); color: var(--green); }
     .srr-date { font-size: 0.76rem; color: var(--muted); white-space: nowrap; }
     .srr-bar-wrap { width: 60px; background: var(--card); border-radius: 99px; height: 5px; flex-shrink: 0; }
@@ -639,7 +680,7 @@
       border-radius: 7px; padding: 4px 10px; font-size: 0.76rem; font-weight: 600;
       cursor: pointer; transition: all 0.2s; white-space: nowrap;
     }
-    .srr-repeat:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,70,229,0.06); }
+    .srr-repeat:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,58,237,0.06); }
 
     @media (max-width: 600px) {
       .student-profile-stats { grid-template-columns: repeat(2,1fr); }
@@ -662,7 +703,7 @@
       transition: border-color 0.2s, background 0.2s; position: relative;
       background: var(--card);
     }
-    .img-upload-area:hover { border-color: var(--accent); background: rgba(79,70,229,0.04); }
+    .img-upload-area:hover { border-color: var(--accent); background: rgba(124,58,237,0.04); }
     .img-upload-area.has-image { border-style: solid; padding: 6px; }
     .img-placeholder { font-size: 0.88rem; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 7px; }
     .img-preview-img { max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; display: block; margin: 0 auto; }
@@ -719,7 +760,7 @@
       color: var(--accent); border-radius: 8px; padding: 7px 14px;
       font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
     }
-    .btn-share:hover { background: rgba(79,70,229,0.12); }
+    .btn-share:hover { background: rgba(124,58,237,0.12); }
 
     /* ── SHARE MODAL ── */
     .share-qr-wrap {
@@ -771,7 +812,7 @@
       padding: 14px 16px; display: flex; align-items: center; gap: 14px;
       cursor: pointer; transition: background .15s;
     }
-    .stat-row-header:hover { background: rgba(79,70,229,.045); }
+    .stat-row-header:hover { background: rgba(124,58,237,.045); }
     .rd-chevron {
       margin-left: auto; color: var(--muted); font-size: 1.1rem;
       flex-shrink: 0; transition: transform .25s; line-height: 1;
@@ -803,7 +844,7 @@
       font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 99px;
       white-space: nowrap;
     }
-    .stat-row-mode.test { background: rgba(79,70,229,0.2); color: var(--accent); }
+    .stat-row-mode.test { background: rgba(124,58,237,0.2); color: var(--accent); }
     .stat-row-mode.flashcard { background: rgba(5,150,105,0.15); color: var(--green); }
     .stat-row-bar-wrap { flex: 1; background: var(--card); border-radius: 99px; height: 6px; }
     .stat-row-bar { height: 6px; border-radius: 99px; transition: width 0.6s; }
@@ -836,7 +877,7 @@
       margin-bottom:4px; transition:all .15s;
     }
     .sf-pill.active { background:var(--accent); color:#fff; border-color:var(--accent); }
-    .sf-pill:hover:not(.active) { background:rgba(79,70,229,.08); }
+    .sf-pill:hover:not(.active) { background:rgba(124,58,237,.08); }
     .sf-reset {
       width:100%; padding:7px 10px; border-radius:8px; font-size:0.82rem;
       border:1px solid var(--border); background:transparent; cursor:pointer;
@@ -847,8 +888,8 @@
     /* ── PER-SET RESULTS FILTER UX ── */
     .results-filter-wrap {
       display: flex; align-items: center; gap: 10px;
-      background: linear-gradient(180deg, rgba(79,70,229,.08), rgba(79,70,229,.03));
-      border: 1px solid rgba(79,70,229,.22);
+      background: linear-gradient(180deg, rgba(124,58,237,.08), rgba(124,58,237,.03));
+      border: 1px solid rgba(124,58,237,.22);
       border-radius: 10px;
       padding: 8px 10px;
       margin-bottom: 12px;
@@ -868,16 +909,16 @@
       font-size: 0.86rem;
       font-weight: 600;
       padding: 7px 10px;
-      border: 1px solid rgba(79,70,229,.3);
+      border: 1px solid rgba(124,58,237,.3);
       border-radius: 8px;
       background: var(--surface);
       color: var(--text);
       outline: none;
-      box-shadow: 0 1px 0 rgba(79,70,229,.08);
+      box-shadow: 0 1px 0 rgba(124,58,237,.08);
     }
     .results-filter-select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(79,70,229,.16);
+      box-shadow: 0 0 0 3px rgba(124,58,237,.16);
     }
 
     /* ── QUESTION BREAKDOWN ── */
@@ -907,7 +948,7 @@
     }
     .class-chart-legend .dot {
       width:10px; height:10px; border-radius:99px; display:inline-block; margin-right:6px;
-      background: linear-gradient(180deg, rgba(79,70,229,0.95), rgba(79,70,229,0.65));
+      background: linear-gradient(180deg, rgba(124,58,237,0.95), rgba(124,58,237,0.65));
     }
     .class-chart-shell {
       background: var(--surface);
@@ -977,8 +1018,8 @@
       width: 100%;
       min-height: 4px;
       border-radius: 7px 7px 0 0;
-      background: linear-gradient(180deg, rgba(79,70,229,0.95), rgba(79,70,229,0.65));
-      box-shadow: 0 2px 8px rgba(79,70,229,0.22);
+      background: linear-gradient(180deg, rgba(124,58,237,0.95), rgba(124,58,237,0.65));
+      box-shadow: 0 2px 8px rgba(124,58,237,0.22);
       height: var(--p, 0%);
     }
     .class-col-name { margin-top: 6px; font-size: 0.76rem; font-weight: 700; color: var(--text); text-align:center; }
@@ -1157,7 +1198,7 @@
     <div id="header-user-info" style="display:none;align-items:center;gap:8px">
       <span id="header-user-role-badge"></span>
     </div>
-    <button class="btn-new-set" id="btn-create-new" onclick="workspaceNewDraftConfirm()" style="display:none">Новый набор</button>
+    <button class="btn-new-set" id="btn-create-new" onclick="workspaceNewDraftConfirm()" style="display:none">Новая подборка</button>
     <button class="btn-signout" id="btn-signout" onclick="doSignOut()" style="display:none">↩ Выйти</button>
   </div>
 </header>
@@ -1227,8 +1268,8 @@
             🧪 Тестовые аккаунты
           </div>
           <div style="display:flex;gap:8px;margin-bottom:10px">
-            <button onclick="fillDemo('teacher')" style="flex:1;padding:8px;border:1.5px solid rgba(79,70,229,0.3);background:rgba(79,70,229,0.06);color:var(--accent);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.2s"
-              onmouseover="this.style.background='rgba(79,70,229,0.12)'" onmouseout="this.style.background='rgba(79,70,229,0.06)'">
+            <button onclick="fillDemo('teacher')" style="flex:1;padding:8px;border:1.5px solid rgba(124,58,237,0.3);background:rgba(124,58,237,0.06);color:var(--accent);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.2s"
+              onmouseover="this.style.background='rgba(124,58,237,0.12)'" onmouseout="this.style.background='rgba(124,58,237,0.06)'">
               👩‍🏫 Учитель
             </button>
             <button onclick="fillDemo('student')" style="flex:1;padding:8px;border:1.5px solid rgba(5,150,105,0.3);background:rgba(5,150,105,0.06);color:var(--green);border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.2s"
@@ -1251,16 +1292,21 @@
 
   <!-- ═══ TEACHER WORKSPACE ═══ -->
   <div class="view" id="view-workspace">
-    <div class="page-title" style="margin-bottom:6px">Интерактивные карточки</div>
-    <input type="text" id="ws-deck-title" placeholder="Название набора" autocomplete="off">
+    <input type="text" id="ws-deck-title" placeholder="Название подборки" autocomplete="off">
     <div class="ws-toolbar">
-      <button type="button" class="btn-secondary" onclick="wsAddEmptyCard()">+ Добавить карточку</button>
-      <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Сгенерировать</button>
-      <button type="button" class="btn-primary" onclick="workspacePublish()">Выдать ученикам</button>
+      <div class="ws-toolbar-left">
+        <button type="button" class="btn-primary" onclick="wsAddEmptyCard()">+ Добавить карточку</button>
+        <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Создать из текста</button>
+        <button type="button" class="btn-secondary" id="ws-toggle-compact" onclick="wsToggleCompact()">Компактный список</button>
+      </div>
+      <div class="ws-toolbar-right">
+        <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish"> Случайный порядок при выдаче</label>
+        <button type="button" class="btn-primary" id="ws-btn-publish" disabled onclick="workspacePublish()">Выдать ученикам</button>
+      </div>
     </div>
     <div class="ws-center">
       <div id="ws-generate-block" class="ws-generate-block" style="display:none">
-        <textarea id="ws-generate-text" placeholder="Вставьте текст…"></textarea>
+        <textarea id="ws-generate-text" placeholder=""></textarea>
         <div class="ws-generate-actions">
           <button type="button" class="btn-primary" onclick="wsGenerateFromPanel()">Создать карточки</button>
           <button type="button" class="btn-ghost" onclick="wsCloseGeneratePanel()">Отмена</button>
@@ -1270,7 +1316,7 @@
         <div class="ws-empty-title">Создайте карточки</div>
         <div class="ws-empty-actions">
           <button type="button" class="btn-secondary" onclick="wsAddEmptyCard()">Создать вручную</button>
-          <button type="button" class="btn-primary" onclick="wsOpenGeneratePanel()">Сгенерировать из текста</button>
+          <button type="button" class="btn-primary" onclick="wsOpenGeneratePanel()">Создать из текста</button>
         </div>
       </div>
       <div id="ws-card-list-wrap" class="ws-card-list-wrap" style="display:none">
@@ -1278,8 +1324,7 @@
       </div>
     </div>
     <div id="ws-share-panel" class="ws-post-publish" style="display:none">
-      <div style="font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:8px">Код и ссылка</div>
-      <div style="font-family:monospace;font-weight:800;font-size:1.1rem;color:var(--accent)" id="ws-share-code">—</div>
+      <div style="font-family:monospace;font-weight:800;font-size:1.1rem;color:var(--accent);margin-bottom:6px" id="ws-share-code">—</div>
       <input type="text" id="ws-share-url" readonly onclick="this.select()" style="width:100%;margin-top:8px;font-size:0.78rem;padding:8px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box">
       <button type="button" class="btn-secondary" style="width:100%;max-width:280px;margin-top:10px" onclick="wsCopyShare()">Скопировать</button>
     </div>
@@ -1304,7 +1349,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
         <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
-          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="workspaceNewDraftConfirm()">Новый набор</button>
+          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="workspaceNewDraftConfirm()">Новая подборка</button>
         </div>
       </div>
     </div>
@@ -1818,7 +1863,7 @@
           📋 Скопировать результат для учителя
         </button>
         <button class="btn-secondary" onclick="stRetry()">Пройти снова</button>
-        <button class="btn-secondary" onclick="goStudentHome()" style="color:var(--accent);border-color:rgba(79,70,229,0.3)">← На главную</button>
+        <button class="btn-secondary" onclick="goStudentHome()" style="color:var(--accent);border-color:rgba(124,58,237,0.3)">← На главную</button>
       </div>
     </div>
   </div>
@@ -1933,8 +1978,8 @@
     <h3>Кто вы?</h3>
     <div class="modal-sub" style="margin-bottom:24px">Выберите роль — это сохранится в вашем аккаунте</div>
     <div style="display:flex;gap:12px;margin-bottom:16px">
-      <button onclick="saveUserRole('teacher')" style="flex:1;padding:20px 12px;border:2px solid rgba(79,70,229,0.3);background:rgba(79,70,229,0.06);color:var(--accent);border-radius:14px;cursor:pointer;font-size:1rem;font-weight:700;transition:all 0.2s"
-        onmouseover="this.style.background='rgba(79,70,229,0.14)'" onmouseout="this.style.background='rgba(79,70,229,0.06)'">
+      <button onclick="saveUserRole('teacher')" style="flex:1;padding:20px 12px;border:2px solid rgba(124,58,237,0.3);background:rgba(124,58,237,0.06);color:var(--accent);border-radius:14px;cursor:pointer;font-size:1rem;font-weight:700;transition:all 0.2s"
+        onmouseover="this.style.background='rgba(124,58,237,0.14)'" onmouseout="this.style.background='rgba(124,58,237,0.06)'">
         👩‍🏫<br><span style="font-size:0.85rem;margin-top:6px;display:block">Учитель</span>
       </button>
       <button onclick="saveUserRole('student')" style="flex:1;padding:20px 12px;border:2px solid rgba(5,150,105,0.3);background:rgba(5,150,105,0.06);color:var(--green);border-radius:14px;cursor:pointer;font-size:1rem;font-weight:700;transition:all 0.2s"
@@ -2027,6 +2072,89 @@ let wsCards = [];
 let wsPublishedId = null;
 let _wsAnalyticsTimer = null;
 let wsGenerateOpen = false;
+let wsCompactList = false;
+const wsExpandedInCompact = new Set();
+
+function wsTypeLabel(type) {
+  const m = { input: 'Короткий ответ', choice: 'Выбор ответа', flashcard: 'Переворот', matching: 'Соответствие' };
+  return m[type] || type;
+}
+
+function wsPreviewLine(c) {
+  let t = String(c.question || '').replace(/\s+/g, ' ').trim();
+  if (!t && c.type === 'choice') t = String((c.options || [])[0] || '').trim();
+  if (!t) t = '…';
+  if (t.length > 80) t = t.slice(0, 78) + '…';
+  return t;
+}
+
+function wsToggleCardExpanded(cardId) {
+  if (wsExpandedInCompact.has(cardId)) wsExpandedInCompact.delete(cardId);
+  else wsExpandedInCompact.add(cardId);
+  renderWorkspaceCards();
+}
+
+function wsToggleCompact() {
+  wsCompactList = !wsCompactList;
+  if (!wsCompactList) wsExpandedInCompact.clear();
+  renderWorkspaceCards();
+}
+
+function wsUpdatePublishButton() {
+  const btn = document.getElementById('ws-btn-publish');
+  if (btn) btn.disabled = !wsCards.length;
+}
+
+function wsSyncCompactButton() {
+  const b = document.getElementById('ws-toggle-compact');
+  if (b) b.classList.toggle('active', wsCompactList);
+}
+
+function wsDragStartFromHandle(ev, i) {
+  ev.stopPropagation();
+  ev.dataTransfer.setData('text/plain', String(i));
+  ev.dataTransfer.effectAllowed = 'move';
+  const card = ev.target.closest('.ws-card-item');
+  if (card) card.classList.add('ws-dragging');
+}
+
+function wsDragEnd(ev) {
+  document.querySelectorAll('.ws-card-item.ws-dragging').forEach(el => el.classList.remove('ws-dragging'));
+  document.querySelectorAll('.ws-card-item.ws-drop-target').forEach(el => el.classList.remove('ws-drop-target'));
+}
+
+function wsDragOverCard(ev) {
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  if (ev.currentTarget.classList && ev.currentTarget.classList.contains('ws-card-item')) ev.currentTarget.classList.add('ws-drop-target');
+}
+
+function wsDragLeaveCard(ev) {
+  if (ev.currentTarget.classList && ev.currentTarget.classList.contains('ws-card-item')) ev.currentTarget.classList.remove('ws-drop-target');
+}
+
+function wsDropOnCard(ev, toIndex) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  if (ev.currentTarget.classList && ev.currentTarget.classList.contains('ws-card-item')) ev.currentTarget.classList.remove('ws-drop-target');
+  const from = parseInt(ev.dataTransfer.getData('text/plain'), 10);
+  if (Number.isNaN(from) || from === toIndex) return;
+  const item = wsCards.splice(from, 1)[0];
+  wsCards.splice(toIndex, 0, item);
+  renderWorkspaceCards();
+}
+
+function wsMoveUp(i) {
+  if (i <= 0) return;
+  const t = wsCards[i - 1]; wsCards[i - 1] = wsCards[i]; wsCards[i] = t;
+  renderWorkspaceCards();
+}
+
+function wsMoveDown(i) {
+  if (i >= wsCards.length - 1) return;
+  const t = wsCards[i + 1]; wsCards[i + 1] = wsCards[i]; wsCards[i] = t;
+  renderWorkspaceCards();
+}
 
 function syncWorkspaceLayout() {
   const genEl = document.getElementById('ws-generate-block');
@@ -2058,23 +2186,40 @@ function wsGenerateFromPanel() {
   const text = (ta && ta.value || '').trim();
   if (!text) { toast('Вставьте текст'); return; }
   const gen = generateCardsFromText(text);
+  if (!gen.length) {
+    toast('Не получилось выделить смысловые блоки. Попробуйте строки вида «Термин — определение» или связный текст из нескольких предложений.');
+    return;
+  }
   wsCards = wsCards.concat(gen);
   if (ta) ta.value = '';
   wsGenerateOpen = false;
   renderWorkspaceCards();
-  toast(`Добавлено карточек: ${gen.length}`);
+  toast(`Создано карточек из текста: ${gen.length}`);
 }
 
 function wsFocusLastQuestion() {
   requestAnimationFrame(() => {
-    const items = document.querySelectorAll('#ws-card-list .ws-card-item');
-    const last = items[items.length - 1];
-    if (!last) return;
-    const ta = last.querySelector('textarea');
-    if (ta) { ta.focus(); const L = ta.value.length; ta.setSelectionRange(L, L); }
+    const lastCard = wsCards[wsCards.length - 1];
+    let needRender = false;
+    if (lastCard && wsCompactList && !wsExpandedInCompact.has(lastCard.id)) {
+      wsExpandedInCompact.add(lastCard.id);
+      needRender = true;
+    }
+    if (needRender) renderWorkspaceCards();
+    requestAnimationFrame(() => {
+      const last = document.querySelector('#ws-card-list .ws-card-item:last-child');
+      if (!last) return;
+      const ta = last.querySelector('textarea');
+      if (ta) { ta.focus(); const L = ta.value.length; ta.setSelectionRange(L, L); }
+    });
   });
 }
 
+function wsPatchAnswerLine(i, val) {
+  if (!wsCards[i] || wsCards[i].type !== 'input') return;
+  const parts = String(val).split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  wsCards[i].accepted = parts.length ? parts : (String(val).trim() ? [String(val).trim()] : ['ответ']);
+}
 
 function legacyCardToMvp(c, idx) {
   if (!c || typeof c !== 'object') return null;
@@ -2140,42 +2285,142 @@ function mvpCardToFirestore(c) {
   return base;
 }
 
-function wsInferTypeFromBlock(text) {
-  const t = text.trim();
-  if (!t) return 'flashcard';
-  if (/\?\s*$|[?？]/.test(t)) return 'choice';
-  if (t.length <= 48 && !/[.!?]$/.test(t) && t.split(/\s+/).length <= 6) return 'flashcard';
-  if (/^(определение|definition|def)\s*[:：]/i.test(t)) return 'input';
-  return 'input';
+function _wsClip(s, max) {
+  const t = String(s || '').trim();
+  if (t.length <= max) return t;
+  return t.slice(0, max - 1) + '…';
 }
 
-function generateCardsFromText(text) {
-  const blocks = text.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
-  if (!blocks.length && text.trim()) blocks.push(text.trim());
-  const out = [];
-  for (const block of blocks) {
-    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-    const typ = wsInferTypeFromBlock(lines[0] || block);
-    if (typ === 'flashcard') {
-      const q = lines[0] || block;
-      const a = lines.slice(1).join('\n') || q;
-      out.push({ id: uid(), type: 'flashcard', question: q, answer: a, accepted: null, options: null, correctIndex: 0, pairs: null });
-    } else if (typ === 'choice') {
-      const q = lines[0] || block;
-      const opts = ['Верно', 'Неверно', 'Частично', 'Не знаю'];
-      out.push({ id: uid(), type: 'choice', question: q, options: opts, correctIndex: 0, accepted: null, pairs: null, answer: '' });
-    } else {
-      const q = lines[0] || block;
-      const a = lines.slice(1).join('\n') || lines[0] || 'ответ';
-      const accepted = a.split(/[,;]/).map(s => s.trim()).filter(Boolean);
-      out.push({ id: uid(), type: 'input', question: q, accepted: accepted.length ? accepted : [a], pairs: null, options: null, correctIndex: 0, answer: '' });
-    }
+function _wsNewFlashcard(question, answer) {
+  return { id: uid(), type: 'flashcard', question: String(question || '').trim(), answer: String(answer || '').trim(), accepted: null, options: null, correctIndex: 0, pairs: null };
+}
+
+/** Строка «термин — определение» / «термин: определение» */
+function _wsTryDefinitionLine(line) {
+  const raw = String(line || '').trim();
+  if (raw.length < 8) return null;
+  const m = raw.match(/^(.+?)\s*[—–\-:]\s*(.+)$/);
+  if (!m) return null;
+  const term = m[1].trim().replace(/^[\d\.\)\s]+/, '').replace(/^[•\*\-]\s*/, '');
+  const ans = m[2].trim();
+  if (term.length < 2 || term.length > 70 || ans.length < 4) return null;
+  return { q: `Что такое «${_wsClip(term, 58)}»?`, a: _wsClip(ans, 320) };
+}
+
+/** Нумерованный тезис: «1. …» */
+function _wsTryNumberedLine(line) {
+  const m = String(line || '').trim().match(/^(\d+)[\.\)]\s+(.+)$/);
+  if (!m) return null;
+  const content = m[2].trim();
+  if (content.length < 14) return null;
+  const words = content.split(/\s+/).slice(0, 8).join(' ');
+  return { q: `Запомните тезис: ${_wsClip(words, 72)}…`, a: _wsClip(content, 300) };
+}
+
+function _wsSplitSentences(prose) {
+  const norm = String(prose || '').replace(/\s+/g, ' ').trim();
+  if (!norm) return [];
+  return norm
+    .split(/(?<=[\.!\?]|…)\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 14);
+}
+
+function _wsDeclarativeToQA(sentence) {
+  const s = String(sentence || '').trim();
+  if (s.length < 18) return null;
+  const comma = s.match(/^(.{14,110}),\s+(.{14,})$/);
+  if (comma) {
+    const a = comma[1].trim();
+    const b = comma[2].trim();
+    return { q: `Как продолжается: «${_wsClip(a, 88)}»?`, a: _wsClip(b, 300) };
   }
-  return out;
+  const eto = s.match(/^(.{4,72})\s+(это|означает|называется|представляет собой)\s+(.{10,})$/i);
+  if (eto) {
+    const subj = eto[1].trim();
+    const rest = eto[3].trim();
+    return { q: `Что ${eto[2]} «${_wsClip(subj, 52)}»?`, a: _wsClip(rest, 300) };
+  }
+  const stop = new Set(['и', 'в', 'на', 'с', 'по', 'для', 'как', 'то', 'не', 'а', 'но', 'от', 'из', 'к', 'о', 'об', 'при', 'что', 'которые', 'который', 'которая', 'которых', 'это', 'также', 'или', 'же', 'ли', 'бы', 'у', 'мы', 'вы', 'они', 'он', 'она', 'оно', 'их', 'его', 'её']);
+  const words = s.split(/\s+/);
+  const meaningful = words
+    .filter(w => {
+      const x = w.replace(/[«»"„",.;:!?…]/g, '').toLowerCase();
+      return x.length > 1 && !stop.has(x);
+    })
+    .slice(0, 7)
+    .join(' ');
+  if (meaningful.length < 8) return { q: 'Запомните формулировку', a: _wsClip(s, 300) };
+  return { q: `В чём суть: ${meaningful}?`, a: _wsClip(s, 300) };
+}
+
+function _wsSentencesToFlashcards(sentences) {
+  const cards = [];
+  for (let i = 0; i < sentences.length; i++) {
+    const s = sentences[i];
+    if (s.length < 16) continue;
+    if (/[?？]\s*$/.test(s)) {
+      const next = sentences[i + 1];
+      if (next && next.length > 12 && !/[?？]\s*$/.test(next)) {
+        cards.push(_wsNewFlashcard(s, _wsClip(next, 280)));
+        i++;
+      } else {
+        cards.push(_wsNewFlashcard(s, 'Ответьте по своим конспектам или тексту темы.'));
+      }
+      continue;
+    }
+    const d = _wsDeclarativeToQA(s);
+    if (d) cards.push(_wsNewFlashcard(d.q, d.a));
+  }
+  return cards;
+}
+
+/**
+ * Из связного текста: выделяет определения, тезисы и фрагменты по предложениям —
+ * короткие карточки «Переворот» (вопрос + ответ).
+ */
+function generateCardsFromText(text) {
+  const src = String(text || '').trim();
+  if (!src) return [];
+  const out = [];
+  const restLines = [];
+  const lines = src.split(/\n/).map(l => l.trim()).filter(Boolean);
+
+  for (const line of lines) {
+    const def = _wsTryDefinitionLine(line);
+    if (def) {
+      out.push(_wsNewFlashcard(def.q, def.a));
+      continue;
+    }
+    const num = _wsTryNumberedLine(line);
+    if (num) {
+      out.push(_wsNewFlashcard(num.q, num.a));
+      continue;
+    }
+    restLines.push(line);
+  }
+
+  const prose = restLines.join(' ');
+  if (prose.length > 24) {
+    const sents = _wsSplitSentences(prose);
+    out.push(..._wsSentencesToFlashcards(sents));
+  }
+
+  const seen = new Set();
+  const deduped = [];
+  for (const c of out) {
+    const k = `${c.question}\n${c.answer}`.toLowerCase().slice(0, 160);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    deduped.push(c);
+  }
+  return deduped.slice(0, 100);
 }
 
 function renderWorkspaceCards() {
   syncWorkspaceLayout();
+  wsUpdatePublishButton();
+  wsSyncCompactButton();
   const list = document.getElementById('ws-card-list');
   if (!list) return;
   if (!wsCards.length) {
@@ -2183,10 +2428,10 @@ function renderWorkspaceCards() {
     return;
   }
   const types = [
-    { v: 'input', l: 'Ввод' },
-    { v: 'choice', l: 'Выбор' },
-    { v: 'flashcard', l: 'Карточка' },
-    { v: 'matching', l: 'Пары' }
+    { v: 'input', l: 'Короткий ответ' },
+    { v: 'choice', l: 'Выбор ответа' },
+    { v: 'flashcard', l: 'Переворот' },
+    { v: 'matching', l: 'Соответствие' }
   ];
   list.innerHTML = wsCards.map((c, i) => {
     const sw = types.map(t =>
@@ -2195,8 +2440,8 @@ function renderWorkspaceCards() {
     let body = '';
     if (c.type === 'input') {
       const acc = (c.accepted || []).join(', ');
-      body = `<div class="ws-field"><label>Вопрос</label><textarea data-ws="${i}" data-f="question" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
-        <div class="ws-field"><label>Ответы через запятую</label><input type="text" value="${esc(acc)}" data-ws="${i}" oninput="wsPatchAccepted(${i},this.value)"></div>`;
+      body = `<div class="ws-field"><label class="wl">Вопрос</label><textarea data-ws="${i}" data-f="question" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        <div class="ws-field"><label class="wl">Ответ</label><input type="text" value="${esc(acc)}" oninput="wsPatchAnswerLine(${i},this.value)"></div>`;
     } else if (c.type === 'choice') {
       const opts = (c.options || ['', '', '', '']).slice(0, 4);
       while (opts.length < 4) opts.push('');
@@ -2206,25 +2451,42 @@ function renderWorkspaceCards() {
           <input type="text" value="${esc(o)}" oninput="wsPatchOption(${i},${j},this.value)" style="flex:1;min-width:0">
         </div>`
       ).join('');
-      body = `<div class="ws-field"><label>Вопрос</label><textarea data-ws="${i}" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
-        <div class="ws-field"><label>Варианты</label>${radios}</div>`;
+      body = `<div class="ws-field"><label class="wl">Вопрос</label><textarea data-ws="${i}" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        <div class="ws-field"><label class="wl">Варианты ответа</label>${radios}</div>`;
     } else if (c.type === 'flashcard') {
-      body = `<div class="ws-field"><label>Вопрос</label><textarea oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
-        <div class="ws-field"><label>Ответ</label><textarea oninput="wsPatch(${i},'answer',this.value)">${esc(c.answer || '')}</textarea></div>`;
+      body = `<div class="ws-field"><label class="wl">Вопрос</label><textarea oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        <div class="ws-field"><label class="wl">Ответ</label><textarea oninput="wsPatch(${i},'answer',this.value)">${esc(c.answer || '')}</textarea></div>`;
     } else {
       const rows = (c.pairs || [{ left: '', right: '' }]).map((p, pi) =>
-        `<div style="display:flex;gap:6px;margin-bottom:6px"><input placeholder="Термин" value="${esc(p.left)}" oninput="wsPatchPair(${i},${pi},'left',this.value)"><input placeholder="Ответ" value="${esc(p.right)}" oninput="wsPatchPair(${i},${pi},'right',this.value)"></div>`
+        `<div style="display:flex;gap:6px;margin-bottom:6px"><input placeholder="Слева" value="${esc(p.left)}" oninput="wsPatchPair(${i},${pi},'left',this.value)"><input placeholder="Справа" value="${esc(p.right)}" oninput="wsPatchPair(${i},${pi},'right',this.value)"></div>`
       ).join('');
-      body = `<div class="ws-field"><label>Вопрос</label><input type="text" value="${esc(c.question)}" oninput="wsPatch(${i},'question',this.value)"></div>
-        <div class="ws-field"><label>Пары</label>${rows}<button type="button" class="btn-ghost" onclick="wsAddPair(${i})">+ пара</button></div>`;
+      body = `<div class="ws-field"><label class="wl">Вопрос</label><input type="text" value="${esc(c.question)}" oninput="wsPatch(${i},'question',this.value)"></div>
+        <div class="ws-field"><label class="wl">Пары</label>${rows}<button type="button" class="btn-ghost" onclick="wsAddPair(${i})">+ пара</button></div>`;
     }
-    return `<div class="ws-card-item" data-wsid="${i}">
-      <div class="ws-type-switch">${sw}</div>
-      ${body}
-      <div class="ws-actions-row">
-        <button type="button" class="btn-ghost" onclick="wsDup(${i})">Дублировать</button>
-        <button type="button" class="btn-ghost danger" onclick="wsDel(${i})">Удалить</button>
-      </div></div>`;
+    const tl = wsTypeLabel(c.type);
+    const compact = wsCompactList;
+    const expanded = !compact || wsExpandedInCompact.has(c.id);
+    const dupB = `<button type="button" onclick="event.stopPropagation();wsDup(${i})" title="Дублировать">⧉</button>`;
+    const upB = `<button type="button" onclick="event.stopPropagation();wsMoveUp(${i})" title="Вверх"${i === 0 ? ' disabled' : ''}>↑</button>`;
+    const dnB = `<button type="button" onclick="event.stopPropagation();wsMoveDown(${i})" title="Вниз"${i >= wsCards.length - 1 ? ' disabled' : ''}>↓</button>`;
+    const delB = `<button type="button" class="danger" onclick="event.stopPropagation();wsDel(${i})" title="Удалить">✕</button>`;
+    const prev = compact
+      ? `<div class="ws-compact-preview" onclick="wsToggleCardExpanded('${c.id}')">${esc(wsPreviewLine(c))}</div>`
+      : '';
+    const cls = `ws-card-item${compact ? ' ws-compact' : ''}${compact && expanded ? ' ws-card-expanded' : ''}`;
+    return `<div class="${cls}" data-wsid="${i}" data-card-id="${esc(c.id)}"
+      ondragover="wsDragOverCard(event)" ondragleave="wsDragLeaveCard(event)" ondrop="wsDropOnCard(event,${i})">
+      <div class="ws-card-head">
+        <span class="ws-drag-handle" draggable="true" ondragstart="wsDragStartFromHandle(event,${i})" ondragend="wsDragEnd(event)">⠿</span>
+        <span class="ws-card-head-title">Карточка ${i + 1} · ${tl}</span>
+        <div class="ws-card-head-actions">${dupB}${upB}${dnB}${delB}</div>
+      </div>
+      ${prev}
+      <div class="ws-card-body">
+        <div class="ws-type-switch">${sw}</div>
+        ${body}
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -2283,6 +2545,8 @@ function wsDup(i) {
 }
 
 function wsDel(i) {
+  const id = wsCards[i]?.id;
+  if (id) wsExpandedInCompact.delete(id);
   wsCards.splice(i, 1);
   renderWorkspaceCards();
 }
@@ -2301,10 +2565,12 @@ function wsShuffleCards() {
 }
 
 function workspaceNewDraftConfirm() {
-  if (wsCards.length && !confirm('Очистить рабочий стол и начать новый набор?')) return;
+  if (wsCards.length && !confirm('Очистить экран и начать новую подборку?')) return;
   wsCards = [];
   wsPublishedId = null;
   wsGenerateOpen = false;
+  wsExpandedInCompact.clear();
+  wsCompactList = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
   const ta = document.getElementById('ws-generate-text');
@@ -2328,9 +2594,10 @@ function wsCopyShare() {
 
 async function workspacePublish() {
   if (!wsCards.length) { toast('Добавьте хотя бы одну карточку'); return; }
-  const name = (document.getElementById('ws-deck-title')?.value || '').trim() || 'Набор без названия';
+  const name = (document.getElementById('ws-deck-title')?.value || '').trim() || 'Подборка без названия';
   const teacherId = currentUser?.uid || 'local';
-  const cardsFs = wsCards.map(mvpCardToFirestore);
+  let cardsFs = wsCards.map(mvpCardToFirestore);
+  if (document.getElementById('ws-shuffle-publish')?.checked) cardsFs = shuffle([...cardsFs]);
   const data = {
     teacherId,
     name,
@@ -2371,7 +2638,7 @@ async function workspacePublish() {
     if (ue) ue.value = url;
     if (sh) sh.style.display = '';
     if (an) an.style.display = '';
-    toast('Набор выдан ученикам');
+    toast('Подборка выдана ученикам');
     wsRefreshAnalytics();
     if (_wsAnalyticsTimer) clearInterval(_wsAnalyticsTimer);
     _wsAnalyticsTimer = setInterval(wsRefreshAnalytics, 20000);
@@ -2428,6 +2695,8 @@ function initWorkspaceAfterLogin() {
   wsCards = [];
   wsPublishedId = null;
   wsGenerateOpen = false;
+  wsExpandedInCompact.clear();
+  wsCompactList = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
   const ta = document.getElementById('ws-generate-text');
@@ -2537,7 +2806,7 @@ function _applyUserUI() {
     document.getElementById('header-user-info').style.display = 'flex';
     const roleLabel = '👩‍🏫 Учитель';
     document.getElementById('header-user-role-badge').innerHTML =
-      `<span class="deck-badge" style="background:rgba(79,70,229,0.1);color:var(--accent)">${roleLabel}</span>`;
+      `<span class="deck-badge" style="background:rgba(124,58,237,0.1);color:var(--accent)">${roleLabel}</span>`;
     document.getElementById('btn-create-new').style.display = '';
     document.getElementById('btn-signout').style.display    = '';
     const mba = document.getElementById('mobile-decks-actions');
@@ -2756,9 +3025,11 @@ async function repeatQuiz(deckId) {
     isStudentMode = true;
     document.getElementById('main-header').style.display = 'none';
     showPage('student');
-    const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-    const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(5,150,105,0.15)' : 'rgba(79,70,229,0.2)';
-    const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    const fcOnly = studentDeck.mode === 'flashcard';
+    const mixed = studentDeck.mode === 'mixed' || studentDeck.schemaVersion === 2;
+    const modeLabel = fcOnly ? '🃏 Карточки' : (mixed ? '📚 Подборка' : '🧠 Тест');
+    const modeBg    = fcOnly ? 'rgba(5,150,105,0.15)' : 'rgba(124,58,237,0.2)';
+    const modeColor = fcOnly ? 'var(--green)' : 'var(--accent)';
     document.getElementById('st-set-badge').innerHTML =
       `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
     document.getElementById('st-set-name').textContent = studentDeck.name;
@@ -2812,9 +3083,11 @@ async function openQuizByCode(code) {
     isStudentMode = true;
     document.getElementById('main-header').style.display = 'none';
     showPage('student');
-    const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-    const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(5,150,105,0.15)' : 'rgba(79,70,229,0.2)';
-    const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    const fcOnly2 = studentDeck.mode === 'flashcard';
+    const mixed2 = studentDeck.mode === 'mixed' || studentDeck.schemaVersion === 2;
+    const modeLabel = fcOnly2 ? '🃏 Карточки' : (mixed2 ? '📚 Подборка' : '🧠 Тест');
+    const modeBg    = fcOnly2 ? 'rgba(5,150,105,0.15)' : 'rgba(124,58,237,0.2)';
+    const modeColor = fcOnly2 ? 'var(--green)' : 'var(--accent)';
     document.getElementById('st-set-badge').innerHTML =
       `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
     document.getElementById('st-set-name').textContent = studentDeck.name;
@@ -3268,7 +3541,7 @@ function renderDecks() {
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
-      <p>Заданий пока нет. Создайте набор на <strong>рабочем столе</strong> (кнопка «Новый набор» в шапке).</p>
+      <p>Заданий пока нет. Создайте подборку на главном экране (кнопка «Новая подборка» в шапке).</p>
     </div>`;
     renderLibrarySidePanel([]);
     return;
@@ -3276,9 +3549,11 @@ function renderDecks() {
   if (!visibleDecks.some(d => d.id === selectedDeckId)) selectedDeckId = null;
   if (!currentSetId && selectedDeckId) currentSetId = selectedDeckId;
   grid.innerHTML = visibleDecks.map(d => {
-    const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-    const modeBg    = d.mode === 'flashcard' ? 'rgba(5,150,105,0.15)' : 'rgba(79,70,229,0.2)';
-    const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+    const dfc = d.mode === 'flashcard';
+    const dmx = d.mode === 'mixed' || d.schemaVersion === 2;
+    const modeLabel = dfc ? '🃏 Карточки' : (dmx ? '📚 Подборка' : '🧠 Тест');
+    const modeBg    = dfc ? 'rgba(5,150,105,0.15)' : 'rgba(124,58,237,0.2)';
+    const modeColor = dfc ? 'var(--green)' : 'var(--accent)';
     const subject = _guessSubjectLabel(d.name);
     const dateStr = _formatDeckDate(d);
     const menuOpen = openDeckMenuId === d.id ? 'open' : '';
@@ -3378,6 +3653,8 @@ function openSet(id, tab = 'cards') {
   setCards = [...(d.cards || [])];
   wsPublishedId = id;
   wsGenerateOpen = false;
+  wsExpandedInCompact.clear();
+  wsCompactList = false;
   const _gt = document.getElementById('ws-generate-text');
   if (_gt) _gt.value = '';
   wsCards = (d.cards || []).map((c, i) => legacyCardToMvp(c, i)).filter(Boolean);
@@ -3408,9 +3685,11 @@ function openSet(id, tab = 'cards') {
 }
 
 function renderSetHeader(d) {
-  const modeLabel = d.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-  const modeBg    = d.mode === 'flashcard' ? 'rgba(5,150,105,0.15)' : 'rgba(79,70,229,0.2)';
-  const modeColor = d.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+  const fc = d.mode === 'flashcard';
+  const mx = d.mode === 'mixed' || d.schemaVersion === 2;
+  const modeLabel = fc ? '🃏 Карточки' : (mx ? '📚 Подборка' : '🧠 Тест');
+  const modeBg    = fc ? 'rgba(5,150,105,0.15)' : 'rgba(124,58,237,0.2)';
+  const modeColor = fc ? 'var(--green)' : 'var(--accent)';
   document.getElementById('set-badges').innerHTML = `
     <span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
   document.getElementById('set-name').textContent = d.name;
@@ -4680,8 +4959,8 @@ function initApp() {
         showPage('student');
         const fcOnly = studentDeck.mode === 'flashcard';
         const mixed = studentDeck.mode === 'mixed' || studentDeck.schemaVersion === 2;
-        const modeLabel = fcOnly ? '🃏 Карточки' : (mixed ? '📚 Набор' : '🧠 Тест');
-        const modeBg    = fcOnly ? 'rgba(5,150,105,0.15)' : 'rgba(79,70,229,0.2)';
+        const modeLabel = fcOnly ? '🃏 Карточки' : (mixed ? '📚 Подборка' : '🧠 Тест');
+        const modeBg    = fcOnly ? 'rgba(5,150,105,0.15)' : 'rgba(124,58,237,0.2)';
         const modeColor = fcOnly ? 'var(--green)' : 'var(--accent)';
         document.getElementById('st-set-badge').innerHTML =
           `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
@@ -5008,7 +5287,7 @@ function stToggleMulti(btn) {
   if (stQuizState.answered) return;
   btn.classList.toggle('selected');
   btn.style.borderColor = btn.classList.contains('selected') ? 'var(--accent)' : '';
-  btn.style.background  = btn.classList.contains('selected') ? 'rgba(79,70,229,0.1)' : '';
+  btn.style.background  = btn.classList.contains('selected') ? 'rgba(124,58,237,0.1)' : '';
 }
 
 function stCheckTf(pickedTrue) {
@@ -5420,7 +5699,7 @@ async function _loadAndRenderResults(container) {
         const d   = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
         const t   = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         const c   = r.pct >= 80 ? 'var(--green)' : r.pct >= 50 ? 'var(--yellow)' : 'var(--accent2)';
-        const grp = r.group ? `<span style="font-size:0.72rem;background:rgba(79,70,229,0.1);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px">${esc(r.group)}</span>` : '';
+        const grp = r.group ? `<span style="font-size:0.72rem;background:rgba(124,58,237,0.1);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px">${esc(r.group)}</span>` : '';
         return `<div class="stat-row" data-group="${esc(r.group||'')}" data-pct="${r.pct}">
           <div class="stat-row-header" onclick="_toggleResultDetail(this,'${rid}')">
             <div class="results-row-name">${esc(r.studentName || r.name || '—')}${grp}</div>
@@ -5579,7 +5858,7 @@ async function renderGlobalStats() {
     const unique = new Set(results.map(r => r.studentId || r.studentName)).size;
     sumEl.innerHTML = `
       <div class="stat-card"><div class="val" id="g-stat-total">${total}</div><div class="lbl">Все работы</div></div>
-      <div class="stat-card" style="border-color:rgba(79,70,229,0.2)"><div class="val" id="g-stat-unique" style="color:var(--accent)">${unique}</div><div class="lbl">Учеников</div></div>
+      <div class="stat-card" style="border-color:rgba(124,58,237,0.2)"><div class="val" id="g-stat-unique" style="color:var(--accent)">${unique}</div><div class="lbl">Учеников</div></div>
       <div class="stat-card best"><div class="val" id="g-stat-best">${best}%</div><div class="lbl">Лучший результат</div></div>
       <div class="stat-card avg"><div class="val" id="g-stat-avg">${avg}%</div><div class="lbl">Средний балл</div></div>
     `;
@@ -5810,7 +6089,7 @@ function _updateRoleButtons(role) {
   btns.forEach(b => {
     const isActive = b.getAttribute('onclick').includes(role);
     b.style.borderWidth = isActive ? '2.5px' : '2px';
-    b.style.boxShadow = isActive ? '0 0 0 3px rgba(79,70,229,0.15)' : 'none';
+    b.style.boxShadow = isActive ? '0 0 0 3px rgba(124,58,237,0.15)' : 'none';
   });
 }
 
