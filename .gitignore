@@ -26,6 +26,7 @@ build/
 .env
 .env.local
 .env.*
+feedback-proxy/.env
 
 # Temp
 tmp/

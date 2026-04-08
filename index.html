@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Создание опросов и карточек</title>
+  <!-- Отзывы: публичный URL прокси (без слэша в конце). Ключ API только на сервере — см. feedback-proxy/README.md -->
+  <script>
+    window.FEEDBACK_PROXY_BASE = '';
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
@@ -651,16 +655,126 @@
     .feedback-fab svg { width: 22px; height: 22px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
     .feedback-fab--hidden { display: none !important; }
     .feedback-modal-overlay { z-index: 1200; }
-    .feedback-modal { max-width: 420px; }
-    .feedback-modal .feedback-useful-row { display: flex; gap: 20px; margin-bottom: 16px; font-size: 0.92rem; font-weight: 600; }
-    .feedback-modal .feedback-useful-row label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .feedback-modal textarea#feedback-comment {
-      width: 100%; margin-top: 8px; margin-bottom: 8px; min-height: 100px; padding: 12px;
-      border-radius: 10px; border: 1.5px solid var(--border); font-family: inherit; font-size: 0.9rem; resize: vertical; box-sizing: border-box;
+    .modal.feedback-modal {
+      position: relative;
+      max-width: 440px;
+      padding: 26px 24px 22px;
+      border-radius: 18px;
+      box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12);
     }
-    .feedback-modal textarea#feedback-comment:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
+    .feedback-modal .feedback-modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .feedback-modal .feedback-modal-close:hover { background: var(--border); color: var(--text); }
+    .feedback-modal .feedback-modal-title {
+      font-size: 1.22rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 48px 8px 0;
+      color: var(--text);
+      line-height: 1.25;
+    }
+    .feedback-modal .feedback-modal-lead {
+      margin: 0 0 18px 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .feedback-rating-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .feedback-rating-btn {
+      padding: 14px 10px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: #fff;
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+    }
+    .feedback-rating-btn:hover:not(.feedback-rating-btn--active) {
+      border-color: #cbd5e1;
+      color: var(--text);
+    }
+    .feedback-rating-btn--active {
+      border-color: #5d3fd3;
+      background: rgba(93, 63, 211, 0.11);
+      color: #5d3fd3;
+    }
+    .feedback-modal textarea#feedback-comment.feedback-comment-field {
+      width: 100%;
+      min-height: 118px;
+      padding: 14px;
+      margin: 0 0 14px 0;
+      border-radius: 12px;
+      border: 2px solid rgba(93, 63, 211, 0.38);
+      font-family: inherit;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .feedback-modal textarea#feedback-comment.feedback-comment-field:focus {
+      outline: none;
+      border-color: #5d3fd3;
+      box-shadow: 0 0 0 3px rgba(93, 63, 211, 0.16);
+    }
+    .feedback-submit-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      background: #5d3fd3;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.12s;
+    }
+    .feedback-submit-btn:hover { background: #4a32b5; }
+    .feedback-submit-btn:active { transform: scale(0.99); }
+    .feedback-submit-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+    .feedback-submit-btn svg { flex-shrink: 0; opacity: 0.95; }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
     @media (max-width: 600px) {
       .feedback-fab { bottom: 88px; right: 16px; padding: 10px 16px; font-size: 0.88rem; }
+      .modal.feedback-modal { padding: 22px 16px 18px; }
+      .feedback-modal .feedback-modal-title { margin-right: 42px; font-size: 1.1rem; }
     }
 
     /* ── MODAL ── */
@@ -2086,19 +2200,21 @@
 
 <div class="modal-overlay feedback-modal-overlay" id="feedback-modal-overlay" onclick="if(event.target===this)closeExternalFeedbackModal()">
   <div class="modal feedback-modal" role="dialog" aria-labelledby="feedback-modal-title" aria-modal="true" onclick="event.stopPropagation()">
-    <h3 id="feedback-modal-title">Обратная связь</h3>
-    <p class="modal-sub">Поделитесь впечатлением — это поможет улучшить сервис.</p>
-    <div class="modal-sub" style="margin-bottom:10px;font-weight:600;color:var(--text)">Сервис был полезен?</div>
-    <div class="feedback-useful-row">
-      <label><input type="radio" name="fb-useful" value="true" checked> Да</label>
-      <label><input type="radio" name="fb-useful" value="false"> Нет</label>
+    <button type="button" class="feedback-modal-close" onclick="closeExternalFeedbackModal()" aria-label="Закрыть" title="Закрыть">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <h3 id="feedback-modal-title" class="feedback-modal-title">Оцените сервис</h3>
+    <p class="feedback-modal-lead">Помогите нам стать лучше — это займёт 30 секунд</p>
+    <div class="feedback-rating-btns" role="group" aria-label="Оценка полезности">
+      <button type="button" class="feedback-rating-btn feedback-rating-btn--active" id="fb-btn-useful" aria-pressed="true" onclick="feedbackSetUseful(true)">👍 Полезно</button>
+      <button type="button" class="feedback-rating-btn" id="fb-btn-not-useful" aria-pressed="false" onclick="feedbackSetUseful(false)">👎 Не полезно</button>
     </div>
-    <label for="feedback-comment" class="modal-sub" style="display:block;margin-bottom:0">Комментарий</label>
-    <textarea id="feedback-comment" placeholder="Текст отзыва (необязательно)"></textarea>
-    <div class="modal-actions">
-      <button type="button" class="btn-secondary" onclick="closeExternalFeedbackModal()">Закрыть</button>
-      <button type="button" class="btn-primary" id="feedback-submit-btn" onclick="submitExternalFeedback()">Отправить</button>
-    </div>
+    <label for="feedback-comment" class="visually-hidden">Комментарий</label>
+    <textarea id="feedback-comment" class="feedback-comment-field" placeholder="Что можно улучшить? (необязательно)" rows="5"></textarea>
+    <button type="button" class="feedback-submit-btn" id="feedback-submit-btn" onclick="submitExternalFeedback()">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2 .01 7z"/></svg>
+      Отправить
+    </button>
   </div>
 </div>
 
@@ -7145,12 +7261,18 @@ async function _toggleResultDetail(header, rid) {
   detail.style.maxHeight = detail.scrollHeight + 'px';
 }
 
-// ─── EXTERNAL FEEDBACK (ap-experiment-zone) ──────────────────────────────────
-const FEEDBACK_API_URL = 'https://ap-experiment-zone.onrender.com/api/external/feedback';
-const FEEDBACK_API_KEY = 'fyI2K26aTOeIJkw_m_vBaoHm7Y8B3J5EjunFJZCepmY';
+// ─── EXTERNAL FEEDBACK (через прокси; ключ не в браузере) ─────────────────────
 const FEEDBACK_LS_SENT = 'oprosy_ext_feedback_sent';
 const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
 const _feedbackMoveOpts = { passive: true };
+
+function getFeedbackSubmitUrl() {
+  const raw = typeof window !== 'undefined' && window.FEEDBACK_PROXY_BASE != null
+    ? String(window.FEEDBACK_PROXY_BASE).trim()
+    : '';
+  if (!raw) return '';
+  return raw.replace(/\/$/, '') + '/feedback';
+}
 
 function getFeedbackSessionId() {
   let id = sessionStorage.getItem('oprosy_feedback_sid');
@@ -7159,6 +7281,16 @@ function getFeedbackSessionId() {
     sessionStorage.setItem('oprosy_feedback_sid', id);
   }
   return id;
+}
+
+function feedbackSetUseful(useful) {
+  const u = document.getElementById('fb-btn-useful');
+  const n = document.getElementById('fb-btn-not-useful');
+  if (!u || !n) return;
+  u.classList.toggle('feedback-rating-btn--active', !!useful);
+  n.classList.toggle('feedback-rating-btn--active', !useful);
+  u.setAttribute('aria-pressed', useful ? 'true' : 'false');
+  n.setAttribute('aria-pressed', useful ? 'false' : 'true');
 }
 
 function openExternalFeedbackModal() {
@@ -7173,17 +7305,20 @@ function closeExternalFeedbackModal() {
 async function submitExternalFeedback() {
   const btn = document.getElementById('feedback-submit-btn');
   const commentEl = document.getElementById('feedback-comment');
-  const useful = document.querySelector('input[name="fb-useful"]:checked');
-  const is_useful = useful ? useful.value === 'true' : true;
+  const is_useful = document.getElementById('fb-btn-useful')?.classList.contains('feedback-rating-btn--active') ?? true;
   const comment = (commentEl?.value || '').trim();
+  const url = getFeedbackSubmitUrl();
+  if (!url) {
+    toast('Обратная связь не настроена: задайте window.FEEDBACK_PROXY_BASE в <head> (см. feedback-proxy/README.md)');
+    return;
+  }
   btn.disabled = true;
   try {
-    const res = await fetch(FEEDBACK_API_URL, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-API-Key': FEEDBACK_API_KEY
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         session_id: getFeedbackSessionId(),
@@ -7208,7 +7343,9 @@ async function submitExternalFeedback() {
     }
     toast('Спасибо за отзыв!');
   } catch (err) {
-    toast('Не удалось отправить. ' + (err.message || 'Проверьте сеть'));
+    const msg = err && err.message ? String(err.message) : 'Проверьте сеть';
+    const hint = /fail/i.test(msg) ? ' Частая причина: нет прокси или CORS — см. feedback-proxy/README.md' : '';
+    toast('Не удалось отправить. ' + msg + hint);
   } finally {
     btn.disabled = false;
   }
@@ -7216,6 +7353,10 @@ async function submitExternalFeedback() {
 
 function initExternalFeedbackWidget() {
   if (localStorage.getItem(FEEDBACK_LS_SENT)) {
+    document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
+    return;
+  }
+  if (!getFeedbackSubmitUrl()) {
     document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
     return;
   }
