@@ -67,13 +67,21 @@
     .view.active { display: block; }
     body.teacher-workspace-active main { max-width: 1320px; }
 
-    /* ── TEACHER WORKSPACE (ТЗ: один экран) ── */
-    .teacher-workspace { display: grid; grid-template-columns: minmax(220px, 0.9fr) minmax(0, 2.2fr) minmax(200px, 0.85fr); gap: 16px; align-items: start; min-height: calc(100vh - 120px); }
-    .ws-col { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
-    .ws-col h2 { font-size: 0.95rem; font-weight: 800; margin-bottom: 10px; color: var(--text); }
-    .ws-col .ws-hint { font-size: 0.8rem; color: var(--muted); line-height: 1.45; margin-bottom: 12px; }
-    #ws-input-text { width: 100%; min-height: 200px; font-size: 0.95rem; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); resize: vertical; box-sizing: border-box; }
-    .ws-card-list { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 200px); overflow: auto; padding-right: 4px; }
+    /* ── TEACHER WORKSPACE (центр + панель сверху) ── */
+    .ws-toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
+    .ws-center { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; min-height: 260px; box-shadow: var(--shadow); }
+    .ws-empty-cta { flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 220px; gap: 20px; }
+    .ws-empty-title { font-size: 1.12rem; font-weight: 700; color: var(--text); }
+    .ws-empty-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .ws-generate-block { margin-bottom: 16px; }
+    .ws-generate-block textarea {
+      width: 100%; min-height: 220px; font-size: 0.95rem; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border);
+      resize: vertical; box-sizing: border-box; background: var(--card); color: var(--text);
+    }
+    .ws-generate-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+    .ws-card-list-wrap { margin-top: 4px; }
+    .ws-post-publish { margin-top: 18px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+    .ws-card-list { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 260px); overflow: auto; padding-right: 4px; }
     .ws-card-item { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--card); }
     .ws-type-switch { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .ws-type-switch button {
@@ -92,7 +100,6 @@
     .ws-top-errors li { margin-bottom: 4px; }
     #ws-deck-title { width: 100%; font-size: 1rem; font-weight: 700; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border); margin-bottom: 12px; box-sizing: border-box; }
     @media (max-width: 1024px) {
-      .teacher-workspace { grid-template-columns: 1fr; }
       .ws-card-list { max-height: none; }
     }
 
@@ -1022,7 +1029,6 @@
       /* Шапка */
       header { padding: 10px 14px; gap: 8px; }
       .logo { font-size: 1.1rem; }
-      #teacher-nav { display: none !important; } /* навигация спрятана — используем кнопки на странице */
       #header-user-name { display: none; }       /* имя скрыто — экономим место */
       .btn-new-set { padding: 7px 12px; font-size: 0.82rem; }
       .btn-signout { padding: 6px 10px; font-size: 0.78rem; }
@@ -1144,9 +1150,6 @@
 
 <header id="main-header" style="display:none">
   <div class="logo" onclick="workspaceNewDraftConfirm()">Опросы<span> и карточки</span></div>
-  <div class="nav-tabs" id="teacher-nav" style="display:none">
-    <button class="nav-tab active" id="nav-home" onclick="goHome()">Рабочий стол</button>
-  </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="header-user-info" style="display:none;align-items:center;gap:8px">
       <span id="header-user-role-badge"></span>
@@ -1243,47 +1246,48 @@
     </div>
   </div>
 
-  <!-- ═══ TEACHER WORKSPACE (ТЗ §4.1) ═══ -->
+  <!-- ═══ TEACHER WORKSPACE ═══ -->
   <div class="view" id="view-workspace">
     <div class="page-title" style="margin-bottom:6px">Интерактивные карточки</div>
-    <p class="page-sub" style="margin-bottom:16px">Вставьте текст — получите карточки — отредактируйте здесь — выдайте ученикам.</p>
-    <input type="text" id="ws-deck-title" placeholder="Название набора (для учеников)" autocomplete="off">
-    <div class="teacher-workspace">
-      <div class="ws-col" id="ws-col-input">
-        <h2>1. Ввод</h2>
-        <p class="ws-hint">Текст урока, термины, вопросы. Нажмите «Создать карточки» — тип подберётся автоматически.</p>
-        <textarea id="ws-input-text" placeholder="Вставьте текст или тему…"></textarea>
-        <button type="button" class="btn-primary" style="width:100%;margin-top:10px" onclick="wsGenerateFromText()">Создать карточки</button>
+    <input type="text" id="ws-deck-title" placeholder="Название набора" autocomplete="off">
+    <div class="ws-toolbar">
+      <button type="button" class="btn-secondary" onclick="wsAddEmptyCard()">+ Добавить карточку</button>
+      <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Сгенерировать</button>
+      <button type="button" class="btn-primary" onclick="workspacePublish()">Выдать ученикам</button>
+    </div>
+    <div class="ws-center">
+      <div id="ws-generate-block" class="ws-generate-block" style="display:none">
+        <textarea id="ws-generate-text" placeholder="Вставьте текст…"></textarea>
+        <div class="ws-generate-actions">
+          <button type="button" class="btn-primary" onclick="wsGenerateFromPanel()">Создать карточки</button>
+          <button type="button" class="btn-ghost" onclick="wsCloseGeneratePanel()">Отмена</button>
+        </div>
       </div>
-      <div class="ws-col" id="ws-col-cards">
-        <h2>2. Карточки</h2>
-        <p class="ws-hint">Редактирование в списке, без отдельных окон. Смена типа — кнопками на карточке.</p>
+      <div id="ws-empty-cta" class="ws-empty-cta" style="display:none">
+        <div class="ws-empty-title">Создайте карточки</div>
+        <div class="ws-empty-actions">
+          <button type="button" class="btn-secondary" onclick="wsAddEmptyCard()">Создать вручную</button>
+          <button type="button" class="btn-primary" onclick="wsOpenGeneratePanel()">Сгенерировать из текста</button>
+        </div>
+      </div>
+      <div id="ws-card-list-wrap" class="ws-card-list-wrap" style="display:none">
         <div id="ws-card-list" class="ws-card-list"></div>
-        <p id="ws-empty-hint" class="ws-hint" style="margin-top:8px">Пока пусто — вставьте текст слева или добавьте карточку справа.</p>
       </div>
-      <div class="ws-col" id="ws-col-actions">
-        <h2>3. Управление</h2>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <button type="button" class="btn-secondary" style="width:100%" onclick="wsAddEmptyCard()">Добавить карточку</button>
-          <button type="button" class="btn-secondary" style="width:100%" onclick="wsShuffleCards()">Перемешать</button>
-          <button type="button" class="btn-primary" style="width:100%" onclick="workspacePublish()">Выдать ученикам</button>
-        </div>
-        <div id="ws-share-panel" style="display:none;margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
-          <div class="ws-hint" style="margin-bottom:8px">Код и ссылка</div>
-          <div style="font-family:monospace;font-weight:800;font-size:1.1rem;color:var(--accent)" id="ws-share-code">—</div>
-          <input type="text" id="ws-share-url" readonly onclick="this.select()" style="width:100%;margin-top:8px;font-size:0.78rem;padding:8px;border-radius:8px;border:1px solid var(--border)">
-          <button type="button" class="btn-secondary" style="width:100%;margin-top:8px" onclick="wsCopyShare()">Копировать ссылку</button>
-        </div>
-        <div id="ws-analytics-panel" style="display:none;margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
-          <h2 style="font-size:0.88rem;margin-bottom:8px">Результаты</h2>
-          <div class="ws-stat-line">Учеников: <strong id="ws-st-students">0</strong></div>
-          <div class="ws-stat-line">Завершили: <strong id="ws-st-done">0</strong></div>
-          <div class="ws-stat-line">Средний %: <strong id="ws-st-avg">—</strong></div>
-          <div class="ws-hint" style="margin-top:10px;margin-bottom:4px">Чаще ошибаются:</div>
-          <ul class="ws-top-errors" id="ws-top-errors"></ul>
-          <button type="button" class="btn-ghost" style="width:100%;margin-top:8px" onclick="wsRefreshAnalytics()">Обновить</button>
-        </div>
-      </div>
+    </div>
+    <div id="ws-share-panel" class="ws-post-publish" style="display:none">
+      <div style="font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:8px">Код и ссылка</div>
+      <div style="font-family:monospace;font-weight:800;font-size:1.1rem;color:var(--accent)" id="ws-share-code">—</div>
+      <input type="text" id="ws-share-url" readonly onclick="this.select()" style="width:100%;margin-top:8px;font-size:0.78rem;padding:8px;border-radius:8px;border:1px solid var(--border);box-sizing:border-box">
+      <button type="button" class="btn-secondary" style="width:100%;max-width:280px;margin-top:10px" onclick="wsCopyShare()">Скопировать</button>
+    </div>
+    <div id="ws-analytics-panel" class="ws-post-publish" style="display:none">
+      <div style="font-size:0.88rem;font-weight:700;margin-bottom:10px">Результаты</div>
+      <div class="ws-stat-line">Учеников: <strong id="ws-st-students">0</strong></div>
+      <div class="ws-stat-line">Завершили: <strong id="ws-st-done">0</strong></div>
+      <div class="ws-stat-line">Средний %: <strong id="ws-st-avg">—</strong></div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:10px;margin-bottom:4px">Чаще ошибаются</div>
+      <ul class="ws-top-errors" id="ws-top-errors"></ul>
+      <button type="button" class="btn-ghost" style="width:100%;margin-top:8px" onclick="wsRefreshAnalytics()">Обновить</button>
     </div>
   </div>
 
@@ -2019,6 +2023,55 @@ let _libraryCreateSubmitting = false;
 let wsCards = [];
 let wsPublishedId = null;
 let _wsAnalyticsTimer = null;
+let wsGenerateOpen = false;
+
+function syncWorkspaceLayout() {
+  const genEl = document.getElementById('ws-generate-block');
+  const emptyEl = document.getElementById('ws-empty-cta');
+  const listWrap = document.getElementById('ws-card-list-wrap');
+  if (genEl) genEl.style.display = wsGenerateOpen ? 'block' : 'none';
+  if (emptyEl) emptyEl.style.display = (!wsCards.length && !wsGenerateOpen) ? 'flex' : 'none';
+  if (listWrap) listWrap.style.display = wsCards.length ? 'block' : 'none';
+}
+
+function wsOpenGeneratePanel() {
+  wsGenerateOpen = true;
+  syncWorkspaceLayout();
+  requestAnimationFrame(() => {
+    const t = document.getElementById('ws-generate-text');
+    if (t) t.focus();
+  });
+}
+
+function wsCloseGeneratePanel() {
+  wsGenerateOpen = false;
+  const ta = document.getElementById('ws-generate-text');
+  if (ta) ta.value = '';
+  syncWorkspaceLayout();
+}
+
+function wsGenerateFromPanel() {
+  const ta = document.getElementById('ws-generate-text');
+  const text = (ta && ta.value || '').trim();
+  if (!text) { toast('Вставьте текст'); return; }
+  const gen = generateCardsFromText(text);
+  wsCards = wsCards.concat(gen);
+  if (ta) ta.value = '';
+  wsGenerateOpen = false;
+  renderWorkspaceCards();
+  toast(`Добавлено карточек: ${gen.length}`);
+}
+
+function wsFocusLastQuestion() {
+  requestAnimationFrame(() => {
+    const items = document.querySelectorAll('#ws-card-list .ws-card-item');
+    const last = items[items.length - 1];
+    if (!last) return;
+    const ta = last.querySelector('textarea');
+    if (ta) { ta.focus(); const L = ta.value.length; ta.setSelectionRange(L, L); }
+  });
+}
+
 
 function legacyCardToMvp(c, idx) {
   if (!c || typeof c !== 'object') return null;
@@ -2119,15 +2172,13 @@ function generateCardsFromText(text) {
 }
 
 function renderWorkspaceCards() {
+  syncWorkspaceLayout();
   const list = document.getElementById('ws-card-list');
-  const empty = document.getElementById('ws-empty-hint');
   if (!list) return;
   if (!wsCards.length) {
     list.innerHTML = '';
-    if (empty) empty.style.display = '';
     return;
   }
-  if (empty) empty.style.display = 'none';
   const types = [
     { v: 'input', l: 'Ввод' },
     { v: 'choice', l: 'Выбор' },
@@ -2142,7 +2193,7 @@ function renderWorkspaceCards() {
     if (c.type === 'input') {
       const acc = (c.accepted || []).join(', ');
       body = `<div class="ws-field"><label>Вопрос</label><textarea data-ws="${i}" data-f="question" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
-        <div class="ws-field"><label>Допустимые ответы (через запятую)</label><input type="text" value="${esc(acc)}" data-ws="${i}" oninput="wsPatchAccepted(${i},this.value)"></div>`;
+        <div class="ws-field"><label>Ответы через запятую</label><input type="text" value="${esc(acc)}" data-ws="${i}" oninput="wsPatchAccepted(${i},this.value)"></div>`;
     } else if (c.type === 'choice') {
       const opts = (c.options || ['', '', '', '']).slice(0, 4);
       while (opts.length < 4) opts.push('');
@@ -2153,15 +2204,15 @@ function renderWorkspaceCards() {
         </div>`
       ).join('');
       body = `<div class="ws-field"><label>Вопрос</label><textarea data-ws="${i}" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
-        <div class="ws-field"><label>4 варианта (отметьте верный)</label>${radios}</div>`;
+        <div class="ws-field"><label>Варианты</label>${radios}</div>`;
     } else if (c.type === 'flashcard') {
-      body = `<div class="ws-field"><label>Вопрос (лицевая сторона)</label><textarea oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+      body = `<div class="ws-field"><label>Вопрос</label><textarea oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
         <div class="ws-field"><label>Ответ</label><textarea oninput="wsPatch(${i},'answer',this.value)">${esc(c.answer || '')}</textarea></div>`;
     } else {
       const rows = (c.pairs || [{ left: '', right: '' }]).map((p, pi) =>
         `<div style="display:flex;gap:6px;margin-bottom:6px"><input placeholder="Термин" value="${esc(p.left)}" oninput="wsPatchPair(${i},${pi},'left',this.value)"><input placeholder="Ответ" value="${esc(p.right)}" oninput="wsPatchPair(${i},${pi},'right',this.value)"></div>`
       ).join('');
-      body = `<div class="ws-field"><label>Подпись (необязательно)</label><input type="text" value="${esc(c.question)}" oninput="wsPatch(${i},'question',this.value)"></div>
+      body = `<div class="ws-field"><label>Вопрос</label><input type="text" value="${esc(c.question)}" oninput="wsPatch(${i},'question',this.value)"></div>
         <div class="ws-field"><label>Пары</label>${rows}<button type="button" class="btn-ghost" onclick="wsAddPair(${i})">+ пара</button></div>`;
     }
     return `<div class="ws-card-item" data-wsid="${i}">
@@ -2234,8 +2285,10 @@ function wsDel(i) {
 }
 
 function wsAddEmptyCard() {
+  wsGenerateOpen = false;
   wsCards.push({ id: uid(), type: 'flashcard', question: '', answer: '', accepted: null, options: null, correctIndex: 0, pairs: null });
   renderWorkspaceCards();
+  wsFocusLastQuestion();
 }
 
 function wsShuffleCards() {
@@ -2244,23 +2297,14 @@ function wsShuffleCards() {
   toast('Порядок карточек изменён');
 }
 
-function wsGenerateFromText() {
-  const ta = document.getElementById('ws-input-text');
-  const text = (ta && ta.value || '').trim();
-  if (!text) { toast('Вставьте текст'); return; }
-  const gen = generateCardsFromText(text);
-  wsCards = wsCards.concat(gen);
-  renderWorkspaceCards();
-  toast(`Добавлено карточек: ${gen.length}`);
-}
-
 function workspaceNewDraftConfirm() {
   if (wsCards.length && !confirm('Очистить рабочий стол и начать новый набор?')) return;
   wsCards = [];
   wsPublishedId = null;
+  wsGenerateOpen = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
-  const ta = document.getElementById('ws-input-text');
+  const ta = document.getElementById('ws-generate-text');
   if (ta) ta.value = '';
   const sp = document.getElementById('ws-share-panel');
   const ap = document.getElementById('ws-analytics-panel');
@@ -2275,7 +2319,7 @@ function wsCopyShare() {
   const inp = document.getElementById('ws-share-url');
   if (inp) {
     inp.select();
-    navigator.clipboard.writeText(inp.value).then(() => toast('Ссылка скопирована'));
+    navigator.clipboard.writeText(inp.value).then(() => toast('Скопировано'));
   }
 }
 
@@ -2380,9 +2424,10 @@ async function wsRefreshAnalytics() {
 function initWorkspaceAfterLogin() {
   wsCards = [];
   wsPublishedId = null;
+  wsGenerateOpen = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
-  const ta = document.getElementById('ws-input-text');
+  const ta = document.getElementById('ws-generate-text');
   if (ta) ta.value = '';
   const sp = document.getElementById('ws-share-panel');
   const ap = document.getElementById('ws-analytics-panel');
@@ -2490,7 +2535,6 @@ function _applyUserUI() {
     const roleLabel = '👩‍🏫 Учитель';
     document.getElementById('header-user-role-badge').innerHTML =
       `<span class="deck-badge" style="background:rgba(99,91,255,0.1);color:var(--accent)">${roleLabel}</span>`;
-    document.getElementById('teacher-nav').style.display    = '';
     document.getElementById('btn-create-new').style.display = '';
     document.getElementById('btn-signout').style.display    = '';
     const mba = document.getElementById('mobile-decks-actions');
@@ -2901,10 +2945,6 @@ function showPage(name) {
   }
   if (el) el.classList.add('active');
   document.body.classList.toggle('teacher-workspace-active', resolved === 'workspace');
-  const nh = document.getElementById('nav-home');
-  if (nh) nh.classList.toggle('active', resolved === 'workspace');
-  const ns = document.getElementById('nav-stats');
-  if (ns) ns.classList.toggle('active', false);
 }
 
 function goHome() {
@@ -3186,7 +3226,7 @@ function renderDecks() {
   const qa = document.getElementById('library-quick-actions');
   if (qa) {
     qa.innerHTML = `
-      <button class="btn-primary" onclick="goHome()">Рабочий стол</button>
+      <button class="btn-primary" onclick="goHome()">Главная</button>
       <button class="btn-secondary" onclick="showImportModal()" ${!currentSetId ? 'disabled' : ''}>⬆ Импортировать</button>
       <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : `toast('Сначала выберите задание')`}">🔗 Выдать</button>
     `;
@@ -3334,6 +3374,9 @@ function openSet(id, tab = 'cards') {
   currentSetMode = d.mode || 'test';
   setCards = [...(d.cards || [])];
   wsPublishedId = id;
+  wsGenerateOpen = false;
+  const _gt = document.getElementById('ws-generate-text');
+  if (_gt) _gt.value = '';
   wsCards = (d.cards || []).map((c, i) => legacyCardToMvp(c, i)).filter(Boolean);
   const titleEl = document.getElementById('ws-deck-title');
   if (titleEl) titleEl.value = d.name || '';
@@ -4622,7 +4665,6 @@ function initApp() {
   // But if Firebase is not configured, fall back to teacher-only local mode.
   if (!_auth) {
     document.getElementById('main-header').style.display = '';
-    document.getElementById('teacher-nav').style.display = '';
     document.getElementById('btn-create-new').style.display = '';
     // Load from localStorage as fallback
     decks = JSON.parse(localStorage.getItem('qf_decks') || '[]');
