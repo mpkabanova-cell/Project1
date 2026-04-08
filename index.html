@@ -87,7 +87,10 @@
       resize: vertical; box-sizing: border-box; background: #ffffff; color: var(--text);
     }
     .ws-generate-block textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12); }
-    #ws-toggle-compact.active { background: var(--accent-soft); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.35); }
+    #ws-toggle-preview.active { background: var(--accent-soft); color: var(--accent); border-color: rgba(var(--accent-rgb), 0.35); }
+    .ws-gen-controls { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; align-items: center; }
+    .ws-gen-controls label { font-size: 0.84rem; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .ws-gen-controls select { padding: 7px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; color: var(--text); font-size: 0.88rem; }
     .ws-generate-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
     .ws-card-list-wrap { margin-top: 4px; }
     .ws-post-publish { margin-top: 18px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
@@ -114,14 +117,14 @@
     .ws-card-head-actions button:disabled { opacity: 0.35; cursor: not-allowed; }
     .ws-card-head-actions button.danger:hover { color: var(--accent2); border-color: rgba(225,29,72,0.35); }
     .ws-card-body { padding: 14px; }
-    .ws-compact-preview {
+    .ws-preview-line {
       padding: 8px 12px 12px; font-size: 0.86rem; color: var(--muted); cursor: pointer; border-top: 1px solid transparent;
     }
-    .ws-compact-preview:hover { color: var(--text); background: rgba(15,23,42,0.02); }
-    .ws-card-item.ws-compact .ws-card-body { display: none; }
-    .ws-card-item.ws-compact.ws-card-expanded .ws-card-body { display: block; }
-    .ws-card-item.ws-compact:not(.ws-card-expanded) .ws-compact-preview { border-top-color: var(--border); }
-    .ws-type-switch { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ws-preview-line:hover { color: var(--text); background: rgba(15,23,42,0.02); }
+    .ws-card-item.ws-preview .ws-card-body { display: none; }
+    .ws-card-item.ws-preview.ws-preview-open .ws-card-body { display: block; }
+    .ws-card-item.ws-preview:not(.ws-preview-open) .ws-preview-line { border-top-color: var(--border); }
+    .ws-type-switch { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; margin-bottom: 10px; }
     .ws-type-switch button {
       font-size: 0.68rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
       background: #ffffff; color: var(--muted); cursor: pointer;
@@ -1297,7 +1300,7 @@
       <div class="ws-toolbar-left">
         <button type="button" class="btn-primary" onclick="wsAddEmptyCard()">+ Добавить карточку</button>
         <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Создать из текста</button>
-        <button type="button" class="btn-secondary" id="ws-toggle-compact" onclick="wsToggleCompact()">Компактный список</button>
+        <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Карточки свёрнуты до одной строки; нажмите строку, чтобы открыть правку">Предпросмотр</button>
       </div>
       <div class="ws-toolbar-right">
         <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish"> Случайный порядок при выдаче</label>
@@ -1306,6 +1309,26 @@
     </div>
     <div class="ws-center">
       <div id="ws-generate-block" class="ws-generate-block" style="display:none">
+        <div class="ws-gen-controls">
+          <label>Сколько карточек
+            <select id="ws-gen-count">
+              <option value="5">5</option>
+              <option value="8">8</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+            </select>
+          </label>
+          <label>Тип (все одинаковые)
+            <select id="ws-gen-type">
+              <option value="flashcard">Переворот</option>
+              <option value="input">Короткий ответ</option>
+              <option value="choice">Выбор ответа</option>
+              <option value="matching">Соответствие</option>
+            </select>
+          </label>
+        </div>
         <textarea id="ws-generate-text" placeholder=""></textarea>
         <div class="ws-generate-actions">
           <button type="button" class="btn-primary" onclick="wsGenerateFromPanel()">Создать карточки</button>
@@ -2072,8 +2095,8 @@ let wsCards = [];
 let wsPublishedId = null;
 let _wsAnalyticsTimer = null;
 let wsGenerateOpen = false;
-let wsCompactList = false;
-const wsExpandedInCompact = new Set();
+let wsPreviewMode = false;
+const wsPreviewExpandedIds = new Set();
 
 function wsTypeLabel(type) {
   const m = { input: 'Короткий ответ', choice: 'Выбор ответа', flashcard: 'Переворот', matching: 'Соответствие' };
@@ -2088,15 +2111,15 @@ function wsPreviewLine(c) {
   return t;
 }
 
-function wsToggleCardExpanded(cardId) {
-  if (wsExpandedInCompact.has(cardId)) wsExpandedInCompact.delete(cardId);
-  else wsExpandedInCompact.add(cardId);
+function wsTogglePreviewCardExpanded(cardId) {
+  if (wsPreviewExpandedIds.has(cardId)) wsPreviewExpandedIds.delete(cardId);
+  else wsPreviewExpandedIds.add(cardId);
   renderWorkspaceCards();
 }
 
-function wsToggleCompact() {
-  wsCompactList = !wsCompactList;
-  if (!wsCompactList) wsExpandedInCompact.clear();
+function wsTogglePreviewMode() {
+  wsPreviewMode = !wsPreviewMode;
+  if (!wsPreviewMode) wsPreviewExpandedIds.clear();
   renderWorkspaceCards();
 }
 
@@ -2105,9 +2128,9 @@ function wsUpdatePublishButton() {
   if (btn) btn.disabled = !wsCards.length;
 }
 
-function wsSyncCompactButton() {
-  const b = document.getElementById('ws-toggle-compact');
-  if (b) b.classList.toggle('active', wsCompactList);
+function wsSyncPreviewModeButton() {
+  const b = document.getElementById('ws-toggle-preview');
+  if (b) b.classList.toggle('active', wsPreviewMode);
 }
 
 function wsDragStartFromHandle(ev, i) {
@@ -2185,9 +2208,13 @@ function wsGenerateFromPanel() {
   const ta = document.getElementById('ws-generate-text');
   const text = (ta && ta.value || '').trim();
   if (!text) { toast('Вставьте текст'); return; }
-  const gen = generateCardsFromText(text);
+  const countEl = document.getElementById('ws-gen-count');
+  const typeEl = document.getElementById('ws-gen-type');
+  const count = Math.min(50, Math.max(1, parseInt(countEl && countEl.value, 10) || 10));
+  const cardType = (typeEl && typeEl.value) || 'flashcard';
+  const gen = generateCardsFromText(text, { count, type: cardType });
   if (!gen.length) {
-    toast('Не получилось выделить смысловые блоки. Попробуйте строки вида «Термин — определение» или связный текст из нескольких предложений.');
+    toast('Не получилось выделить пары «вопрос — короткий ответ». Попробуйте «Термин — определение», даты, числа или связный текст.');
     return;
   }
   wsCards = wsCards.concat(gen);
@@ -2201,8 +2228,8 @@ function wsFocusLastQuestion() {
   requestAnimationFrame(() => {
     const lastCard = wsCards[wsCards.length - 1];
     let needRender = false;
-    if (lastCard && wsCompactList && !wsExpandedInCompact.has(lastCard.id)) {
-      wsExpandedInCompact.add(lastCard.id);
+    if (lastCard && wsPreviewMode && !wsPreviewExpandedIds.has(lastCard.id)) {
+      wsPreviewExpandedIds.add(lastCard.id);
       needRender = true;
     }
     if (needRender) renderWorkspaceCards();
@@ -2295,26 +2322,52 @@ function _wsNewFlashcard(question, answer) {
   return { id: uid(), type: 'flashcard', question: String(question || '').trim(), answer: String(answer || '').trim(), accepted: null, options: null, correctIndex: 0, pairs: null };
 }
 
-/** Строка «термин — определение» / «термин: определение» */
-function _wsTryDefinitionLine(line) {
+function _wsShortToken(s, maxLen) {
+  const t = String(s || '').trim();
+  if (!t) return '';
+  const m = t.match(/\b(\d{1,2}[./]\d{1,2}[./]\d{2,4})\b/) || t.match(/\b((?:19|20)\d{2})\b/) || t.match(/\b(\d+(?:[.,]\d+)?%)\b/);
+  if (m) return _wsClip(m[1], maxLen);
+  const g = t.match(/«([^»]+)»/);
+  if (g && g[1].trim().length >= 2) return _wsClip(g[1].trim(), maxLen);
+  const w = t.split(/\s+/)[0] || '';
+  return _wsClip(w.replace(/^[—–\-•*]+\s*/, '').replace(/[.,;:!?«»]+$/g, ''), maxLen);
+}
+
+/** Пара {q,a}: ответ — одно слово / число / дата / короткий термин (до maxA символов). */
+function _wsPairFromDefinitionLine(line, maxA) {
   const raw = String(line || '').trim();
   if (raw.length < 8) return null;
   const m = raw.match(/^(.+?)\s*[—–\-:]\s*(.+)$/);
   if (!m) return null;
-  const term = m[1].trim().replace(/^[\d\.\)\s]+/, '').replace(/^[•\*\-]\s*/, '');
-  const ans = m[2].trim();
-  if (term.length < 2 || term.length > 70 || ans.length < 4) return null;
-  return { q: `Что такое «${_wsClip(term, 58)}»?`, a: _wsClip(ans, 320) };
+  let term = m[1].trim().replace(/^[\d\.\)\s]+/, '').replace(/^[•\*\-]\s*/, '');
+  const def = m[2].trim();
+  if (term.length < 2 || def.length < 4) return null;
+  term = _wsClip(term, maxA);
+  return {
+    q: `Назовите термин по определению:\n${_wsClip(def, 220)}`,
+    a: term
+  };
 }
 
-/** Нумерованный тезис: «1. …» */
-function _wsTryNumberedLine(line) {
+function _wsPairFromNumberedLine(line, maxA) {
   const m = String(line || '').trim().match(/^(\d+)[\.\)]\s+(.+)$/);
   if (!m) return null;
   const content = m[2].trim();
-  if (content.length < 14) return null;
-  const words = content.split(/\s+/).slice(0, 8).join(' ');
-  return { q: `Запомните тезис: ${_wsClip(words, 72)}…`, a: _wsClip(content, 300) };
+  if (content.length < 10) return null;
+  const inner = content.match(/^(.+?)\s*[—–\-]\s+(.+)$/);
+  if (inner) {
+    const left = _wsClip(inner[1].trim(), maxA);
+    const right = inner[2].trim();
+    if (left.length >= 2) {
+      return { q: `Уточните по тезису:\n${_wsClip(right, 200)}`, a: left };
+    }
+  }
+  const a = _wsShortToken(content, maxA);
+  if (a.length < 2) return null;
+  let qrest = content;
+  const esc = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  qrest = qrest.replace(new RegExp('^' + esc + '\\s*[—–\-:]?\\s*', 'i'), '').trim() || content;
+  return { q: `Кратко (слово, число или дата):\n${_wsClip(qrest, 200)}`, a };
 }
 
 function _wsSplitSentences(prose) {
@@ -2326,75 +2379,90 @@ function _wsSplitSentences(prose) {
     .filter(s => s.length > 14);
 }
 
-function _wsDeclarativeToQA(sentence) {
+function _wsDeclarativeToShortPair(sentence, maxA) {
   const s = String(sentence || '').trim();
   if (s.length < 18) return null;
-  const comma = s.match(/^(.{14,110}),\s+(.{14,})$/);
-  if (comma) {
-    const a = comma[1].trim();
-    const b = comma[2].trim();
-    return { q: `Как продолжается: «${_wsClip(a, 88)}»?`, a: _wsClip(b, 300) };
+  const g = s.match(/«([^»]{2,40})»/);
+  if (g) {
+    const a = _wsClip(g[1].trim(), maxA);
+    const q = s.replace('«' + g[1] + '»', '________').trim();
+    return { q: `Вставьте термин:\n${_wsClip(q, 200)}`, a };
   }
-  const eto = s.match(/^(.{4,72})\s+(это|означает|называется|представляет собой)\s+(.{10,})$/i);
+  const comma = s.match(/^(.{12,100}),\s+(.{10,})$/);
+  if (comma) {
+    const tail = comma[2].trim();
+    const a = _wsClip(tail.split(/\s+/).slice(0, 2).join(' '), maxA);
+    if (a.length >= 2) {
+      return { q: `Как продолжается:\n«${_wsClip(comma[1].trim(), 90)}»?`, a };
+    }
+  }
+  const eto = s.match(/^(.{4,60})\s+(это|означает|называется|представляет собой)\s+(.{8,})$/i);
   if (eto) {
-    const subj = eto[1].trim();
-    const rest = eto[3].trim();
-    return { q: `Что ${eto[2]} «${_wsClip(subj, 52)}»?`, a: _wsClip(rest, 300) };
+    const rest = eto[3].trim().split(/\s+/);
+    let tok = rest[0] || '';
+    if (/^(и|а|но|или|как|в|во|на)$/.test(tok.toLowerCase()) && rest[1]) tok = rest[1];
+    const a = _wsClip(tok.replace(/[.,;:]+$/, ''), maxA);
+    if (a.length >= 2) {
+      return { q: `Одно слово — суть «${_wsClip(eto[1].trim(), 56)}» (${eto[2]} …)?`, a };
+    }
+  }
+  const num = s.match(/\b(\d{3,4}|\d{1,2}(?:[.,]\d+)?%?)\b/);
+  if (num && s.length > 30) {
+    const a = _wsClip(num[1], maxA);
+    const q = s.replace(num[1], '____').trim();
+    return { q: `Заполните пропуск:\n${_wsClip(q, 200)}`, a };
   }
   const stop = new Set(['и', 'в', 'на', 'с', 'по', 'для', 'как', 'то', 'не', 'а', 'но', 'от', 'из', 'к', 'о', 'об', 'при', 'что', 'которые', 'который', 'которая', 'которых', 'это', 'также', 'или', 'же', 'ли', 'бы', 'у', 'мы', 'вы', 'они', 'он', 'она', 'оно', 'их', 'его', 'её']);
   const words = s.split(/\s+/);
   const meaningful = words
     .filter(w => {
       const x = w.replace(/[«»"„",.;:!?…]/g, '').toLowerCase();
-      return x.length > 1 && !stop.has(x);
+      return x.length > 2 && !stop.has(x);
     })
-    .slice(0, 7)
+    .slice(0, 6)
     .join(' ');
-  if (meaningful.length < 8) return { q: 'Запомните формулировку', a: _wsClip(s, 300) };
-  return { q: `В чём суть: ${meaningful}?`, a: _wsClip(s, 300) };
+  if (meaningful.length < 6) return null;
+  const a = _wsClip(meaningful.split(/\s+/).pop() || '', maxA);
+  if (a.length < 3) return null;
+  return { q: `Ключевой термин в формулировке:\n${_wsClip(s, 180)}`, a };
 }
 
-function _wsSentencesToFlashcards(sentences) {
-  const cards = [];
+function _wsSentencesToShortPairs(sentences, maxA) {
+  const pairs = [];
   for (let i = 0; i < sentences.length; i++) {
     const s = sentences[i];
     if (s.length < 16) continue;
     if (/[?？]\s*$/.test(s)) {
       const next = sentences[i + 1];
-      if (next && next.length > 12 && !/[?？]\s*$/.test(next)) {
-        cards.push(_wsNewFlashcard(s, _wsClip(next, 280)));
+      if (next && next.length > 10 && !/[?？]\s*$/.test(next)) {
+        const a = _wsShortToken(next, maxA);
+        pairs.push({ q: s.trim(), a: a || _wsClip(next.split(/\s+/)[0], maxA) });
         i++;
-      } else {
-        cards.push(_wsNewFlashcard(s, 'Ответьте по своим конспектам или тексту темы.'));
       }
       continue;
     }
-    const d = _wsDeclarativeToQA(s);
-    if (d) cards.push(_wsNewFlashcard(d.q, d.a));
+    const d = _wsDeclarativeToShortPair(s, maxA);
+    if (d) pairs.push(d);
   }
-  return cards;
+  return pairs;
 }
 
-/**
- * Из связного текста: выделяет определения, тезисы и фрагменты по предложениям —
- * короткие карточки «Переворот» (вопрос + ответ).
- */
-function generateCardsFromText(text) {
+function _wsCollectShortPairs(text, maxA) {
   const src = String(text || '').trim();
   if (!src) return [];
-  const out = [];
+  const pairs = [];
   const restLines = [];
   const lines = src.split(/\n/).map(l => l.trim()).filter(Boolean);
 
   for (const line of lines) {
-    const def = _wsTryDefinitionLine(line);
+    const def = _wsPairFromDefinitionLine(line, maxA);
     if (def) {
-      out.push(_wsNewFlashcard(def.q, def.a));
+      pairs.push(def);
       continue;
     }
-    const num = _wsTryNumberedLine(line);
+    const num = _wsPairFromNumberedLine(line, maxA);
     if (num) {
-      out.push(_wsNewFlashcard(num.q, num.a));
+      pairs.push(num);
       continue;
     }
     restLines.push(line);
@@ -2403,24 +2471,81 @@ function generateCardsFromText(text) {
   const prose = restLines.join(' ');
   if (prose.length > 24) {
     const sents = _wsSplitSentences(prose);
-    out.push(..._wsSentencesToFlashcards(sents));
+    pairs.push(..._wsSentencesToShortPairs(sents, maxA));
   }
 
   const seen = new Set();
   const deduped = [];
-  for (const c of out) {
-    const k = `${c.question}\n${c.answer}`.toLowerCase().slice(0, 160);
+  for (const p of pairs) {
+    const a = String(p.a || '').trim();
+    const q = String(p.q || '').trim();
+    if (!a || !q) continue;
+    const k = `${q}\n${a}`.toLowerCase().slice(0, 200);
     if (seen.has(k)) continue;
     seen.add(k);
-    deduped.push(c);
+    deduped.push({ q, a });
   }
-  return deduped.slice(0, 100);
+  return deduped;
+}
+
+function _wsChoiceOptionsForAnswer(correct, pool) {
+  const c = String(correct || '').trim();
+  const norm = (x) => String(x || '').trim().toLowerCase();
+  const others = shuffle(
+    [...new Set(pool.map((x) => String(x).trim()).filter((x) => x && norm(x) !== norm(c)))]
+  );
+  const distr = [];
+  for (const x of others) {
+    if (distr.length >= 3) break;
+    distr.push(x);
+  }
+  const fill = ['другое', 'не применимо', 'нет в тексте'];
+  let fi = 0;
+  while (distr.length < 3) distr.push(fill[fi++] || '—');
+  const opts = shuffle([c, distr[0], distr[1], distr[2]]);
+  const ci = opts.findIndex((o) => norm(o) === norm(c));
+  return { options: opts, correctIndex: ci >= 0 ? ci : 0 };
+}
+
+function _wsAssembleCardFromPair(pair, type, answerPool) {
+  const q = String(pair.q || '').trim();
+  const a = String(pair.a || '').trim();
+  const id = uid();
+  if (type === 'flashcard') {
+    return { id, type: 'flashcard', question: q, answer: a, accepted: null, options: null, correctIndex: 0, pairs: null };
+  }
+  if (type === 'input') {
+    return { id, type: 'input', question: q, accepted: a ? [a] : ['—'], pairs: null, options: null, correctIndex: 0, answer: '' };
+  }
+  if (type === 'choice') {
+    const { options, correctIndex } = _wsChoiceOptionsForAnswer(a, answerPool);
+    return { id, type: 'choice', question: q, options, correctIndex, accepted: null, pairs: null, answer: '' };
+  }
+  if (type === 'matching') {
+    const left = _wsClip(q.replace(/\s+/g, ' '), 80);
+    return { id, type: 'matching', question: 'Соотнесите подсказку и ответ', pairs: [{ left, right: a }], accepted: null, options: null, correctIndex: 0, answer: '' };
+  }
+  return _wsNewFlashcard(q, a);
+}
+
+/**
+ * Текст → карточки одного типа; ответы укорочены (слово, число, дата, термин).
+ * options: { count, type: 'flashcard'|'input'|'choice'|'matching' }
+ */
+function generateCardsFromText(text, options) {
+  const maxA = 44;
+  const count = Math.min(50, Math.max(1, parseInt(options && options.count, 10) || 10));
+  const type = (options && options.type) || 'flashcard';
+  const pairs = _wsCollectShortPairs(text, maxA);
+  const slice = pairs.slice(0, count);
+  const pool = pairs.map((p) => p.a);
+  return slice.map((p) => _wsAssembleCardFromPair(p, type, pool));
 }
 
 function renderWorkspaceCards() {
   syncWorkspaceLayout();
   wsUpdatePublishButton();
-  wsSyncCompactButton();
+  wsSyncPreviewModeButton();
   const list = document.getElementById('ws-card-list');
   if (!list) return;
   if (!wsCards.length) {
@@ -2437,10 +2562,12 @@ function renderWorkspaceCards() {
     const sw = types.map(t =>
       `<button type="button" class="${c.type === t.v ? 'active' : ''}" onclick="wsSetCardType(${i},'${t.v}')">${t.l}</button>`
     ).join('');
+    const typeSwitchHtml = `<div class="ws-type-switch">${sw}</div>`;
     let body = '';
     if (c.type === 'input') {
       const acc = (c.accepted || []).join(', ');
       body = `<div class="ws-field"><label class="wl">Вопрос</label><textarea data-ws="${i}" data-f="question" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        ${typeSwitchHtml}
         <div class="ws-field"><label class="wl">Ответ</label><input type="text" value="${esc(acc)}" oninput="wsPatchAnswerLine(${i},this.value)"></div>`;
     } else if (c.type === 'choice') {
       const opts = (c.options || ['', '', '', '']).slice(0, 4);
@@ -2452,28 +2579,31 @@ function renderWorkspaceCards() {
         </div>`
       ).join('');
       body = `<div class="ws-field"><label class="wl">Вопрос</label><textarea data-ws="${i}" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        ${typeSwitchHtml}
         <div class="ws-field"><label class="wl">Варианты ответа</label>${radios}</div>`;
     } else if (c.type === 'flashcard') {
       body = `<div class="ws-field"><label class="wl">Вопрос</label><textarea oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        ${typeSwitchHtml}
         <div class="ws-field"><label class="wl">Ответ</label><textarea oninput="wsPatch(${i},'answer',this.value)">${esc(c.answer || '')}</textarea></div>`;
     } else {
       const rows = (c.pairs || [{ left: '', right: '' }]).map((p, pi) =>
         `<div style="display:flex;gap:6px;margin-bottom:6px"><input placeholder="Слева" value="${esc(p.left)}" oninput="wsPatchPair(${i},${pi},'left',this.value)"><input placeholder="Справа" value="${esc(p.right)}" oninput="wsPatchPair(${i},${pi},'right',this.value)"></div>`
       ).join('');
       body = `<div class="ws-field"><label class="wl">Вопрос</label><input type="text" value="${esc(c.question)}" oninput="wsPatch(${i},'question',this.value)"></div>
+        ${typeSwitchHtml}
         <div class="ws-field"><label class="wl">Пары</label>${rows}<button type="button" class="btn-ghost" onclick="wsAddPair(${i})">+ пара</button></div>`;
     }
     const tl = wsTypeLabel(c.type);
-    const compact = wsCompactList;
-    const expanded = !compact || wsExpandedInCompact.has(c.id);
+    const previewMode = wsPreviewMode;
+    const expanded = !previewMode || wsPreviewExpandedIds.has(c.id);
     const dupB = `<button type="button" onclick="event.stopPropagation();wsDup(${i})" title="Дублировать">⧉</button>`;
     const upB = `<button type="button" onclick="event.stopPropagation();wsMoveUp(${i})" title="Вверх"${i === 0 ? ' disabled' : ''}>↑</button>`;
     const dnB = `<button type="button" onclick="event.stopPropagation();wsMoveDown(${i})" title="Вниз"${i >= wsCards.length - 1 ? ' disabled' : ''}>↓</button>`;
     const delB = `<button type="button" class="danger" onclick="event.stopPropagation();wsDel(${i})" title="Удалить">✕</button>`;
-    const prev = compact
-      ? `<div class="ws-compact-preview" onclick="wsToggleCardExpanded('${c.id}')">${esc(wsPreviewLine(c))}</div>`
+    const prev = previewMode
+      ? `<div class="ws-preview-line" onclick="wsTogglePreviewCardExpanded('${c.id}')">${esc(wsPreviewLine(c))}</div>`
       : '';
-    const cls = `ws-card-item${compact ? ' ws-compact' : ''}${compact && expanded ? ' ws-card-expanded' : ''}`;
+    const cls = `ws-card-item${previewMode ? ' ws-preview' : ''}${previewMode && expanded ? ' ws-preview-open' : ''}`;
     return `<div class="${cls}" data-wsid="${i}" data-card-id="${esc(c.id)}"
       ondragover="wsDragOverCard(event)" ondragleave="wsDragLeaveCard(event)" ondrop="wsDropOnCard(event,${i})">
       <div class="ws-card-head">
@@ -2483,7 +2613,6 @@ function renderWorkspaceCards() {
       </div>
       ${prev}
       <div class="ws-card-body">
-        <div class="ws-type-switch">${sw}</div>
         ${body}
       </div>
     </div>`;
@@ -2546,7 +2675,7 @@ function wsDup(i) {
 
 function wsDel(i) {
   const id = wsCards[i]?.id;
-  if (id) wsExpandedInCompact.delete(id);
+  if (id) wsPreviewExpandedIds.delete(id);
   wsCards.splice(i, 1);
   renderWorkspaceCards();
 }
@@ -2569,8 +2698,8 @@ function workspaceNewDraftConfirm() {
   wsCards = [];
   wsPublishedId = null;
   wsGenerateOpen = false;
-  wsExpandedInCompact.clear();
-  wsCompactList = false;
+  wsPreviewExpandedIds.clear();
+  wsPreviewMode = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
   const ta = document.getElementById('ws-generate-text');
@@ -2695,8 +2824,8 @@ function initWorkspaceAfterLogin() {
   wsCards = [];
   wsPublishedId = null;
   wsGenerateOpen = false;
-  wsExpandedInCompact.clear();
-  wsCompactList = false;
+  wsPreviewExpandedIds.clear();
+  wsPreviewMode = false;
   const t = document.getElementById('ws-deck-title');
   if (t) t.value = '';
   const ta = document.getElementById('ws-generate-text');
@@ -3653,8 +3782,8 @@ function openSet(id, tab = 'cards') {
   setCards = [...(d.cards || [])];
   wsPublishedId = id;
   wsGenerateOpen = false;
-  wsExpandedInCompact.clear();
-  wsCompactList = false;
+  wsPreviewExpandedIds.clear();
+  wsPreviewMode = false;
   const _gt = document.getElementById('ws-generate-text');
   if (_gt) _gt.value = '';
   wsCards = (d.cards || []).map((c, i) => legacyCardToMvp(c, i)).filter(Boolean);
