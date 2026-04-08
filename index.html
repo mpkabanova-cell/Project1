@@ -1270,17 +1270,16 @@
 
   <!-- ═══ TEACHER WORKSPACE ═══ -->
   <div class="view" id="view-workspace">
-    <input type="text" id="ws-deck-title" placeholder="Название подборки" autocomplete="off">
     <div class="ws-session-banner" id="ws-session-banner">
-      Подборка в браузере не сохраняется автоматически. Перед закрытием вкладки скачайте файл — позже его можно снова загрузить кнопкой «Импорт подборки».
+      Подборка в браузере не сохраняется автоматически. Перед закрытием вкладки скачайте файл — позже его можно снова загрузить кнопкой «Импортировать».
     </div>
+    <input type="text" id="ws-deck-title" placeholder="Название подборки" autocomplete="off">
     <input type="file" id="ws-import-file" accept="application/json,.json" style="display:none" onchange="wsOnWorkspaceImportFileChange(event)">
     <div class="ws-toolbar">
       <div class="ws-toolbar-left">
-        <button type="button" class="btn-secondary" onclick="workspaceExportDownload()">Скачать подборку</button>
-        <button type="button" class="btn-secondary" onclick="wsPickWorkspaceImportFile()">Импорт подборки</button>
-        <button type="button" class="btn-secondary" onclick="wsOpenGeneratePanel()">Создать из текста</button>
         <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Показать подборку так, как её увидит ученик при прохождении">Предпросмотр</button>
+        <button type="button" class="btn-secondary" onclick="wsPickWorkspaceImportFile()">Импортировать</button>
+        <button type="button" class="btn-secondary" onclick="workspaceExportDownload()">Скачать</button>
       </div>
       <div class="ws-toolbar-right">
         <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish" onchange="wsOnShufflePreviewRefresh()"> Случайный порядок карточек</label>
@@ -2505,6 +2504,11 @@ function wsWorkspaceDirty() {
 }
 
 function workspaceExportDownload() {
+  const exportable = wsCards.filter((c) => !wsCardIsBlank(c));
+  if (!exportable.length) {
+    toast('Нечего скачивать — добавьте хотя бы одну заполненную карточку');
+    return false;
+  }
   const name = (document.getElementById('ws-deck-title')?.value || '').trim() || 'Подборка без названия';
   const shuffleOnPublish = !!document.getElementById('ws-shuffle-publish')?.checked;
   const deck = {
@@ -2512,7 +2516,7 @@ function workspaceExportDownload() {
     schemaVersion: 2,
     mode: 'mixed',
     shuffleOnPublish,
-    cards: wsCards.map(mvpCardToFirestore)
+    cards: exportable.map(mvpCardToFirestore)
   };
   const payload = {
     format: WS_DECK_EXPORT_FORMAT,
@@ -2529,6 +2533,7 @@ function workspaceExportDownload() {
   a.click();
   URL.revokeObjectURL(url);
   toast('Файл скачан');
+  return true;
 }
 
 function workspaceImportApplyPayload(obj) {
@@ -3036,7 +3041,7 @@ function wsNewDraftExecuteReset() {
 }
 
 function wsNewDraftModalExport() {
-  workspaceExportDownload();
+  if (!workspaceExportDownload()) return;
   wsNewDraftModalClose();
   wsNewDraftExecuteReset();
 }
