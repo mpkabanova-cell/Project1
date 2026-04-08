@@ -65,6 +65,36 @@
     .view-page-wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
     .view { display: none; }
     .view.active { display: block; }
+    body.teacher-workspace-active main { max-width: 1320px; }
+
+    /* ── TEACHER WORKSPACE (ТЗ: один экран) ── */
+    .teacher-workspace { display: grid; grid-template-columns: minmax(220px, 0.9fr) minmax(0, 2.2fr) minmax(200px, 0.85fr); gap: 16px; align-items: start; min-height: calc(100vh - 120px); }
+    .ws-col { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+    .ws-col h2 { font-size: 0.95rem; font-weight: 800; margin-bottom: 10px; color: var(--text); }
+    .ws-col .ws-hint { font-size: 0.8rem; color: var(--muted); line-height: 1.45; margin-bottom: 12px; }
+    #ws-input-text { width: 100%; min-height: 200px; font-size: 0.95rem; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); resize: vertical; box-sizing: border-box; }
+    .ws-card-list { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 200px); overflow: auto; padding-right: 4px; }
+    .ws-card-item { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--card); }
+    .ws-type-switch { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .ws-type-switch button {
+      font-size: 0.68rem; font-weight: 700; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--muted); cursor: pointer;
+    }
+    .ws-type-switch button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .ws-card-item .ws-field { margin-bottom: 10px; }
+    .ws-card-item label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .ws-card-item input[type=text], .ws-card-item textarea { width: 100%; box-sizing: border-box; font-size: 0.9rem; padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--border); }
+    .ws-card-item textarea { min-height: 52px; resize: vertical; }
+    .ws-actions-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .ws-stat-line { font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
+    .ws-stat-line strong { color: var(--text); }
+    .ws-top-errors { font-size: 0.78rem; color: var(--muted); margin-top: 10px; max-height: 140px; overflow: auto; }
+    .ws-top-errors li { margin-bottom: 4px; }
+    #ws-deck-title { width: 100%; font-size: 1rem; font-weight: 700; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border); margin-bottom: 12px; box-sizing: border-box; }
+    @media (max-width: 1024px) {
+      .teacher-workspace { grid-template-columns: 1fr; }
+      .ws-card-list { max-height: none; }
+    }
 
     /* ── TYPOGRAPHY ── */
     .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
@@ -1113,16 +1143,15 @@
 <body>
 
 <header id="main-header" style="display:none">
-  <div class="logo" onclick="goHome()">Опросы<span> и карточки</span></div>
+  <div class="logo" onclick="workspaceNewDraftConfirm()">Опросы<span> и карточки</span></div>
   <div class="nav-tabs" id="teacher-nav" style="display:none">
-    <button class="nav-tab active" id="nav-home" onclick="goHome()">Библиотека</button>
-    <button class="nav-tab" id="nav-stats" onclick="showStatsPage()">📊 Статистика</button>
+    <button class="nav-tab active" id="nav-home" onclick="goHome()">Рабочий стол</button>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="header-user-info" style="display:none;align-items:center;gap:8px">
       <span id="header-user-role-badge"></span>
     </div>
-    <button class="btn-new-set" id="btn-create-new" onclick="openCreateSetPage()" style="display:none">+ Создать</button>
+    <button class="btn-new-set" id="btn-create-new" onclick="workspaceNewDraftConfirm()" style="display:none">Новый набор</button>
     <button class="btn-signout" id="btn-signout" onclick="doSignOut()" style="display:none">↩ Выйти</button>
   </div>
 </header>
@@ -1214,7 +1243,51 @@
     </div>
   </div>
 
-  <!-- ═══ DECKS LIST ═══ -->
+  <!-- ═══ TEACHER WORKSPACE (ТЗ §4.1) ═══ -->
+  <div class="view" id="view-workspace">
+    <div class="page-title" style="margin-bottom:6px">Интерактивные карточки</div>
+    <p class="page-sub" style="margin-bottom:16px">Вставьте текст — получите карточки — отредактируйте здесь — выдайте ученикам.</p>
+    <input type="text" id="ws-deck-title" placeholder="Название набора (для учеников)" autocomplete="off">
+    <div class="teacher-workspace">
+      <div class="ws-col" id="ws-col-input">
+        <h2>1. Ввод</h2>
+        <p class="ws-hint">Текст урока, термины, вопросы. Нажмите «Создать карточки» — тип подберётся автоматически.</p>
+        <textarea id="ws-input-text" placeholder="Вставьте текст или тему…"></textarea>
+        <button type="button" class="btn-primary" style="width:100%;margin-top:10px" onclick="wsGenerateFromText()">Создать карточки</button>
+      </div>
+      <div class="ws-col" id="ws-col-cards">
+        <h2>2. Карточки</h2>
+        <p class="ws-hint">Редактирование в списке, без отдельных окон. Смена типа — кнопками на карточке.</p>
+        <div id="ws-card-list" class="ws-card-list"></div>
+        <p id="ws-empty-hint" class="ws-hint" style="margin-top:8px">Пока пусто — вставьте текст слева или добавьте карточку справа.</p>
+      </div>
+      <div class="ws-col" id="ws-col-actions">
+        <h2>3. Управление</h2>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button type="button" class="btn-secondary" style="width:100%" onclick="wsAddEmptyCard()">Добавить карточку</button>
+          <button type="button" class="btn-secondary" style="width:100%" onclick="wsShuffleCards()">Перемешать</button>
+          <button type="button" class="btn-primary" style="width:100%" onclick="workspacePublish()">Выдать ученикам</button>
+        </div>
+        <div id="ws-share-panel" style="display:none;margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
+          <div class="ws-hint" style="margin-bottom:8px">Код и ссылка</div>
+          <div style="font-family:monospace;font-weight:800;font-size:1.1rem;color:var(--accent)" id="ws-share-code">—</div>
+          <input type="text" id="ws-share-url" readonly onclick="this.select()" style="width:100%;margin-top:8px;font-size:0.78rem;padding:8px;border-radius:8px;border:1px solid var(--border)">
+          <button type="button" class="btn-secondary" style="width:100%;margin-top:8px" onclick="wsCopyShare()">Копировать ссылку</button>
+        </div>
+        <div id="ws-analytics-panel" style="display:none;margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
+          <h2 style="font-size:0.88rem;margin-bottom:8px">Результаты</h2>
+          <div class="ws-stat-line">Учеников: <strong id="ws-st-students">0</strong></div>
+          <div class="ws-stat-line">Завершили: <strong id="ws-st-done">0</strong></div>
+          <div class="ws-stat-line">Средний %: <strong id="ws-st-avg">—</strong></div>
+          <div class="ws-hint" style="margin-top:10px;margin-bottom:4px">Чаще ошибаются:</div>
+          <ul class="ws-top-errors" id="ws-top-errors"></ul>
+          <button type="button" class="btn-ghost" style="width:100%;margin-top:8px" onclick="wsRefreshAnalytics()">Обновить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DECKS LIST (legacy, скрыт из навигации) ═══ -->
   <div class="view" id="view-decks">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
       <div>
@@ -1224,8 +1297,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <!-- Кнопки видны только на мобильном (nav скрыт в шапке) -->
         <div id="mobile-decks-actions" style="display:none;gap:8px;flex-wrap:wrap">
-          <button class="btn-secondary" style="padding:8px 14px;font-size:0.85rem" onclick="showStatsPage()">📊 Статистика</button>
-          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="openCreateSetPage()">+ Создать</button>
+          <button class="btn-primary" style="padding:8px 14px;font-size:0.85rem" onclick="workspaceNewDraftConfirm()">Новый набор</button>
         </div>
       </div>
     </div>
@@ -1706,6 +1778,14 @@
           <div id="st-quiz-match-rows"></div>
           <button type="button" class="btn-primary" onclick="stCheckMatch()" style="margin-top:8px">Проверить</button>
         </div>
+        <div id="st-quiz-flash-inline" style="display:none;text-align:center">
+          <button type="button" class="btn-secondary" id="st-flash-show-btn" onclick="stFlashShowAnswer()" style="margin-bottom:12px">Показать ответ</button>
+          <div id="st-flash-answer-text" style="display:none;font-size:1.05rem;font-weight:700;color:var(--green);margin-bottom:14px"></div>
+          <div id="st-flash-know-row" style="display:none;justify-content:center;gap:12px" class="flashcard-actions">
+            <button type="button" class="btn-primary" onclick="stFlashKnow(true)">Знаю</button>
+            <button type="button" class="btn-secondary" onclick="stFlashKnow(false)">Не знаю</button>
+          </div>
+        </div>
         <div class="quiz-feedback" id="st-feedback"></div>
         <div class="quiz-next-btn" id="st-next-btn">
           <button class="btn-primary" id="st-next-btn-inner" onclick="stNextQ()">Следующий вопрос →</button>
@@ -1935,6 +2015,383 @@ let pendingQuizCode = null;
 let libCreateMode = 'test';
 let _libraryCreateSubmitting = false;
 
+// ═══ MVP CARD MODEL (ТЗ §5, §11) — монолит index.html, schemaVersion 2 ═══
+let wsCards = [];
+let wsPublishedId = null;
+let _wsAnalyticsTimer = null;
+
+function legacyCardToMvp(c, idx) {
+  if (!c || typeof c !== 'object') return null;
+  const id = String(c.id != null ? c.id : 'c' + idx);
+  const t = c.type;
+  if (t === 'input') {
+    const accepted = Array.isArray(c.accepted) ? c.accepted.filter(Boolean) : String(c.answer || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    return { id, type: 'input', question: String(c.question || ''), accepted: accepted.length ? accepted : ['ответ'], pairs: null, options: null, correctIndex: 0, answer: '' };
+  }
+  if (t === 'choice') {
+    const opts = (c.options || []).map(o => (typeof o === 'string' ? o : (o && o.text) || '')).filter(Boolean);
+    while (opts.length < 4) opts.push('Вариант ' + (opts.length + 1));
+    let ci = typeof c.correctIndex === 'number' ? c.correctIndex : 0;
+    const ix = (c.options || []).findIndex(o => o && o.correct);
+    if (ix >= 0) ci = ix;
+    return { id, type: 'choice', question: String(c.question || ''), options: opts.slice(0, 4), correctIndex: Math.min(3, Math.max(0, ci)), accepted: null, pairs: null, answer: '' };
+  }
+  if (t === 'flashcard') {
+    return { id, type: 'flashcard', question: String(c.question || ''), answer: String(c.answer || ''), accepted: null, options: null, correctIndex: 0, pairs: null };
+  }
+  if (t === 'matching') {
+    const pairs = Array.isArray(c.pairs) ? c.pairs.map(p => ({ left: String(p.left || ''), right: String(p.right || '') })).filter(p => p.left) : [];
+    return { id, type: 'matching', question: String(c.question || ''), pairs: pairs.length ? pairs : [{ left: 'A', right: '1' }], accepted: null, options: null, correctIndex: 0, answer: '' };
+  }
+  if (t === 'open') {
+    const accepted = String(c.answer || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    return { id, type: 'input', question: String(c.question || ''), accepted: accepted.length ? accepted : [''], pairs: null, options: null, correctIndex: 0, answer: '' };
+  }
+  if (t === 'tf') {
+    const correctText = c.tfCorrect ? 'Верно' : 'Неверно';
+    const wrongText = c.tfCorrect ? 'Неверно' : 'Верно';
+    return { id, type: 'choice', question: String(c.question || ''), options: [correctText, wrongText, 'Не знаю', 'Пропустить'], correctIndex: 0, accepted: null, pairs: null, answer: '' };
+  }
+  if (t === 'single') {
+    const opts = (c.options || []).map(o => ({ text: String(o.text || ''), correct: !!o.correct }));
+    while (opts.length < 4) opts.push({ text: 'Вариант ' + opts.length, correct: false });
+    const ci = opts.findIndex(o => o.correct);
+    return { id, type: 'choice', question: String(c.question || ''), options: opts.slice(0, 4).map(o => o.text), correctIndex: ci < 0 ? 0 : ci, accepted: null, pairs: null, answer: '' };
+  }
+  if (t === 'multi') {
+    const opts = (c.options || []).map(o => String(o.text || ''));
+    const corrects = (c.options || []).filter(o => o && o.correct).map(o => o.text);
+    const rest = (c.options || []).filter(o => o && !o.correct).map(o => o.text);
+    const o0 = corrects[0] || 'Верно';
+    const o1 = rest[0] || 'Неверно';
+    const o2 = rest[1] || '—';
+    const o3 = rest[2] || '—';
+    return { id, type: 'choice', question: String(c.question || ''), options: [o0, o1, o2, o3], correctIndex: 0, accepted: null, pairs: null, answer: '' };
+  }
+  if (t === 'match') {
+    const pairs = Array.isArray(c.pairs) ? c.pairs.map(p => ({ left: String(p.left || ''), right: String(p.right || '') })) : [];
+    return { id, type: 'matching', question: String(c.question || ''), pairs: pairs.length ? pairs : [{ left: 'A', right: '1' }], accepted: null, options: null, correctIndex: 0, answer: '' };
+  }
+  return { id, type: 'input', question: String(c.question || ''), accepted: [String(c.answer || 'ответ')], pairs: null, options: null, correctIndex: 0, answer: '' };
+}
+
+function mvpCardToFirestore(c) {
+  const base = { id: c.id, type: c.type, question: c.question };
+  if (c.type === 'input') return { ...base, accepted: c.accepted || [] };
+  if (c.type === 'choice') return { ...base, options: (c.options || []).slice(0, 4), correctIndex: c.correctIndex || 0 };
+  if (c.type === 'flashcard') return { ...base, answer: c.answer || '' };
+  if (c.type === 'matching') return { ...base, pairs: c.pairs || [] };
+  return base;
+}
+
+function wsInferTypeFromBlock(text) {
+  const t = text.trim();
+  if (!t) return 'flashcard';
+  if (/\?\s*$|[?？]/.test(t)) return 'choice';
+  if (t.length <= 48 && !/[.!?]$/.test(t) && t.split(/\s+/).length <= 6) return 'flashcard';
+  if (/^(определение|definition|def)\s*[:：]/i.test(t)) return 'input';
+  return 'input';
+}
+
+function generateCardsFromText(text) {
+  const blocks = text.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+  if (!blocks.length && text.trim()) blocks.push(text.trim());
+  const out = [];
+  for (const block of blocks) {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    const typ = wsInferTypeFromBlock(lines[0] || block);
+    if (typ === 'flashcard') {
+      const q = lines[0] || block;
+      const a = lines.slice(1).join('\n') || q;
+      out.push({ id: uid(), type: 'flashcard', question: q, answer: a, accepted: null, options: null, correctIndex: 0, pairs: null });
+    } else if (typ === 'choice') {
+      const q = lines[0] || block;
+      const opts = ['Верно', 'Неверно', 'Частично', 'Не знаю'];
+      out.push({ id: uid(), type: 'choice', question: q, options: opts, correctIndex: 0, accepted: null, pairs: null, answer: '' });
+    } else {
+      const q = lines[0] || block;
+      const a = lines.slice(1).join('\n') || lines[0] || 'ответ';
+      const accepted = a.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+      out.push({ id: uid(), type: 'input', question: q, accepted: accepted.length ? accepted : [a], pairs: null, options: null, correctIndex: 0, answer: '' });
+    }
+  }
+  return out;
+}
+
+function renderWorkspaceCards() {
+  const list = document.getElementById('ws-card-list');
+  const empty = document.getElementById('ws-empty-hint');
+  if (!list) return;
+  if (!wsCards.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  const types = [
+    { v: 'input', l: 'Ввод' },
+    { v: 'choice', l: 'Выбор' },
+    { v: 'flashcard', l: 'Карточка' },
+    { v: 'matching', l: 'Пары' }
+  ];
+  list.innerHTML = wsCards.map((c, i) => {
+    const sw = types.map(t =>
+      `<button type="button" class="${c.type === t.v ? 'active' : ''}" onclick="wsSetCardType(${i},'${t.v}')">${t.l}</button>`
+    ).join('');
+    let body = '';
+    if (c.type === 'input') {
+      const acc = (c.accepted || []).join(', ');
+      body = `<div class="ws-field"><label>Вопрос</label><textarea data-ws="${i}" data-f="question" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        <div class="ws-field"><label>Допустимые ответы (через запятую)</label><input type="text" value="${esc(acc)}" data-ws="${i}" oninput="wsPatchAccepted(${i},this.value)"></div>`;
+    } else if (c.type === 'choice') {
+      const opts = (c.options || ['', '', '', '']).slice(0, 4);
+      while (opts.length < 4) opts.push('');
+      const radios = opts.map((o, j) =>
+        `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <input type="radio" name="wscc${i}" ${j === (c.correctIndex || 0) ? 'checked' : ''} onchange="wsPatch(${i},'correctIndex',${j})" style="flex-shrink:0">
+          <input type="text" value="${esc(o)}" oninput="wsPatchOption(${i},${j},this.value)" style="flex:1;min-width:0">
+        </div>`
+      ).join('');
+      body = `<div class="ws-field"><label>Вопрос</label><textarea data-ws="${i}" oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        <div class="ws-field"><label>4 варианта (отметьте верный)</label>${radios}</div>`;
+    } else if (c.type === 'flashcard') {
+      body = `<div class="ws-field"><label>Вопрос (лицевая сторона)</label><textarea oninput="wsPatch(${i},'question',this.value)">${esc(c.question)}</textarea></div>
+        <div class="ws-field"><label>Ответ</label><textarea oninput="wsPatch(${i},'answer',this.value)">${esc(c.answer || '')}</textarea></div>`;
+    } else {
+      const rows = (c.pairs || [{ left: '', right: '' }]).map((p, pi) =>
+        `<div style="display:flex;gap:6px;margin-bottom:6px"><input placeholder="Термин" value="${esc(p.left)}" oninput="wsPatchPair(${i},${pi},'left',this.value)"><input placeholder="Ответ" value="${esc(p.right)}" oninput="wsPatchPair(${i},${pi},'right',this.value)"></div>`
+      ).join('');
+      body = `<div class="ws-field"><label>Подпись (необязательно)</label><input type="text" value="${esc(c.question)}" oninput="wsPatch(${i},'question',this.value)"></div>
+        <div class="ws-field"><label>Пары</label>${rows}<button type="button" class="btn-ghost" onclick="wsAddPair(${i})">+ пара</button></div>`;
+    }
+    return `<div class="ws-card-item" data-wsid="${i}">
+      <div class="ws-type-switch">${sw}</div>
+      ${body}
+      <div class="ws-actions-row">
+        <button type="button" class="btn-ghost" onclick="wsDup(${i})">Дублировать</button>
+        <button type="button" class="btn-ghost danger" onclick="wsDel(${i})">Удалить</button>
+      </div></div>`;
+  }).join('');
+}
+
+function wsPatch(i, field, val) {
+  if (!wsCards[i]) return;
+  if (field === 'correctIndex') wsCards[i].correctIndex = val;
+  else wsCards[i][field] = val;
+}
+
+function wsPatchAccepted(i, str) {
+  if (!wsCards[i]) return;
+  wsCards[i].accepted = String(str).split(/[,;]/).map(s => s.trim()).filter(Boolean);
+}
+
+function wsPatchOption(i, j, val) {
+  if (!wsCards[i] || !wsCards[i].options) return;
+  const o = [...wsCards[i].options];
+  while (o.length < 4) o.push('');
+  o[j] = val;
+  wsCards[i].options = o;
+}
+
+function wsPatchPair(i, pi, side, val) {
+  if (!wsCards[i] || !wsCards[i].pairs) return;
+  const pairs = [...wsCards[i].pairs];
+  if (!pairs[pi]) pairs[pi] = { left: '', right: '' };
+  pairs[pi][side] = val;
+  wsCards[i].pairs = pairs;
+}
+
+function wsAddPair(i) {
+  if (!wsCards[i]) return;
+  wsCards[i].pairs = [...(wsCards[i].pairs || []), { left: '', right: '' }];
+  renderWorkspaceCards();
+}
+
+function wsSetCardType(i, type) {
+  const c = wsCards[i];
+  if (!c) return;
+  const q = c.question || '';
+  const a = c.answer || (c.accepted && c.accepted[0]) || '';
+  if (type === 'input') wsCards[i] = { id: c.id, type: 'input', question: q, accepted: a ? [a] : ['ответ'], options: null, correctIndex: 0, pairs: null, answer: '' };
+  else if (type === 'choice') wsCards[i] = { id: c.id, type: 'choice', question: q, options: ['Вариант 1', 'Вариант 2', 'Вариант 3', 'Вариант 4'], correctIndex: 0, accepted: null, pairs: null, answer: '' };
+  else if (type === 'flashcard') wsCards[i] = { id: c.id, type: 'flashcard', question: q, answer: a || 'Ответ', accepted: null, options: null, correctIndex: 0, pairs: null };
+  else wsCards[i] = { id: c.id, type: 'matching', question: q || 'Сопоставьте', pairs: [{ left: 'A', right: '1' }], accepted: null, options: null, correctIndex: 0, answer: '' };
+  renderWorkspaceCards();
+}
+
+function wsDup(i) {
+  const c = wsCards[i];
+  if (!c) return;
+  const copy = JSON.parse(JSON.stringify(c));
+  copy.id = uid();
+  wsCards.splice(i + 1, 0, copy);
+  renderWorkspaceCards();
+}
+
+function wsDel(i) {
+  wsCards.splice(i, 1);
+  renderWorkspaceCards();
+}
+
+function wsAddEmptyCard() {
+  wsCards.push({ id: uid(), type: 'flashcard', question: '', answer: '', accepted: null, options: null, correctIndex: 0, pairs: null });
+  renderWorkspaceCards();
+}
+
+function wsShuffleCards() {
+  wsCards = shuffle([...wsCards]);
+  renderWorkspaceCards();
+  toast('Порядок карточек изменён');
+}
+
+function wsGenerateFromText() {
+  const ta = document.getElementById('ws-input-text');
+  const text = (ta && ta.value || '').trim();
+  if (!text) { toast('Вставьте текст'); return; }
+  const gen = generateCardsFromText(text);
+  wsCards = wsCards.concat(gen);
+  renderWorkspaceCards();
+  toast(`Добавлено карточек: ${gen.length}`);
+}
+
+function workspaceNewDraftConfirm() {
+  if (wsCards.length && !confirm('Очистить рабочий стол и начать новый набор?')) return;
+  wsCards = [];
+  wsPublishedId = null;
+  const t = document.getElementById('ws-deck-title');
+  if (t) t.value = '';
+  const ta = document.getElementById('ws-input-text');
+  if (ta) ta.value = '';
+  const sp = document.getElementById('ws-share-panel');
+  const ap = document.getElementById('ws-analytics-panel');
+  if (sp) sp.style.display = 'none';
+  if (ap) ap.style.display = 'none';
+  if (_wsAnalyticsTimer) { clearInterval(_wsAnalyticsTimer); _wsAnalyticsTimer = null; }
+  renderWorkspaceCards();
+  goHome();
+}
+
+function wsCopyShare() {
+  const inp = document.getElementById('ws-share-url');
+  if (inp) {
+    inp.select();
+    navigator.clipboard.writeText(inp.value).then(() => toast('Ссылка скопирована'));
+  }
+}
+
+async function workspacePublish() {
+  if (!wsCards.length) { toast('Добавьте хотя бы одну карточку'); return; }
+  const name = (document.getElementById('ws-deck-title')?.value || '').trim() || 'Набор без названия';
+  const teacherId = currentUser?.uid || 'local';
+  const cardsFs = wsCards.map(mvpCardToFirestore);
+  const data = {
+    teacherId,
+    name,
+    desc: '',
+    schemaVersion: 2,
+    mode: 'mixed',
+    cards: cardsFs,
+    history: [],
+    shortCode: wsPublishedId ? (decks.find(d => d.id === wsPublishedId)?.shortCode || generateShortCode()) : generateShortCode(),
+    createdAt: _db ? firebase.firestore.FieldValue.serverTimestamp() : Date.now()
+  };
+  try {
+    if (_db && currentUser) {
+      if (wsPublishedId) {
+        const { createdAt: _ca, ...patch } = data;
+        await _db.collection('decks').doc(wsPublishedId).set(patch, { merge: true });
+        const ix = decks.findIndex(d => d.id === wsPublishedId);
+        if (ix >= 0) decks[ix] = { ...decks[ix], ...patch, cards: cardsFs };
+      } else {
+        const ref = await _db.collection('decks').add(data);
+        wsPublishedId = ref.id;
+        decks.unshift({ id: ref.id, ...data, cards: cardsFs, createdAt: new Date() });
+      }
+    } else {
+      if (!wsPublishedId) wsPublishedId = uid();
+      const d = { id: wsPublishedId, ...data, cards: cardsFs };
+      const ix = decks.findIndex(x => x.id === wsPublishedId);
+      if (ix >= 0) decks[ix] = d; else decks.unshift(d);
+      localStorage.setItem('qf_decks', JSON.stringify(decks));
+    }
+    const base = location.href.split('#')[0];
+    const url = base + '#q=' + wsPublishedId;
+    const ce = document.getElementById('ws-share-code');
+    const ue = document.getElementById('ws-share-url');
+    const sh = document.getElementById('ws-share-panel');
+    const an = document.getElementById('ws-analytics-panel');
+    if (ce) ce.textContent = data.shortCode;
+    if (ue) ue.value = url;
+    if (sh) sh.style.display = '';
+    if (an) an.style.display = '';
+    toast('Набор выдан ученикам');
+    wsRefreshAnalytics();
+    if (_wsAnalyticsTimer) clearInterval(_wsAnalyticsTimer);
+    _wsAnalyticsTimer = setInterval(wsRefreshAnalytics, 20000);
+  } catch (e) {
+    toast('Ошибка: ' + (e.message || e.code));
+  }
+}
+
+async function wsRefreshAnalytics() {
+  const z = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  if (!wsPublishedId || !_db || !currentUser) {
+    z('ws-st-students', '0');
+    z('ws-st-done', '0');
+    z('ws-st-avg', '—');
+    const ul = document.getElementById('ws-top-errors');
+    if (ul) ul.innerHTML = '';
+    return;
+  }
+  try {
+    const snap = await _db.collection('results').where('deckId', '==', wsPublishedId).get();
+    const rows = snap.docs.map(d => d.data());
+    const students = new Set(rows.map(r => r.studentId || r.studentName).filter(Boolean));
+    z('ws-st-students', String(students.size));
+    z('ws-st-done', String(rows.length));
+    if (rows.length) {
+      const avg = Math.round(rows.reduce((s, r) => s + (Number(r.pct) || 0), 0) / rows.length);
+      z('ws-st-avg', avg + '%');
+    } else z('ws-st-avg', '—');
+    const errMap = {};
+    rows.forEach(r => {
+      (r.answers || []).forEach(a => {
+        if (a.correct) return;
+        const k = a.cardId || ('idx' + (a.idx != null ? a.idx : ''));
+        errMap[k] = (errMap[k] || 0) + 1;
+      });
+    });
+    const top = Object.entries(errMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const ul = document.getElementById('ws-top-errors');
+    if (!ul) return;
+    if (!top.length) ul.innerHTML = '<li>Нет данных об ошибках</li>';
+    else {
+      ul.innerHTML = top.map(([k, n]) => {
+        const card = wsCards.find(c => c.id === k) || wsCards[parseInt(k.replace('idx', ''), 10)];
+        const label = card ? (card.question || '').slice(0, 42) || k : k;
+        return `<li>${esc(label)} — ${n} раз</li>`;
+      }).join('');
+    }
+  } catch (e) {
+    console.warn('wsRefreshAnalytics', e);
+  }
+}
+
+function initWorkspaceAfterLogin() {
+  wsCards = [];
+  wsPublishedId = null;
+  const t = document.getElementById('ws-deck-title');
+  if (t) t.value = '';
+  const ta = document.getElementById('ws-input-text');
+  if (ta) ta.value = '';
+  const sp = document.getElementById('ws-share-panel');
+  const ap = document.getElementById('ws-analytics-panel');
+  if (sp) sp.style.display = 'none';
+  if (ap) ap.style.display = 'none';
+  if (_wsAnalyticsTimer) { clearInterval(_wsAnalyticsTimer); _wsAnalyticsTimer = null; }
+  renderWorkspaceCards();
+}
+
 // ─── FIREBASE HELPERS ────────────────────────────────────────────────────────
 function showLoadingOverlay(on) {
   document.getElementById('loading-overlay').classList.toggle('show', on);
@@ -2105,8 +2562,8 @@ async function _loadTeacherDecks() {
     console.error('[decks] load error:', e.code, e.message);
     decks = [];
   }
-  showPage('decks');
-  renderDecks();
+  showPage('workspace');
+  initWorkspaceAfterLogin();
 }
 
 async function _dedupeTeacherDecksInDb(tid) {
@@ -2434,28 +2891,26 @@ function closeModal2() { document.getElementById('firebase-help-modal').classLis
 
 // ─── NAVIGATION ─────────────────────────────────────────────────────────────
 function showPage(name) {
+  const legacyTeacher = (name === 'decks' || name === 'create' || name === 'set' || name === 'stats');
+  const resolved = legacyTeacher ? 'workspace' : name;
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  let el = document.getElementById('view-' + name);
-  let navName = name;
+  let el = document.getElementById('view-' + resolved);
   if (!el) {
-    console.warn('showPage: нет элемента #view-' + name);
-    if (name === 'create') {
-      toast('На сайте старая версия страницы: сделайте жёсткое обновление (Ctrl+F5) или загрузите актуальный index.html в репозиторий.', 7000);
-    }
-    el = document.getElementById('view-decks');
-    navName = 'decks';
+    console.warn('showPage: нет элемента #view-' + resolved);
+    el = document.getElementById('view-workspace') || document.getElementById('view-auth');
   }
   if (el) el.classList.add('active');
+  document.body.classList.toggle('teacher-workspace-active', resolved === 'workspace');
   const nh = document.getElementById('nav-home');
-  if (nh) nh.classList.toggle('active', navName === 'decks' || navName === 'create');
+  if (nh) nh.classList.toggle('active', resolved === 'workspace');
   const ns = document.getElementById('nav-stats');
-  if (ns) ns.classList.toggle('active', navName === 'stats');
+  if (ns) ns.classList.toggle('active', false);
 }
 
 function goHome() {
   if (currentUserData?.role === 'student') { _showStudentHome(); return; }
-  showPage('decks');
-  renderDecks();
+  showPage('workspace');
+  renderWorkspaceCards();
 }
 
 // ─── DECKS LIST ─────────────────────────────────────────────────────────────
@@ -2664,27 +3119,11 @@ function setLibCreateMode(mode) {
 }
 
 function openCreateSetPage() {
-  libraryPanelMode = 'details';
-  libCreateMode = 'test';
-  const n = document.getElementById('lib-create-name');
-  const d = document.getElementById('lib-create-desc');
-  const tg = document.getElementById('lib-create-tags');
-  const tl = document.getElementById('lib-create-timelimit');
-  if (n) n.value = '';
-  if (d) d.value = '';
-  if (tg) tg.value = '';
-  if (tl) tl.value = '';
-  setLibCreateMode('test');
-  showPage('create');
-  requestAnimationFrame(() => {
-    window.scrollTo(0, 0);
-    document.getElementById('lib-create-name')?.focus();
-  });
+  goHome();
 }
 
 function cancelCreateSetPage() {
-  showPage('decks');
-  renderDecks();
+  goHome();
 }
 
 async function submitLibraryCreate() {
@@ -2747,7 +3186,7 @@ function renderDecks() {
   const qa = document.getElementById('library-quick-actions');
   if (qa) {
     qa.innerHTML = `
-      <button class="btn-primary" onclick="openCreateSetPage()">+ Создать задание</button>
+      <button class="btn-primary" onclick="goHome()">Рабочий стол</button>
       <button class="btn-secondary" onclick="showImportModal()" ${!currentSetId ? 'disabled' : ''}>⬆ Импортировать</button>
       <button class="btn-secondary" onclick="${selectedDeckId ? `_openShareInline('${selectedDeckId}')` : `toast('Сначала выберите задание')`}">🔗 Выдать</button>
     `;
@@ -2786,7 +3225,7 @@ function renderDecks() {
   if (!decks.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">📚</div>
-      <p>Заданий пока нет. <strong>Нажмите «+ Создать»!</strong></p>
+      <p>Заданий пока нет. Создайте набор на <strong>рабочем столе</strong> (кнопка «Новый набор» в шапке).</p>
     </div>`;
     renderLibrarySidePanel([]);
     return;
@@ -2893,24 +3332,33 @@ function openSet(id, tab = 'cards') {
   if (!d) return;
   currentSetId = id;
   currentSetMode = d.mode || 'test';
-  setCards = [...d.cards];
-
-  // render header
-  renderSetHeader(d);
-
-  // close edit panel
-  document.getElementById('set-edit-panel').classList.remove('open');
-
-  // reset card form
-  editingCardId = null;
-  closeCardForm();
-  renderSetCards();
-
-  // reset play tab
-  exitQuiz();
-
-  showPage('set');
-  setSetTab(tab);
+  setCards = [...(d.cards || [])];
+  wsPublishedId = id;
+  wsCards = (d.cards || []).map((c, i) => legacyCardToMvp(c, i)).filter(Boolean);
+  const titleEl = document.getElementById('ws-deck-title');
+  if (titleEl) titleEl.value = d.name || '';
+  const share = document.getElementById('ws-share-panel');
+  const analytics = document.getElementById('ws-analytics-panel');
+  const codeEl = document.getElementById('ws-share-code');
+  const urlEl = document.getElementById('ws-share-url');
+  const base = location.href.split('#')[0];
+  if (d.shortCode && share && codeEl && urlEl) {
+    share.style.display = '';
+    codeEl.textContent = d.shortCode;
+    urlEl.value = base + '#q=' + id;
+    if (analytics) analytics.style.display = '';
+    wsRefreshAnalytics();
+    if (_wsAnalyticsTimer) clearInterval(_wsAnalyticsTimer);
+    _wsAnalyticsTimer = setInterval(wsRefreshAnalytics, 20000);
+  } else {
+    if (share) share.style.display = 'none';
+    if (analytics) analytics.style.display = 'none';
+    if (_wsAnalyticsTimer) { clearInterval(_wsAnalyticsTimer); _wsAnalyticsTimer = null; }
+  }
+  showPage('workspace');
+  renderWorkspaceCards();
+  if (tab === 'play') toast('Прохождение — по ссылке или коду для ученика');
+  if (tab === 'results') wsRefreshAnalytics();
 }
 
 function renderSetHeader(d) {
@@ -4079,7 +4527,7 @@ async function saveStudentResult(deckId, deckName, teacherId, studentName, corre
   const doc = {
     deckId, deckName: deckName || '', teacherId: teacherId || '',
     studentId: currentUser.uid, studentName,
-    correct, total, pct, mode: studentDeck?.mode || 'test',
+    correct, total, pct, mode: studentDeck?.schemaVersion === 2 ? 'mixed' : (studentDeck?.mode || 'test'),
     answers: answers || [],
     date: firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -4091,13 +4539,28 @@ async function saveStudentResult(deckId, deckName, teacherId, studentName, corre
 // ─── URL ENCODE / DECODE ──────────────────────────────────────────────────────
 // Compact deck: only the fields needed for quiz (strip history, keep minimal keys)
 function packDeck(d) {
+  const sv = d.schemaVersion === 2 ? 2 : 1;
   return {
-    i: d.id, n: d.name, d: d.desc || '', m: d.mode,
+    i: d.id, n: d.name, d: d.desc || '', m: d.mode === 'mixed' ? 'mixed' : d.mode,
+    sv,
     fm: d.feedbackMode === 'end' ? 'e' : '',
     sp: d.shufflePolicy && d.shufflePolicy !== 'student' ? d.shufflePolicy[0] : '',
-    c: d.cards.map(c => {
+    c: (d.cards || []).map(c => {
       const p = { q: c.question, a: c.answer || '', t: c.type };
-      if (c.options && c.options.length) p.o = c.options.map(o => ({ t: o.text, c: o.correct }));
+      if (c.type === 'input' && Array.isArray(c.accepted) && c.accepted.length) {
+        p.ac = c.accepted;
+      }
+      if (c.type === 'choice') {
+        const os = (c.options || []).map(o => (typeof o === 'string' ? o : (o && o.text) || ''));
+        if (os.length === 4 && typeof c.correctIndex === 'number') {
+          p.os = os;
+          p.ci = c.correctIndex;
+        } else if (c.options && c.options.length) {
+          p.o = c.options.map(o => ({ t: o.text, c: o.correct }));
+        }
+      } else if (c.options && c.options.length) {
+        p.o = c.options.map(o => ({ t: o.text, c: o.correct }));
+      }
       if (c.tfCorrect === true || c.tfCorrect === false) p.tf = c.tfCorrect;
       if (c.pairs && c.pairs.length) p.ps = c.pairs.map(x => ({ l: x.left, r: x.right }));
       if (c.hint) p.h = c.hint;
@@ -4107,15 +4570,29 @@ function packDeck(d) {
 }
 function unpackDeck(p) {
   const spMap = { s: 'shuffle', o: 'ordered' };
+  const schemaVersion = p.sv === 2 ? 2 : 1;
   return {
     id: p.i, name: p.n, desc: p.d || '', mode: p.m,
+    schemaVersion,
     feedbackMode: p.fm === 'e' ? 'end' : 'immediate',
     shufflePolicy: spMap[p.sp] || 'student',
     cards: (p.c || []).map((c, i) => {
+      let options = (c.o || []).map(o => ({ text: o.t, correct: o.c }));
+      let correctIndex;
+      if (Array.isArray(c.os) && c.os.length === 4 && typeof c.ci === 'number') {
+        const ci = Math.min(3, Math.max(0, c.ci));
+        options = c.os.map((text, j) => ({ text: String(text || ''), correct: j === ci }));
+        correctIndex = ci;
+      }
       const card = {
         id: 'c' + i, type: c.t, question: c.q, answer: c.a || '',
-        options: (c.o || []).map(o => ({ text: o.t, correct: o.c }))
+        options
       };
+      if (correctIndex != null) card.correctIndex = correctIndex;
+      if (Array.isArray(c.ac) && c.ac.length) {
+        card.accepted = c.ac.map(String);
+        card.type = 'input';
+      }
       if (c.tf === true || c.tf === false) card.tfCorrect = c.tf;
       if (c.ps && c.ps.length) card.pairs = c.ps.map(x => ({ left: x.l, right: x.r }));
       if (c.h) card.hint = c.h;
@@ -4156,21 +4633,24 @@ function initApp() {
         isStudentMode = true;
         document.getElementById('main-header').style.display = 'none';
         showPage('student');
-        const modeLabel = studentDeck.mode === 'flashcard' ? '🃏 Карточки' : '🧠 Тест';
-        const modeBg    = studentDeck.mode === 'flashcard' ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
-        const modeColor = studentDeck.mode === 'flashcard' ? 'var(--green)' : 'var(--accent)';
+        const fcOnly = studentDeck.mode === 'flashcard';
+        const mixed = studentDeck.mode === 'mixed' || studentDeck.schemaVersion === 2;
+        const modeLabel = fcOnly ? '🃏 Карточки' : (mixed ? '📚 Набор' : '🧠 Тест');
+        const modeBg    = fcOnly ? 'rgba(67,217,162,0.15)' : 'rgba(108,99,255,0.2)';
+        const modeColor = fcOnly ? 'var(--green)' : 'var(--accent)';
         document.getElementById('st-set-badge').innerHTML =
           `<span class="deck-badge" style="background:${modeBg};color:${modeColor}">${modeLabel}</span>`;
         document.getElementById('st-set-name').textContent = studentDeck.name;
         document.getElementById('st-set-desc').textContent = studentDeck.desc || '';
-      } catch(e) { history.replaceState(null, '', location.pathname); renderDecks(); }
+      } catch(e) { history.replaceState(null, '', location.pathname); showPage('workspace'); initWorkspaceAfterLogin(); }
     } else if (hash.startsWith('#q=')) {
       const code = hash.slice(3);
       history.replaceState(null, '', location.pathname);
       if (_db) { pendingQuizCode = code; }
-      else { toast('Firebase не настроен — замените REPLACE_* в коде'); renderDecks(); }
+      else { toast('Firebase не настроен — замените REPLACE_* в коде'); showPage('workspace'); initWorkspaceAfterLogin(); }
     } else {
-      renderDecks();
+      showPage('workspace');
+      initWorkspaceAfterLogin();
     }
   }
   // else: Firebase auth listener in onAuthStateChanged handles everything
@@ -4261,19 +4741,25 @@ async function startStudentQuiz() {
 }
 
 function _beginStudentQuizAfterChecks() {
-  const cards = getStudentPlayCards(studentDeck);
-  if (studentDeck.mode === 'flashcard') {
-    stFcState = { cards, idx: 0, knew: 0, didnt: 0, flipped: false, answers: [], wrongToEnd: !!studentDeck.fcWrongToEnd };
+  const raw = getStudentPlayCards(studentDeck);
+  const norm = raw.map((c, i) => legacyCardToMvp(c, i)).filter(Boolean);
+  const allFlash = norm.length && norm.every(c => c.type === 'flashcard');
+  if (allFlash) {
+    const fcCards = norm.map(c => ({ ...c, type: 'flashcard', question: c.question, answer: c.answer || '' }));
+    stFcState = { cards: fcCards, idx: 0, knew: 0, didnt: 0, flipped: false, answers: [], wrongToEnd: false };
+    document.getElementById('st-quiz-play').classList.remove('active');
     document.getElementById('st-fc-play').classList.add('active');
     stRenderFlashcard();
   } else {
     stQuizState = {
-      cards, idx: 0, correct: 0, wrong: 0, answered: false, answers: [],
-      feedbackMode: studentDeck.feedbackMode === 'end' ? 'end' : 'immediate',
-      noBack: !!studentDeck.noBack,
+      cards: norm, idx: 0, correct: 0, wrong: 0, answered: false, answers: [],
+      feedbackMode: 'immediate',
+      noBack: true,
       answerLog: [],
-      lastAnswerCorrect: undefined
+      lastAnswerCorrect: undefined,
+      flashRevealed: false
     };
+    document.getElementById('st-fc-play').classList.remove('active');
     document.getElementById('st-quiz-play').classList.add('active');
     _updateStQuizNavButtons();
     stRenderQuestion();
@@ -4316,7 +4802,8 @@ function stFlipCard() {
 
 function stMarkCard(knew) {
   if (!stFcState.flipped) return;
-  stFcState.answers.push({ idx: stFcState.idx, correct: knew, given: knew ? 'Знал' : 'Не знал' });
+  const card = stFcState.cards[stFcState.idx];
+  stFcState.answers.push({ cardId: card.id, idx: stFcState.idx, correct: knew, given: knew ? 'Знал' : 'Не знал', type: 'flashcard' });
   if (knew) {
     stFcState.knew++;
     stFcState.idx++;
@@ -4350,9 +4837,10 @@ function _updateStQuizNavButtons() {
 function stRenderQuestion() {
   const { cards, idx } = stQuizState;
   const card = cards[idx];
-  document.getElementById('st-quiz-counter').textContent = `Вопрос ${idx + 1} из ${cards.length}`;
+  stQuizState.flashRevealed = false;
+  document.getElementById('st-quiz-counter').textContent = `Карточка ${idx + 1} из ${cards.length}`;
   document.getElementById('st-quiz-bar').style.width = (idx / cards.length * 100) + '%';
-  document.getElementById('st-quiz-q').textContent = card.question;
+  document.getElementById('st-quiz-q').textContent = card.question || '—';
   document.getElementById('st-feedback').className = 'quiz-feedback';
   document.getElementById('st-next-btn').className = 'quiz-next-btn';
   stQuizState.answered = false;
@@ -4362,10 +4850,39 @@ function stRenderQuestion() {
   const opts = document.getElementById('st-quiz-opts');
   const open = document.getElementById('st-quiz-open');
   const matchBlk = document.getElementById('st-quiz-match-block');
+  const flashBlk = document.getElementById('st-quiz-flash-inline');
   if (matchBlk) matchBlk.style.display = 'none';
+  if (flashBlk) flashBlk.style.display = 'none';
   opts.style.display = 'none';
   open.style.display = 'none';
-  if (card.type === 'open') {
+
+  if (card.type === 'flashcard') {
+    if (flashBlk) {
+      flashBlk.style.display = 'block';
+      document.getElementById('st-flash-show-btn').style.display = '';
+      document.getElementById('st-flash-answer-text').style.display = 'none';
+      document.getElementById('st-flash-answer-text').textContent = card.answer || '';
+      document.getElementById('st-flash-know-row').style.display = 'none';
+    }
+  } else if (card.type === 'input') {
+    open.style.display = 'block';
+    const inp = document.getElementById('st-open-ans');
+    inp.value = ''; inp.disabled = false;
+    setTimeout(() => inp.focus(), 50);
+  } else if (card.type === 'choice' && card.options && card.options.length) {
+    opts.style.display = 'grid';
+    opts.innerHTML = card.options.map((text, i) =>
+      `<button type="button" class="quiz-opt" onclick="stCheckChoice(${i})">${esc(text)}</button>`
+    ).join('');
+  } else if (card.type === 'matching' && card.pairs && card.pairs.length) {
+    matchBlk.style.display = 'block';
+    const rights = shuffle(card.pairs.map(p => p.right));
+    document.getElementById('st-quiz-match-rows').innerHTML = card.pairs.map((p, i) => {
+      const optHtml = rights.map(r => `<option value="${escAttr(r)}">${esc(r)}</option>`).join('');
+      return `<div class="match-play-row" data-i="${i}"><label>${esc(p.left)}</label>
+        <select class="match-select-st">${optHtml}</select></div>`;
+    }).join('');
+  } else if (card.type === 'open') {
     open.style.display = 'block';
     const inp = document.getElementById('st-open-ans');
     inp.value = ''; inp.disabled = false;
@@ -4387,20 +4904,59 @@ function stRenderQuestion() {
     }).join('');
   } else {
     opts.style.display = 'grid';
-    opts.style.flexDirection = '';
-    opts.style.gap = '';
-    open.style.display = 'none';
     if (card.type === 'multi') {
       opts.innerHTML = card.options.map((o, i) =>
-        `<button class="quiz-opt" onclick="stToggleMulti(this,${i})">${esc(o.text)}</button>`
+        `<button class="quiz-opt" onclick="stToggleMulti(this,${i})">${esc(o && o.text != null ? o.text : o)}</button>`
       ).join('') + `<button class="btn-primary" onclick="stCheckMulti()" style="margin-top:8px">Проверить</button>`;
     } else {
-      opts.innerHTML = card.options.map((o, i) =>
-        `<button class="quiz-opt" onclick="stCheckSingle(this,${i})">${esc(o.text)}</button>`
+      opts.innerHTML = (card.options || []).map((o, i) =>
+        `<button class="quiz-opt" onclick="stCheckSingle(this,${i})">${esc(typeof o === 'string' ? o : o.text)}</button>`
       ).join('');
     }
   }
   _updateStQuizNavButtons();
+}
+
+function stFlashShowAnswer() {
+  if (!stQuizState || stQuizState.answered || stQuizState.flashRevealed) return;
+  stQuizState.flashRevealed = true;
+  document.getElementById('st-flash-show-btn').style.display = 'none';
+  const el = document.getElementById('st-flash-answer-text');
+  el.style.display = 'block';
+  el.textContent = stQuizState.cards[stQuizState.idx].answer || '—';
+  document.getElementById('st-flash-know-row').style.display = 'flex';
+}
+
+function stFlashKnow(knew) {
+  if (!stQuizState || stQuizState.answered) return;
+  if (!stQuizState.flashRevealed) return;
+  stQuizState.answered = true;
+  const card = stQuizState.cards[stQuizState.idx];
+  stQuizState.answers.push({ cardId: card.id, idx: stQuizState.idx, correct: knew, given: knew ? 'Знаю' : 'Не знаю', type: 'flashcard' });
+  if (knew) stQuizState.correct++; else stQuizState.wrong++;
+  stQuizState.lastAnswerCorrect = knew;
+  const fb = document.getElementById('st-feedback');
+  fb.textContent = knew ? 'Отмечено: знал' : 'Отмечено: повторить позже';
+  fb.className = 'quiz-feedback show ' + (knew ? 'correct' : 'wrong');
+  document.getElementById('st-next-btn').className = 'quiz-next-btn show';
+}
+
+function stCheckChoice(i) {
+  if (stQuizState.answered) return;
+  stQuizState.answered = true;
+  const card = stQuizState.cards[stQuizState.idx];
+  const correct = i === (card.correctIndex || 0);
+  const given = (card.options || [])[i] || '';
+  stQuizState.answers.push({ cardId: card.id, idx: stQuizState.idx, correct, given, type: 'choice' });
+  if (correct) stQuizState.correct++; else stQuizState.wrong++;
+  document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, j) => {
+    b.disabled = true;
+    if (j === (card.correctIndex || 0)) b.classList.add('correct');
+    else if (j === i && !correct) b.classList.add('wrong');
+  });
+  stQuizState.lastAnswerCorrect = correct;
+  const okText = (card.options || [])[card.correctIndex || 0] || '';
+  stFeedback(correct, okText);
 }
 
 function stToggleMulti(btn) {
@@ -4415,7 +4971,7 @@ function stCheckTf(pickedTrue) {
   stQuizState.answered = true;
   const card = stQuizState.cards[stQuizState.idx];
   const correct = !!pickedTrue === !!card.tfCorrect;
-  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: pickedTrue ? 'Верно' : 'Неверно' });
+  stQuizState.answers.push({ cardId: card.id, idx: stQuizState.idx, correct, given: pickedTrue ? 'Верно' : 'Неверно', type: 'tf' });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach(b => { b.disabled = true; });
   if (stQuizState.feedbackMode !== 'end') {
@@ -4442,7 +4998,7 @@ function stCheckMatch() {
     if (v !== card.pairs[i].right) allOk = false;
   });
   stQuizState.answered = true;
-  stQuizState.answers.push({ idx: stQuizState.idx, correct: allOk, given: given.join('; ') });
+  stQuizState.answers.push({ cardId: card.id, idx: stQuizState.idx, correct: allOk, given: given.join('; '), type: 'matching' });
   if (allOk) stQuizState.correct++; else stQuizState.wrong++;
   rows.forEach((row, i) => {
     const sel = row.querySelector('.match-select-st');
@@ -4462,7 +5018,7 @@ function stCheckSingle(btn, idx) {
   stQuizState.answered = true;
   const card = stQuizState.cards[stQuizState.idx];
   const correct = card.options[idx].correct;
-  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: card.options[idx].text });
+  stQuizState.answers.push({ cardId: card.id, idx: stQuizState.idx, correct, given: card.options[idx].text, type: 'single' });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
@@ -4482,7 +5038,7 @@ function stCheckMulti() {
   const selected = [...document.querySelectorAll('#st-quiz-opts .quiz-opt.selected')].map(b => b.textContent);
   const correctOpts = card.options.filter(o => o.correct).map(o => o.text);
   const correct = selected.length === correctOpts.length && correctOpts.every(c => selected.includes(c));
-  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: selected.length ? selected.join(', ') : '(ничего не выбрано)' });
+  stQuizState.answers.push({ cardId: card.id, idx: stQuizState.idx, correct, given: selected.length ? selected.join(', ') : '(ничего не выбрано)', type: 'multi' });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   document.querySelectorAll('#st-quiz-opts .quiz-opt').forEach((b, i) => {
     b.disabled = true;
@@ -4505,11 +5061,19 @@ function stCheckOpen() {
   if (!val) return;
   stQuizState.answered = true;
   inp.disabled = true;
-  const correct = val.toLowerCase() === card.answer.toLowerCase();
-  stQuizState.answers.push({ idx: stQuizState.idx, correct, given: val });
+  const v = val.toLowerCase();
+  let correct = false;
+  let showAns = card.answer || '';
+  if (card.type === 'input' && Array.isArray(card.accepted)) {
+    correct = card.accepted.some(a => a && String(a).trim().toLowerCase() === v);
+    showAns = (card.accepted || []).join(', ');
+  } else {
+    correct = v === String(card.answer || '').toLowerCase();
+  }
+  stQuizState.answers.push({ cardId: card.id, idx: stQuizState.idx, correct, given: val, type: card.type || 'open' });
   if (correct) stQuizState.correct++; else stQuizState.wrong++;
   stQuizState.lastAnswerCorrect = correct;
-  stFeedback(correct, card.answer);
+  stFeedback(correct, showAns);
 }
 
 function stFeedback(correct, correctText) {
@@ -4905,12 +5469,8 @@ function clearSetStats() {
 }
 
 function showStatsPage() {
-  showPage('stats');
-  const nh = document.getElementById('nav-home');
-  const ns = document.getElementById('nav-stats');
-  if (nh) nh.classList.remove('active');
-  if (ns) ns.classList.add('active');
-  renderGlobalStats();
+  goHome();
+  toast('Сводная статистика не в MVP: после «Выдать» смотрите блок «Результаты» справа');
 }
 
 async function renderGlobalStats() {
