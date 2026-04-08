@@ -1,0 +1,12 @@
+# Blueprint для Render: Web Service из папки feedback-proxy.
+# Имя сервиса совпадает с продакшен-URL в index.html (FEEDBACK_PROXY_BASE).
+services:
+  - type: web
+    name: build-quiz
+    runtime: node
+    rootDir: feedback-proxy
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: FEEDBACK_API_KEY
+        sync: false

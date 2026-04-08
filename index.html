@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Создание опросов и карточек</title>
-  <!-- Отзывы: публичный URL прокси (без слэша в конце). Ключ API только на сервере — см. feedback-proxy/README.md -->
+  <!-- Отзывы: тот же хост, что и сайт на Render; POST идёт на …/feedback (см. feedback-proxy/server.mjs). -->
   <script>
-    window.FEEDBACK_PROXY_BASE = '';
+    window.FEEDBACK_PROXY_BASE = 'https://build-quiz.onrender.com';
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -7353,10 +7353,6 @@ async function submitExternalFeedback() {
 
 function initExternalFeedbackWidget() {
   if (localStorage.getItem(FEEDBACK_LS_SENT)) {
-    document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
-    return;
-  }
-  if (!getFeedbackSubmitUrl()) {
     document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
     return;
   }

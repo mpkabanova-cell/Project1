@@ -31,10 +31,6 @@ window.FEEDBACK_PROXY_BASE = 'http://127.0.0.1:8787';
 3. Environment: **`FEEDBACK_API_KEY`** = ваш ключ (как в спецификации API).
 4. Опционально **`ALLOWED_ORIGINS`** = `https://ваш-логин.github.io` (если не задано — разрешены все origins).
 
-В `index.html` на GitHub Pages:
-
-```js
-window.FEEDBACK_PROXY_BASE = 'https://ваш-сервис.onrender.com';
-```
+В **`index.html`** в `<head>` задано `window.FEEDBACK_PROXY_BASE` (сейчас продакшен: **`https://build-quiz.onrender.com`**). Запросы отзывов идут на `…/feedback` этого же хоста. В корне репозитория **`render.yaml`** с сервисом **`build-quiz`** — при деплое из Blueprint URL должен совпадать; если имя сервиса другое, обновите `FEEDBACK_PROXY_BASE` в `index.html`.
 
 Файл **`.env` не коммитьте** — он уже в `.gitignore` в корне репозитория.
