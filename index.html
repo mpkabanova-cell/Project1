@@ -940,6 +940,14 @@
       font-size: 0.75rem; font-weight: 700; padding: 5px 12px;
       border-radius: 99px; letter-spacing: .4px;
     }
+    body.student-link-only-active #main-header { display: none !important; }
+    .student-link-only-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 24px;
+      max-width: 440px; margin: 28px auto; text-align: center;
+    }
+    .student-link-only-title { font-size: 1.1rem; font-weight: 800; margin: 0 0 12px; }
+    .student-link-only-text { color: var(--muted); line-height: 1.55; font-size: 0.94rem; margin: 0; }
     .student-set-info { text-align: center; margin-bottom: 32px; padding: 0 8px; }
     .student-name-form {
       background: var(--surface); border: 1px solid var(--border);
@@ -2024,6 +2032,20 @@
         <button class="btn-secondary" onclick="goStudentHome()" style="color:var(--accent);border-color:rgba(124,58,237,0.3)">← На главную</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Ученик только по ссылке: без экрана создания викторин -->
+<div class="view" id="view-student-link-only">
+  <div class="student-header">
+    <div class="logo">Опросы<span> и карточки</span></div>
+    <span class="student-badge">Для ученика</span>
+  </div>
+  <div class="student-link-only-card">
+    <p class="student-link-only-title">Задание по ссылке от учителя</p>
+    <p class="student-link-only-text">
+      Создавать викторины и задания здесь нельзя. Откройте ссылку или код, которые вам прислал учитель — откроется прохождение.
+    </p>
   </div>
 </div>
 
@@ -3392,6 +3414,10 @@ function getFirstName(fullName) {
 
 function goStudentHome() {
   isStudentMode = false;
+  if (isStudentLinkOnlySession()) {
+    showStudentLinkLanding();
+    return;
+  }
   document.getElementById('main-header').style.display = '';
   showPage('workspace');
   renderWorkspaceCards();
@@ -3399,6 +3425,10 @@ function goStudentHome() {
 
 function goStudentHomeExitToWorkspace() {
   isStudentMode = false;
+  if (isStudentLinkOnlySession()) {
+    showStudentLinkLanding();
+    return;
+  }
   document.getElementById('main-header').style.display = '';
   showPage('workspace');
   renderWorkspaceCards();
@@ -3438,6 +3468,7 @@ if (_auth) {
         try {
           studentDeck = unpackDeck(urlDecode(location.hash.slice(6)));
           isStudentMode = true;
+          setStudentLinkOnlySession();
           history.replaceState(null, '', location.pathname);
           document.getElementById('main-header').style.display = 'none';
           showPage('student');
@@ -3463,6 +3494,7 @@ if (_auth) {
         pendingQuizCode = null;
         history.replaceState(null, '', location.pathname);
         await openQuizByCode(code);
+        if (isStudentMode) return;
       } else if (currentUserData.role === 'teacher') {
         decks = [];
         showPage('workspace');
@@ -3661,6 +3693,7 @@ async function repeatQuiz(deckId) {
     if (!docSnap.exists) { toast('Задание не найдено'); showLoadingOverlay(false); return; }
     studentDeck = { id: docSnap.id, ...docSnap.data() };
     isStudentMode = true;
+    setStudentLinkOnlySession();
     document.getElementById('main-header').style.display = 'none';
     showPage('student');
     const fcOnly = studentDeck.mode === 'flashcard';
@@ -3717,6 +3750,7 @@ async function openQuizByCode(code) {
       if (d.exists) docSnap = d;
     }
     if (!docSnap) { toast('Задание не найдено — проверьте код'); showLoadingOverlay(false); return; }
+    setStudentLinkOnlySession();
     studentDeck = { id: docSnap.id, ...docSnap.data() };
     isStudentMode = true;
     document.getElementById('main-header').style.display = 'none';
@@ -3859,9 +3893,14 @@ function showPage(name) {
   }
   if (el) el.classList.add('active');
   document.body.classList.toggle('teacher-workspace-active', resolved === 'workspace');
+  document.body.classList.toggle('student-link-only-active', resolved === 'student-link-only');
 }
 
 function goHome() {
+  if (isStudentLinkOnlySession()) {
+    showStudentLinkLanding();
+    return;
+  }
   showPage('workspace');
   renderWorkspaceCards();
 }
@@ -5568,6 +5607,20 @@ function urlDecode(str) {
   return JSON.parse(LZString.decompressFromEncodedURIComponent(str));
 }
 
+/** Вкладка открыта по ссылке/коду задания — без доступа к созданию викторин */
+const QF_STUDENT_LINK_SESSION = 'qf_student_link_session';
+function setStudentLinkOnlySession() {
+  try { sessionStorage.setItem(QF_STUDENT_LINK_SESSION, '1'); } catch (e) { /* ignore */ }
+}
+function isStudentLinkOnlySession() {
+  try { return sessionStorage.getItem(QF_STUDENT_LINK_SESSION) === '1'; } catch (e) { return false; }
+}
+function showStudentLinkLanding() {
+  isStudentMode = false;
+  document.getElementById('main-header').style.display = 'none';
+  showPage('student-link-only');
+}
+
 // ─── STUDENT STATE ────────────────────────────────────────────────────────────
 let isStudentMode = false;
 let studentDeck = null;
@@ -5590,6 +5643,7 @@ function initApp() {
       try {
         studentDeck = unpackDeck(urlDecode(hash.slice(6)));
         isStudentMode = true;
+        setStudentLinkOnlySession();
         document.getElementById('main-header').style.display = 'none';
         showPage('student');
         const fcOnly = studentDeck.mode === 'flashcard';
