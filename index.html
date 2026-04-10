@@ -772,8 +772,8 @@
     .qf-svc-rating-send:active { transform: scale(0.99); }
     .qf-svc-rating-send:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
     .qf-svc-rating-send svg { flex-shrink: 0; opacity: 0.95; }
-    /* Плашка внизу справа: всегда для учителя; скрыта на экранах ученика */
-    body.qf-svc-rating-hide-pill #qf-svc-rating-pill {
+    /* Плашка скрыта только в режиме ученика / только по ссылке (см. syncSvcRatingVisibility) */
+    body:not(.qf-svc-rating-visible) #qf-svc-rating-pill {
       display: none !important;
     }
     .visually-hidden {
@@ -3326,7 +3326,6 @@ async function workspacePublish() {
     if (sh) sh.style.display = '';
     if (an) an.style.display = '';
     toast('Подборка выдана ученикам');
-    unlockSvcRatingUi();
     wsRefreshAnalytics();
     if (_wsAnalyticsTimer) clearInterval(_wsAnalyticsTimer);
     _wsAnalyticsTimer = setInterval(wsRefreshAnalytics, 20000);
@@ -3912,10 +3911,6 @@ function showPage(name) {
   if (el) el.classList.add('active');
   document.body.classList.toggle('teacher-workspace-active', resolved === 'workspace');
   document.body.classList.toggle('student-link-only-active', resolved === 'student-link-only');
-  document.body.classList.toggle(
-    'qf-student-flow-view',
-    resolved === 'student' || resolved === 'student-home' || resolved === 'student-link-only'
-  );
   syncSvcRatingVisibility();
 }
 
@@ -6254,7 +6249,6 @@ async function generateShareLink() {
   // QR code
   document.getElementById('share-qr').src =
     `https://api.qrserver.com/v1/create-qr-code/?size=190x190&color=1e2140&bgcolor=ffffff&qzone=1&data=${encodeURIComponent(shareUrl)}`;
-  unlockSvcRatingUi();
 }
 
 function copyShareUrl() {
@@ -7340,42 +7334,19 @@ async function _toggleResultDetail(header, rid) {
   detail.style.maxHeight = detail.scrollHeight + 'px';
 }
 
-// ─── Оценка сервиса: плашка всегда у учителя; «выдано» — только для авто-модалки ─
-const QF_SVC_RATING_UNLOCK = 'qf_svc_rating_issued';
-function unlockSvcRatingUi() {
-  try { localStorage.setItem(QF_SVC_RATING_UNLOCK, '1'); } catch (e) { /* ignore */ }
-  syncSvcRatingVisibility();
-}
+// ─── Оценка сервиса: одна кнопка внизу справа; модалка только по клику ────────
 function syncSvcRatingVisibility() {
+  let show = true;
   const role = typeof currentUserData !== 'undefined' && currentUserData ? currentUserData.role : null;
-  const teacherUi = role !== 'student' && (!role || role === 'teacher');
-
-  let issued = false;
-  if (teacherUi && typeof isStudentMode !== 'undefined' && !isStudentMode) {
-    try {
-      if (localStorage.getItem(QF_SVC_RATING_UNLOCK) === '1') issued = true;
-    } catch (e) { /* ignore */ }
-    if (!issued && typeof decks !== 'undefined' && decks && Array.isArray(decks) && decks.some(d => d && d.shortCode)) {
-      try { localStorage.setItem(QF_SVC_RATING_UNLOCK, '1'); } catch (e) { /* ignore */ }
-      issued = true;
-    }
-  }
-  document.body.classList.toggle('qf-svc-rating-visible', !!issued);
-
-  const hidePill =
-    (typeof isStudentMode !== 'undefined' && isStudentMode) ||
-    (typeof isStudentLinkOnlySession === 'function' && isStudentLinkOnlySession()) ||
-    role === 'student' ||
-    document.body.classList.contains('qf-student-flow-view');
-  document.body.classList.toggle('qf-svc-rating-hide-pill', !!hidePill);
+  if (typeof isStudentMode !== 'undefined' && isStudentMode) show = false;
+  else if (typeof isStudentLinkOnlySession === 'function' && isStudentLinkOnlySession()) show = false;
+  else if (role === 'student') show = false;
+  document.body.classList.toggle('qf-svc-rating-visible', !!show);
 }
 
 // ─── EXTERNAL FEEDBACK (через прокси; ключ не в браузере) ─────────────────────
-/** Только для авто-открытия модалки (после выдачи задания); плашка видна учителю всегда */
-const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
 /** Идентификатор инструмента для POST …/api/external/feedback (англ.) */
 const FEEDBACK_TOOL_NAME = 'polls-and-cards';
-const _feedbackMoveOpts = { passive: true };
 
 function getFeedbackSubmitUrl() {
   const raw = typeof window !== 'undefined' && window.FEEDBACK_PROXY_BASE != null
@@ -7414,7 +7385,7 @@ function ensureFeedbackFabVisible() {
 }
 
 function openExternalFeedbackModal() {
-  if (document.body.classList.contains('qf-svc-rating-hide-pill')) return;
+  if (!document.body.classList.contains('qf-svc-rating-visible')) return;
   ensureFeedbackFabVisible();
   document.getElementById('qf-svc-rating-overlay')?.classList.add('show');
 }
@@ -7467,45 +7438,11 @@ async function submitExternalFeedback() {
 
 function initExternalFeedbackWidget() {
   ensureFeedbackFabVisible();
-  const onMove = function feedbackExitIntentMove(e) {
-    if (!document.body.classList.contains('qf-svc-rating-visible')) return;
-    if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
-    if (typeof e.clientY !== 'number' || e.clientY > 18) {
-      if (onMove._fbTimer) {
-        clearTimeout(onMove._fbTimer);
-        onMove._fbTimer = null;
-      }
-      return;
-    }
-    if (onMove._fbTimer) return;
-    onMove._fbTimer = setTimeout(() => {
-      onMove._fbTimer = null;
-      if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
-      if (document.getElementById('qf-svc-rating-overlay')?.classList.contains('show')) return;
-      sessionStorage.setItem(FEEDBACK_SS_AUTO, '1');
-      openExternalFeedbackModal();
-    }, 300);
-  };
-  window._feedbackExitMove = onMove;
-  window.addEventListener('mousemove', onMove, _feedbackMoveOpts);
-
-  // Дополнительно: курсор уходит за верхнюю границу документа (к зоне вкладок браузера).
-  document.documentElement.addEventListener('mouseleave', (e) => {
-    if (!document.body.classList.contains('qf-svc-rating-visible')) return;
-    if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
-    if (typeof e.clientY !== 'number' || e.clientY > 24) return;
-    if (document.getElementById('qf-svc-rating-overlay')?.classList.contains('show')) return;
-    sessionStorage.setItem(FEEDBACK_SS_AUTO, '1');
-    openExternalFeedbackModal();
-  });
-
-  const onEsc = (e) => {
+  document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (!document.getElementById('qf-svc-rating-overlay')?.classList.contains('show')) return;
     closeExternalFeedbackModal();
-  };
-  window._feedbackEscHandler = onEsc;
-  document.addEventListener('keydown', onEsc);
+  });
 }
 
 initApp();
