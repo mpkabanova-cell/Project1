@@ -67,6 +67,14 @@
     }
     .btn-new-set:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35); }
 
+    .header-feedback-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px; padding: 7px 14px;
+      font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: inherit;
+      white-space: nowrap;
+    }
+    .header-feedback-btn:hover { color: var(--text); border-color: #cbd5e1; background: var(--card); }
+
     /* ── LAYOUT ── */
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
     /* Экраны вне main (создание задания, статистика) */
@@ -643,7 +651,7 @@
 
     /* ── EXTERNAL FEEDBACK (fab + modal) ── */
     .feedback-fab {
-      position: fixed; bottom: 96px; right: 24px; z-index: 10050;
+      position: fixed; bottom: 96px; right: 24px; z-index: 10100;
       display: inline-flex; align-items: center; gap: 10px;
       padding: 12px 22px; border: none; border-radius: 999px;
       background: #5d3fd3; color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 700;
@@ -654,8 +662,8 @@
     .feedback-fab:active { transform: translateY(0); }
     .feedback-fab svg { width: 22px; height: 22px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
     .feedback-fab--hidden { display: none !important; }
-    /* Выше #loading-overlay (9999), иначе кнопка и модалка скрыты под «Загрузка…» */
-    .feedback-modal-overlay { z-index: 10060; }
+    /* Выше #loading-overlay (9999) и .feedback-fab (10100) */
+    .feedback-modal-overlay { z-index: 10150; }
     .modal.feedback-modal {
       position: relative;
       max-width: 440px;
@@ -1409,6 +1417,7 @@
 <header id="main-header" style="display:none">
   <div class="logo" onclick="workspaceNewDraftConfirm()">Опросы<span> и карточки</span></div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button type="button" class="header-feedback-btn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
     <button class="btn-new-set" id="btn-create-new" onclick="workspaceNewDraftConfirm()" style="display:none">Новая подборка</button>
   </div>
 </header>
@@ -1898,10 +1907,7 @@
 <!-- ═══ STUDENT MODE VIEW ═══ -->
 <div class="view" id="view-student">
   <div class="student-header">
-    <div style="display:flex;align-items:center;gap:12px">
-      <button onclick="goStudentHome()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;font-weight:600;padding:0;display:flex;align-items:center;gap:4px" id="st-home-btn">← Главная</button>
-      <div class="logo">Опросы<span> и карточки</span></div>
-    </div>
+    <div class="logo">Опросы<span> и карточки</span></div>
     <span class="student-badge">Режим ученика</span>
   </div>
 
@@ -2029,7 +2035,6 @@
           📋 Скопировать результат для учителя
         </button>
         <button class="btn-secondary" onclick="stRetry()">Пройти снова</button>
-        <button class="btn-secondary" onclick="goStudentHome()" style="color:var(--accent);border-color:rgba(124,58,237,0.3)">← На главную</button>
       </div>
     </div>
   </div>
@@ -3410,17 +3415,6 @@ function getFirstName(fullName) {
   if (!fullName) return 'ученик';
   const parts = fullName.trim().split(/\s+/);
   return parts.length >= 2 ? parts[1] : parts[0];
-}
-
-function goStudentHome() {
-  isStudentMode = false;
-  if (isStudentLinkOnlySession()) {
-    showStudentLinkLanding();
-    return;
-  }
-  document.getElementById('main-header').style.display = '';
-  showPage('workspace');
-  renderWorkspaceCards();
 }
 
 function goStudentHomeExitToWorkspace() {
