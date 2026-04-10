@@ -638,12 +638,12 @@
     .flashcard-actions-hidden { display: none; }
 
     /* ── TOAST ── */
-    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 0.88rem; opacity: 0; pointer-events: none; transform: translateY(10px); transition: all 0.3s; z-index: 999; }
+    #toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 11px 18px; font-size: 0.88rem; opacity: 0; pointer-events: none; transform: translateY(10px); transition: all 0.3s; z-index: 10055; }
     #toast.show { opacity: 1; transform: translateY(0); }
 
     /* ── EXTERNAL FEEDBACK (fab + modal) ── */
     .feedback-fab {
-      position: fixed; bottom: 96px; right: 24px; z-index: 998;
+      position: fixed; bottom: 96px; right: 24px; z-index: 10050;
       display: inline-flex; align-items: center; gap: 10px;
       padding: 12px 22px; border: none; border-radius: 999px;
       background: #5d3fd3; color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 700;
@@ -654,7 +654,8 @@
     .feedback-fab:active { transform: translateY(0); }
     .feedback-fab svg { width: 22px; height: 22px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
     .feedback-fab--hidden { display: none !important; }
-    .feedback-modal-overlay { z-index: 1200; }
+    /* Выше #loading-overlay (9999), иначе кнопка и модалка скрыты под «Загрузка…» */
+    .feedback-modal-overlay { z-index: 10060; }
     .modal.feedback-modal {
       position: relative;
       max-width: 440px;
@@ -1405,6 +1406,11 @@
 </header>
 
 <div id="loading-overlay"><div class="spinner"></div><div style="font-size:0.85rem;color:var(--muted)">Загрузка…</div></div>
+
+<button type="button" id="feedback-fab" class="feedback-fab" onclick="openExternalFeedbackModal()" aria-label="Оставить отзыв">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" d="M12 2.5l2.9 6.9h7.4l-5.8 4.5 2.2 7.1L12 17.9 5.3 21l2.2-7.1L1.7 9.4h7.4L12 2.5z"/></svg>
+  Оставить отзыв
+</button>
 
 <main>
 
@@ -2192,11 +2198,6 @@
 </div>
 
 <div id="toast"></div>
-
-<button type="button" id="feedback-fab" class="feedback-fab" onclick="openExternalFeedbackModal()" aria-label="Оставить отзыв">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" d="M12 2.5l2.9 6.9h7.4l-5.8 4.5 2.2 7.1L12 17.9 5.3 21l2.2-7.1L1.7 9.4h7.4L12 2.5z"/></svg>
-  Оставить отзыв
-</button>
 
 <div class="modal-overlay feedback-modal-overlay" id="feedback-modal-overlay" onclick="if(event.target===this)closeExternalFeedbackModal()">
   <div class="modal feedback-modal" role="dialog" aria-labelledby="feedback-modal-title" aria-modal="true" onclick="event.stopPropagation()">
