@@ -772,8 +772,8 @@
     .qf-svc-rating-send:active { transform: scale(0.99); }
     .qf-svc-rating-send:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
     .qf-svc-rating-send svg { flex-shrink: 0; opacity: 0.95; }
-    /* Оценка сервиса — только после выдачи задания ученикам (см. unlockSvcRatingUi) */
-    body:not(.qf-svc-rating-visible) #qf-svc-rating-pill {
+    /* Плашка внизу справа: всегда для учителя; скрыта на экранах ученика */
+    body.qf-svc-rating-hide-pill #qf-svc-rating-pill {
       display: none !important;
     }
     .visually-hidden {
@@ -3912,6 +3912,10 @@ function showPage(name) {
   if (el) el.classList.add('active');
   document.body.classList.toggle('teacher-workspace-active', resolved === 'workspace');
   document.body.classList.toggle('student-link-only-active', resolved === 'student-link-only');
+  document.body.classList.toggle(
+    'qf-student-flow-view',
+    resolved === 'student' || resolved === 'student-home' || resolved === 'student-link-only'
+  );
   syncSvcRatingVisibility();
 }
 
@@ -7336,36 +7340,38 @@ async function _toggleResultDetail(header, rid) {
   detail.style.maxHeight = detail.scrollHeight + 'px';
 }
 
-// ─── Оценка сервиса: только после выдачи задания ученикам ─────────────────────
+// ─── Оценка сервиса: плашка всегда у учителя; «выдано» — только для авто-модалки ─
 const QF_SVC_RATING_UNLOCK = 'qf_svc_rating_issued';
 function unlockSvcRatingUi() {
   try { localStorage.setItem(QF_SVC_RATING_UNLOCK, '1'); } catch (e) { /* ignore */ }
   syncSvcRatingVisibility();
 }
 function syncSvcRatingVisibility() {
-  let show = false;
   const role = typeof currentUserData !== 'undefined' && currentUserData ? currentUserData.role : null;
   const teacherUi = role !== 'student' && (!role || role === 'teacher');
-  if (typeof isStudentMode !== 'undefined' && isStudentMode) {
-    show = false;
-  } else if (typeof isStudentLinkOnlySession === 'function' && isStudentLinkOnlySession()) {
-    show = false;
-  } else if (role === 'student') {
-    show = false;
-  } else if (teacherUi) {
+
+  let issued = false;
+  if (teacherUi && typeof isStudentMode !== 'undefined' && !isStudentMode) {
     try {
-      if (localStorage.getItem(QF_SVC_RATING_UNLOCK) === '1') show = true;
+      if (localStorage.getItem(QF_SVC_RATING_UNLOCK) === '1') issued = true;
     } catch (e) { /* ignore */ }
-    if (!show && typeof decks !== 'undefined' && decks && Array.isArray(decks) && decks.some(d => d && d.shortCode)) {
+    if (!issued && typeof decks !== 'undefined' && decks && Array.isArray(decks) && decks.some(d => d && d.shortCode)) {
       try { localStorage.setItem(QF_SVC_RATING_UNLOCK, '1'); } catch (e) { /* ignore */ }
-      show = true;
+      issued = true;
     }
   }
-  document.body.classList.toggle('qf-svc-rating-visible', !!show);
+  document.body.classList.toggle('qf-svc-rating-visible', !!issued);
+
+  const hidePill =
+    (typeof isStudentMode !== 'undefined' && isStudentMode) ||
+    (typeof isStudentLinkOnlySession === 'function' && isStudentLinkOnlySession()) ||
+    role === 'student' ||
+    document.body.classList.contains('qf-student-flow-view');
+  document.body.classList.toggle('qf-svc-rating-hide-pill', !!hidePill);
 }
 
 // ─── EXTERNAL FEEDBACK (через прокси; ключ не в браузере) ─────────────────────
-/** Только для авто-открытия модалки при уходе курсора (один раз за вкладку); на видимость кнопки не влияет */
+/** Только для авто-открытия модалки (после выдачи задания); плашка видна учителю всегда */
 const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
 /** Идентификатор инструмента для POST …/api/external/feedback (англ.) */
 const FEEDBACK_TOOL_NAME = 'polls-and-cards';
@@ -7408,7 +7414,7 @@ function ensureFeedbackFabVisible() {
 }
 
 function openExternalFeedbackModal() {
-  if (!document.body.classList.contains('qf-svc-rating-visible')) return;
+  if (document.body.classList.contains('qf-svc-rating-hide-pill')) return;
   ensureFeedbackFabVisible();
   document.getElementById('qf-svc-rating-overlay')?.classList.add('show');
 }
