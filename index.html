@@ -780,6 +780,12 @@
     .qf-svc-rating-send:active { transform: scale(0.99); }
     .qf-svc-rating-send:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
     .qf-svc-rating-send svg { flex-shrink: 0; opacity: 0.95; }
+    /* Оценка сервиса — только после выдачи задания ученикам (см. unlockSvcRatingUi) */
+    body:not(.qf-svc-rating-visible) #qf-svc-rating-pill,
+    body:not(.qf-svc-rating-visible) .qf-svc-rating-topbtn,
+    body:not(.qf-svc-rating-visible) .qf-svc-rating-wsbtn {
+      display: none !important;
+    }
     .visually-hidden {
       position: absolute;
       width: 1px;
@@ -1463,7 +1469,7 @@
         <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Показать подборку так, как её увидит ученик при прохождении">Предпросмотр</button>
         <button type="button" class="btn-secondary" onclick="wsPickWorkspaceImportFile()">Импортировать</button>
         <button type="button" class="btn-secondary" onclick="workspaceExportDownload()">Скачать</button>
-        <button type="button" class="btn-secondary" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
+        <button type="button" class="btn-secondary qf-svc-rating-wsbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
       </div>
       <div class="ws-toolbar-right">
         <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish" onchange="wsOnShufflePreviewRefresh()"> Случайный порядок карточек</label>
@@ -3338,6 +3344,7 @@ async function workspacePublish() {
     if (sh) sh.style.display = '';
     if (an) an.style.display = '';
     toast('Подборка выдана ученикам');
+    unlockSvcRatingUi();
     wsRefreshAnalytics();
     if (_wsAnalyticsTimer) clearInterval(_wsAnalyticsTimer);
     _wsAnalyticsTimer = setInterval(wsRefreshAnalytics, 20000);
@@ -3557,6 +3564,7 @@ function _applyUserUI() {
     const mba = document.getElementById('mobile-decks-actions');
     if (mba) mba.style.display = window.innerWidth <= 600 ? 'flex' : 'none';
   }
+  syncSvcRatingVisibility();
 }
 
 async function _loadTeacherDecks() {
@@ -3619,9 +3627,11 @@ async function _loadTeacherDecks() {
       });
     }
     await _autoOrganizeFolders();
+    syncSvcRatingVisibility();
   } catch(e) {
     console.error('[decks] load error:', e.code, e.message);
     decks = [];
+    syncSvcRatingVisibility();
   }
 }
 
@@ -3920,6 +3930,7 @@ function showPage(name) {
   if (el) el.classList.add('active');
   document.body.classList.toggle('teacher-workspace-active', resolved === 'workspace');
   document.body.classList.toggle('student-link-only-active', resolved === 'student-link-only');
+  syncSvcRatingVisibility();
 }
 
 function goHome() {
@@ -6257,6 +6268,7 @@ async function generateShareLink() {
   // QR code
   document.getElementById('share-qr').src =
     `https://api.qrserver.com/v1/create-qr-code/?size=190x190&color=1e2140&bgcolor=ffffff&qzone=1&data=${encodeURIComponent(shareUrl)}`;
+  unlockSvcRatingUi();
 }
 
 function copyShareUrl() {
@@ -7342,6 +7354,34 @@ async function _toggleResultDetail(header, rid) {
   detail.style.maxHeight = detail.scrollHeight + 'px';
 }
 
+// ─── Оценка сервиса: только после выдачи задания ученикам ─────────────────────
+const QF_SVC_RATING_UNLOCK = 'qf_svc_rating_issued';
+function unlockSvcRatingUi() {
+  try { localStorage.setItem(QF_SVC_RATING_UNLOCK, '1'); } catch (e) { /* ignore */ }
+  syncSvcRatingVisibility();
+}
+function syncSvcRatingVisibility() {
+  let show = false;
+  const role = typeof currentUserData !== 'undefined' && currentUserData ? currentUserData.role : null;
+  const teacherUi = role !== 'student' && (!role || role === 'teacher');
+  if (typeof isStudentMode !== 'undefined' && isStudentMode) {
+    show = false;
+  } else if (typeof isStudentLinkOnlySession === 'function' && isStudentLinkOnlySession()) {
+    show = false;
+  } else if (role === 'student') {
+    show = false;
+  } else if (teacherUi) {
+    try {
+      if (localStorage.getItem(QF_SVC_RATING_UNLOCK) === '1') show = true;
+    } catch (e) { /* ignore */ }
+    if (!show && typeof decks !== 'undefined' && decks && Array.isArray(decks) && decks.some(d => d && d.shortCode)) {
+      try { localStorage.setItem(QF_SVC_RATING_UNLOCK, '1'); } catch (e) { /* ignore */ }
+      show = true;
+    }
+  }
+  document.body.classList.toggle('qf-svc-rating-visible', !!show);
+}
+
 // ─── EXTERNAL FEEDBACK (через прокси; ключ не в браузере) ─────────────────────
 /** Только для авто-открытия модалки при уходе курсора (один раз за вкладку); на видимость кнопки не влияет */
 const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
@@ -7386,6 +7426,7 @@ function ensureFeedbackFabVisible() {
 }
 
 function openExternalFeedbackModal() {
+  if (!document.body.classList.contains('qf-svc-rating-visible')) return;
   ensureFeedbackFabVisible();
   document.getElementById('qf-svc-rating-overlay')?.classList.add('show');
 }
@@ -7439,6 +7480,7 @@ async function submitExternalFeedback() {
 function initExternalFeedbackWidget() {
   ensureFeedbackFabVisible();
   const onMove = function feedbackExitIntentMove(e) {
+    if (!document.body.classList.contains('qf-svc-rating-visible')) return;
     if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
     if (typeof e.clientY !== 'number' || e.clientY > 18) {
       if (onMove._fbTimer) {
@@ -7461,6 +7503,7 @@ function initExternalFeedbackWidget() {
 
   // Дополнительно: курсор уходит за верхнюю границу документа (к зоне вкладок браузера).
   document.documentElement.addEventListener('mouseleave', (e) => {
+    if (!document.body.classList.contains('qf-svc-rating-visible')) return;
     if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
     if (typeof e.clientY !== 'number' || e.clientY > 24) return;
     if (document.getElementById('qf-svc-rating-overlay')?.classList.contains('show')) return;
@@ -7479,6 +7522,7 @@ function initExternalFeedbackWidget() {
 
 initApp();
 initExternalFeedbackWidget();
+syncSvcRatingVisibility();
 </script>
 </body>
 </html>
