@@ -69,8 +69,18 @@ app.post('/feedback', async (req, res) => {
   }
 });
 
-// Локально: отдаём статику родительской папки (index.html), чтобы открыть сайт с того же origin
-app.use(express.static(rootDir, { index: ['index.html'] }));
+// Статика родительской папки (index.html) с тем же origin, что и POST /feedback.
+// HTML без долгого кэша — иначе в «старом» браузере остаётся устаревшая разметка (кнопки и т.д.).
+app.use(
+  express.static(rootDir, {
+    index: ['index.html'],
+    setHeaders(res, filePath) {
+      if (path.extname(filePath).toLowerCase() === '.html') {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      }
+    },
+  })
+);
 
 app.listen(PORT, () => {
   console.log(`Feedback proxy: http://127.0.0.1:${PORT}/`);
