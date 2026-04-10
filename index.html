@@ -652,7 +652,7 @@
       right: calc(20px + env(safe-area-inset-right, 0px));
       background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px;
       padding: 11px 18px; font-size: 0.88rem; opacity: 0; pointer-events: none; transform: translateY(10px);
-      transition: all 0.3s; z-index: 10105; max-width: min(92vw, 360px);
+      transition: all 0.3s; z-index: 2147482990; max-width: min(92vw, 360px);
     }
     #toast.show { opacity: 1; transform: translateY(0); }
 
@@ -661,7 +661,6 @@
       position: fixed;
       bottom: calc(18px + env(safe-area-inset-bottom, 0px));
       right: calc(18px + env(safe-area-inset-right, 0px));
-      z-index: 10100;
       display: inline-flex; align-items: center; gap: 10px;
       padding: 12px 22px; border: none; border-radius: 999px;
       background: #5d3fd3; color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 700;
@@ -671,9 +670,14 @@
     .feedback-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(93, 63, 211, 0.5); }
     .feedback-fab:active { transform: translateY(0); }
     .feedback-fab svg { width: 22px; height: 22px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
-    .feedback-fab--hidden { display: none !important; }
-    /* Выше #loading-overlay (9999) и .feedback-fab (10100) */
-    .feedback-modal-overlay { z-index: 10150; }
+    /* FAB в конце body + максимальный слой — всегда видна, в т.ч. после отправки отзыва */
+    #feedback-fab {
+      z-index: 2147483000;
+      pointer-events: auto;
+      visibility: visible;
+    }
+    /* Модалка отзыва выше FAB */
+    .feedback-modal-overlay { z-index: 2147483646; }
     .modal.feedback-modal {
       position: relative;
       max-width: 440px;
@@ -1447,11 +1451,6 @@
 
 <div id="loading-overlay"><div class="spinner"></div><div style="font-size:0.85rem;color:var(--muted)">Загрузка…</div></div>
 
-<button type="button" id="feedback-fab" class="feedback-fab" onclick="openExternalFeedbackModal()" aria-label="Оставить отзыв">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" d="M12 2.5l2.9 6.9h7.4l-5.8 4.5 2.2 7.1L12 17.9 5.3 21l2.2-7.1L1.7 9.4h7.4L12 2.5z"/></svg>
-  Оставить отзыв
-</button>
-
 <main>
 
   <!-- ═══ TEACHER WORKSPACE ═══ -->
@@ -1466,6 +1465,7 @@
         <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Показать подборку так, как её увидит ученик при прохождении">Предпросмотр</button>
         <button type="button" class="btn-secondary" onclick="wsPickWorkspaceImportFile()">Импортировать</button>
         <button type="button" class="btn-secondary" onclick="workspaceExportDownload()">Скачать</button>
+        <button type="button" class="btn-secondary" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
       </div>
       <div class="ws-toolbar-right">
         <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish" onchange="wsOnShufflePreviewRefresh()"> Случайный порядок карточек</label>
@@ -1931,7 +1931,10 @@
 <div class="view" id="view-student">
   <div class="student-header">
     <div class="logo">Опросы<span> и карточки</span></div>
-    <span class="student-badge">Режим ученика</span>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+      <button type="button" class="header-feedback-btn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
+      <span class="student-badge">Режим ученика</span>
+    </div>
   </div>
 
   <!-- Step 1: Name input -->
@@ -2067,7 +2070,10 @@
 <div class="view" id="view-student-link-only">
   <div class="student-header">
     <div class="logo">Опросы<span> и карточки</span></div>
-    <span class="student-badge">Для ученика</span>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+      <button type="button" class="header-feedback-btn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
+      <span class="student-badge">Для ученика</span>
+    </div>
   </div>
   <div class="student-link-only-card">
     <p class="student-link-only-title">Задание по ссылке от учителя</p>
@@ -2268,6 +2274,11 @@
     </button>
   </div>
 </div>
+
+<button type="button" id="feedback-fab" class="feedback-fab" onclick="openExternalFeedbackModal()" aria-label="Оставить отзыв">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" d="M12 2.5l2.9 6.9h7.4l-5.8 4.5 2.2 7.1L12 17.9 5.3 21l2.2-7.1L1.7 9.4h7.4L12 2.5z"/></svg>
+  Оставить отзыв
+</button>
 
 <script>
 // ─── FIREBASE CONFIG ─────────────────────────────────────────────────────────
@@ -7334,6 +7345,7 @@ async function _toggleResultDetail(header, rid) {
 }
 
 // ─── EXTERNAL FEEDBACK (через прокси; ключ не в браузере) ─────────────────────
+/** Только для авто-открытия модалки при уходе курсора (один раз за вкладку); на видимость кнопки не влияет */
 const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
 /** Идентификатор инструмента для POST …/api/external/feedback (англ.) */
 const FEEDBACK_TOOL_NAME = 'polls-and-cards';
@@ -7366,7 +7378,17 @@ function feedbackSetUseful(useful) {
   n.setAttribute('aria-pressed', useful ? 'false' : 'true');
 }
 
+function ensureFeedbackFabVisible() {
+  const el = document.getElementById('feedback-fab');
+  if (!el) return;
+  el.removeAttribute('hidden');
+  el.style.removeProperty('display');
+  el.style.removeProperty('visibility');
+  el.setAttribute('aria-hidden', 'false');
+}
+
 function openExternalFeedbackModal() {
+  ensureFeedbackFabVisible();
   document.getElementById('feedback-modal-overlay')?.classList.add('show');
 }
 
@@ -7382,6 +7404,7 @@ async function submitExternalFeedback() {
   const url = getFeedbackSubmitUrl();
   if (!url) {
     toast('Обратная связь не настроена: задайте window.FEEDBACK_PROXY_BASE в <head> (см. feedback-proxy/README.md)');
+    ensureFeedbackFabVisible();
     return;
   }
   btn.disabled = true;
@@ -7411,11 +7434,12 @@ async function submitExternalFeedback() {
     toast('Не удалось отправить. ' + msg + hint);
   } finally {
     btn.disabled = false;
+    ensureFeedbackFabVisible();
   }
 }
 
 function initExternalFeedbackWidget() {
-  document.getElementById('feedback-fab')?.classList.remove('feedback-fab--hidden');
+  ensureFeedbackFabVisible();
   const onMove = function feedbackExitIntentMove(e) {
     if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
     if (typeof e.clientY !== 'number' || e.clientY > 18) {
