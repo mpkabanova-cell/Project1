@@ -67,14 +67,6 @@
     }
     .btn-new-set:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35); }
 
-    .qf-svc-rating-topbtn {
-      background: transparent; border: 1px solid var(--border);
-      color: var(--muted); border-radius: 8px; padding: 7px 14px;
-      font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: inherit;
-      white-space: nowrap;
-    }
-    .qf-svc-rating-topbtn:hover { color: var(--text); border-color: #cbd5e1; background: var(--card); }
-
     /* ── LAYOUT ── */
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
     /* Экраны вне main (создание задания, статистика) */
@@ -781,9 +773,7 @@
     .qf-svc-rating-send:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
     .qf-svc-rating-send svg { flex-shrink: 0; opacity: 0.95; }
     /* Оценка сервиса — только после выдачи задания ученикам (см. unlockSvcRatingUi) */
-    body:not(.qf-svc-rating-visible) #qf-svc-rating-pill,
-    body:not(.qf-svc-rating-visible) .qf-svc-rating-topbtn,
-    body:not(.qf-svc-rating-visible) .qf-svc-rating-wsbtn {
+    body:not(.qf-svc-rating-visible) #qf-svc-rating-pill {
       display: none !important;
     }
     .visually-hidden {
@@ -1448,7 +1438,6 @@
 <header id="main-header" style="display:none">
   <div class="logo" onclick="workspaceNewDraftConfirm()">Опросы<span> и карточки</span></div>
   <div style="display:flex;align-items:center;gap:10px">
-    <button type="button" class="qf-svc-rating-topbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
     <button class="btn-new-set" id="btn-create-new" onclick="workspaceNewDraftConfirm()" style="display:none">Новая подборка</button>
   </div>
 </header>
@@ -1469,7 +1458,6 @@
         <button type="button" class="btn-secondary" id="ws-toggle-preview" onclick="wsTogglePreviewMode()" title="Показать подборку так, как её увидит ученик при прохождении">Предпросмотр</button>
         <button type="button" class="btn-secondary" onclick="wsPickWorkspaceImportFile()">Импортировать</button>
         <button type="button" class="btn-secondary" onclick="workspaceExportDownload()">Скачать</button>
-        <button type="button" class="btn-secondary qf-svc-rating-wsbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
       </div>
       <div class="ws-toolbar-right">
         <label class="ws-shuffle-inline"><input type="checkbox" id="ws-shuffle-publish" onchange="wsOnShufflePreviewRefresh()"> Случайный порядок карточек</label>
@@ -1935,10 +1923,7 @@
 <div class="view" id="view-student">
   <div class="student-header">
     <div class="logo">Опросы<span> и карточки</span></div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <button type="button" class="qf-svc-rating-topbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
-      <span class="student-badge">Режим ученика</span>
-    </div>
+    <span class="student-badge">Режим ученика</span>
   </div>
 
   <!-- Step 1: Name input -->
@@ -2074,10 +2059,7 @@
 <div class="view" id="view-student-link-only">
   <div class="student-header">
     <div class="logo">Опросы<span> и карточки</span></div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <button type="button" class="qf-svc-rating-topbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
-      <span class="student-badge">Для ученика</span>
-    </div>
+    <span class="student-badge">Для ученика</span>
   </div>
   <div class="student-link-only-card">
     <p class="student-link-only-title">Задание по ссылке от учителя</p>
