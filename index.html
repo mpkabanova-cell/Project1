@@ -67,13 +67,13 @@
     }
     .btn-new-set:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35); }
 
-    .header-feedback-btn {
+    .qf-svc-rating-topbtn {
       background: transparent; border: 1px solid var(--border);
       color: var(--muted); border-radius: 8px; padding: 7px 14px;
       font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: inherit;
       white-space: nowrap;
     }
-    .header-feedback-btn:hover { color: var(--text); border-color: #cbd5e1; background: var(--card); }
+    .qf-svc-rating-topbtn:hover { color: var(--text); border-color: #cbd5e1; background: var(--card); }
 
     /* ── LAYOUT ── */
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
@@ -656,8 +656,8 @@
     }
     #toast.show { opacity: 1; transform: translateY(0); }
 
-    /* ── EXTERNAL FEEDBACK (fab + modal) — фиксированно внизу справа ── */
-    .feedback-fab {
+    /* Оценка сервиса: классы без слова «feedback» — иначе блокировщики (uBlock и др.) скрывают кнопку в обычном окне */
+    .qf-svc-rating-pill {
       position: fixed;
       bottom: calc(18px + env(safe-area-inset-bottom, 0px));
       right: calc(18px + env(safe-area-inset-right, 0px));
@@ -667,25 +667,22 @@
       cursor: pointer; box-shadow: 0 6px 22px rgba(93, 63, 211, 0.42);
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .feedback-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(93, 63, 211, 0.5); }
-    .feedback-fab:active { transform: translateY(0); }
-    .feedback-fab svg { width: 22px; height: 22px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
-    /* FAB в конце body + максимальный слой — всегда видна, в т.ч. после отправки отзыва */
-    #feedback-fab {
+    .qf-svc-rating-pill:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(93, 63, 211, 0.5); }
+    .qf-svc-rating-pill:active { transform: translateY(0); }
+    .qf-svc-rating-pill svg { width: 22px; height: 22px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linejoin: round; }
+    #qf-svc-rating-pill {
       z-index: 2147483000;
       pointer-events: auto;
       visibility: visible;
     }
-    /* Модалка отзыва выше FAB */
-    .feedback-modal-overlay { z-index: 2147483646; }
-    .modal.feedback-modal {
+    .modal.qf-svc-rating-panel {
       position: relative;
       max-width: 440px;
       padding: 26px 24px 22px;
       border-radius: 18px;
       box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12);
     }
-    .feedback-modal .feedback-modal-close {
+    .qf-svc-rating-panel .qf-svc-rating-x {
       position: absolute;
       top: 14px;
       right: 14px;
@@ -701,8 +698,8 @@
       justify-content: center;
       transition: background 0.2s, color 0.2s;
     }
-    .feedback-modal .feedback-modal-close:hover { background: var(--border); color: var(--text); }
-    .feedback-modal .feedback-modal-title {
+    .qf-svc-rating-panel .qf-svc-rating-x:hover { background: var(--border); color: var(--text); }
+    .qf-svc-rating-panel .qf-svc-rating-h {
       font-size: 1.22rem;
       font-weight: 800;
       letter-spacing: -0.02em;
@@ -710,19 +707,19 @@
       color: var(--text);
       line-height: 1.25;
     }
-    .feedback-modal .feedback-modal-lead {
+    .qf-svc-rating-panel .qf-svc-rating-lead {
       margin: 0 0 18px 0;
       font-size: 0.9rem;
       color: var(--muted);
       line-height: 1.45;
     }
-    .feedback-rating-btns {
+    .qf-svc-rating-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-bottom: 16px;
     }
-    .feedback-rating-btn {
+    .qf-svc-rating-chip {
       padding: 14px 10px;
       border-radius: 12px;
       border: 2px solid var(--border);
@@ -734,16 +731,16 @@
       cursor: pointer;
       transition: border-color 0.2s, background 0.2s, color 0.2s;
     }
-    .feedback-rating-btn:hover:not(.feedback-rating-btn--active) {
+    .qf-svc-rating-chip:hover:not(.qf-svc-rating-chip--on) {
       border-color: #cbd5e1;
       color: var(--text);
     }
-    .feedback-rating-btn--active {
+    .qf-svc-rating-chip--on {
       border-color: #5d3fd3;
       background: rgba(93, 63, 211, 0.11);
       color: #5d3fd3;
     }
-    .feedback-modal textarea#feedback-comment.feedback-comment-field {
+    .qf-svc-rating-panel textarea#qf-svc-rating-note.qf-svc-rating-note {
       width: 100%;
       min-height: 118px;
       padding: 14px;
@@ -757,12 +754,12 @@
       box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .feedback-modal textarea#feedback-comment.feedback-comment-field:focus {
+    .qf-svc-rating-panel textarea#qf-svc-rating-note.qf-svc-rating-note:focus {
       outline: none;
       border-color: #5d3fd3;
       box-shadow: 0 0 0 3px rgba(93, 63, 211, 0.16);
     }
-    .feedback-submit-btn {
+    .qf-svc-rating-send {
       width: 100%;
       display: flex;
       align-items: center;
@@ -779,10 +776,10 @@
       cursor: pointer;
       transition: background 0.2s, transform 0.12s;
     }
-    .feedback-submit-btn:hover { background: #4a32b5; }
-    .feedback-submit-btn:active { transform: scale(0.99); }
-    .feedback-submit-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-    .feedback-submit-btn svg { flex-shrink: 0; opacity: 0.95; }
+    .qf-svc-rating-send:hover { background: #4a32b5; }
+    .qf-svc-rating-send:active { transform: scale(0.99); }
+    .qf-svc-rating-send:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+    .qf-svc-rating-send svg { flex-shrink: 0; opacity: 0.95; }
     .visually-hidden {
       position: absolute;
       width: 1px;
@@ -800,18 +797,19 @@
         right: calc(14px + env(safe-area-inset-right, 0px));
         font-size: 0.82rem; padding: 9px 14px;
       }
-      .feedback-fab {
+      .qf-svc-rating-pill {
         bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         right: calc(14px + env(safe-area-inset-right, 0px));
         padding: 10px 16px; font-size: 0.88rem;
       }
-      .modal.feedback-modal { padding: 22px 16px 18px; }
-      .feedback-modal .feedback-modal-title { margin-right: 42px; font-size: 1.1rem; }
+      .modal.qf-svc-rating-panel { padding: 22px 16px 18px; }
+      .qf-svc-rating-panel .qf-svc-rating-h { margin-right: 42px; font-size: 1.1rem; }
     }
 
     /* ── MODAL ── */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(30,33,64,0.45); z-index: 200; align-items: center; justify-content: center; }
     .modal-overlay.show { display: flex; }
+    .modal-overlay.qf-svc-rating-overlay { z-index: 2147483646; }
     .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; max-width: 480px; width: 92%; box-shadow: var(--shadow); }
     .modal h3 { font-size: 1.2rem; margin-bottom: 8px; }
     .modal .modal-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
@@ -1444,7 +1442,7 @@
 <header id="main-header" style="display:none">
   <div class="logo" onclick="workspaceNewDraftConfirm()">Опросы<span> и карточки</span></div>
   <div style="display:flex;align-items:center;gap:10px">
-    <button type="button" class="header-feedback-btn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
+    <button type="button" class="qf-svc-rating-topbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
     <button class="btn-new-set" id="btn-create-new" onclick="workspaceNewDraftConfirm()" style="display:none">Новая подборка</button>
   </div>
 </header>
@@ -1932,7 +1930,7 @@
   <div class="student-header">
     <div class="logo">Опросы<span> и карточки</span></div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <button type="button" class="header-feedback-btn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
+      <button type="button" class="qf-svc-rating-topbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
       <span class="student-badge">Режим ученика</span>
     </div>
   </div>
@@ -2071,7 +2069,7 @@
   <div class="student-header">
     <div class="logo">Опросы<span> и карточки</span></div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-      <button type="button" class="header-feedback-btn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
+      <button type="button" class="qf-svc-rating-topbtn" onclick="openExternalFeedbackModal()" title="Оцените сервис">Отзыв</button>
       <span class="student-badge">Для ученика</span>
     </div>
   </div>
@@ -2255,29 +2253,29 @@
 
 <div id="toast"></div>
 
-<div class="modal-overlay feedback-modal-overlay" id="feedback-modal-overlay" onclick="if(event.target===this)closeExternalFeedbackModal()">
-  <div class="modal feedback-modal" role="dialog" aria-labelledby="feedback-modal-title" aria-modal="true" onclick="event.stopPropagation()">
-    <button type="button" class="feedback-modal-close" onclick="closeExternalFeedbackModal()" aria-label="Закрыть" title="Закрыть">
+<div class="modal-overlay qf-svc-rating-overlay" id="qf-svc-rating-overlay" onclick="if(event.target===this)closeExternalFeedbackModal()">
+  <div class="modal qf-svc-rating-panel" role="dialog" aria-labelledby="qf-svc-rating-h" aria-modal="true" onclick="event.stopPropagation()">
+    <button type="button" class="qf-svc-rating-x" onclick="closeExternalFeedbackModal()" aria-label="Закрыть" title="Закрыть">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
-    <h3 id="feedback-modal-title" class="feedback-modal-title">Оцените сервис</h3>
-    <p class="feedback-modal-lead">Помогите нам стать лучше — это займёт 30 секунд</p>
-    <div class="feedback-rating-btns" role="group" aria-label="Оценка полезности">
-      <button type="button" class="feedback-rating-btn feedback-rating-btn--active" id="fb-btn-useful" aria-pressed="true" onclick="feedbackSetUseful(true)">👍 Полезно</button>
-      <button type="button" class="feedback-rating-btn" id="fb-btn-not-useful" aria-pressed="false" onclick="feedbackSetUseful(false)">👎 Не полезно</button>
+    <h3 id="qf-svc-rating-h" class="qf-svc-rating-h">Оцените сервис</h3>
+    <p class="qf-svc-rating-lead">Помогите нам стать лучше — это займёт 30 секунд</p>
+    <div class="qf-svc-rating-row" role="group" aria-label="Оценка полезности">
+      <button type="button" class="qf-svc-rating-chip qf-svc-rating-chip--on" id="qf-svc-chip-yes" aria-pressed="true" onclick="svcRatingSetPolarity(true)">👍 Полезно</button>
+      <button type="button" class="qf-svc-rating-chip" id="qf-svc-chip-no" aria-pressed="false" onclick="svcRatingSetPolarity(false)">👎 Не полезно</button>
     </div>
-    <label for="feedback-comment" class="visually-hidden">Комментарий</label>
-    <textarea id="feedback-comment" class="feedback-comment-field" placeholder="Что можно улучшить? (необязательно)" rows="5"></textarea>
-    <button type="button" class="feedback-submit-btn" id="feedback-submit-btn" onclick="submitExternalFeedback()">
+    <label for="qf-svc-rating-note" class="visually-hidden">Комментарий</label>
+    <textarea id="qf-svc-rating-note" class="qf-svc-rating-note" placeholder="Что можно улучшить? (необязательно)" rows="5"></textarea>
+    <button type="button" class="qf-svc-rating-send" id="qf-svc-rating-send" onclick="submitExternalFeedback()">
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2 .01 7z"/></svg>
       Отправить
     </button>
   </div>
 </div>
 
-<button type="button" id="feedback-fab" class="feedback-fab" onclick="openExternalFeedbackModal()" aria-label="Оставить отзыв">
+<button type="button" id="qf-svc-rating-pill" class="qf-svc-rating-pill" onclick="openExternalFeedbackModal()" aria-label="Оценить сервис">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" d="M12 2.5l2.9 6.9h7.4l-5.8 4.5 2.2 7.1L12 17.9 5.3 21l2.2-7.1L1.7 9.4h7.4L12 2.5z"/></svg>
-  Оставить отзыв
+  Оценить сервис
 </button>
 
 <script>
@@ -7368,18 +7366,18 @@ function getFeedbackSessionId() {
   return id;
 }
 
-function feedbackSetUseful(useful) {
-  const u = document.getElementById('fb-btn-useful');
-  const n = document.getElementById('fb-btn-not-useful');
+function svcRatingSetPolarity(useful) {
+  const u = document.getElementById('qf-svc-chip-yes');
+  const n = document.getElementById('qf-svc-chip-no');
   if (!u || !n) return;
-  u.classList.toggle('feedback-rating-btn--active', !!useful);
-  n.classList.toggle('feedback-rating-btn--active', !useful);
+  u.classList.toggle('qf-svc-rating-chip--on', !!useful);
+  n.classList.toggle('qf-svc-rating-chip--on', !useful);
   u.setAttribute('aria-pressed', useful ? 'true' : 'false');
   n.setAttribute('aria-pressed', useful ? 'false' : 'true');
 }
 
 function ensureFeedbackFabVisible() {
-  const el = document.getElementById('feedback-fab');
+  const el = document.getElementById('qf-svc-rating-pill');
   if (!el) return;
   el.removeAttribute('hidden');
   el.style.removeProperty('display');
@@ -7389,17 +7387,17 @@ function ensureFeedbackFabVisible() {
 
 function openExternalFeedbackModal() {
   ensureFeedbackFabVisible();
-  document.getElementById('feedback-modal-overlay')?.classList.add('show');
+  document.getElementById('qf-svc-rating-overlay')?.classList.add('show');
 }
 
 function closeExternalFeedbackModal() {
-  document.getElementById('feedback-modal-overlay')?.classList.remove('show');
+  document.getElementById('qf-svc-rating-overlay')?.classList.remove('show');
 }
 
 async function submitExternalFeedback() {
-  const btn = document.getElementById('feedback-submit-btn');
-  const commentEl = document.getElementById('feedback-comment');
-  const is_useful = document.getElementById('fb-btn-useful')?.classList.contains('feedback-rating-btn--active') ?? true;
+  const btn = document.getElementById('qf-svc-rating-send');
+  const commentEl = document.getElementById('qf-svc-rating-note');
+  const is_useful = document.getElementById('qf-svc-chip-yes')?.classList.contains('qf-svc-rating-chip--on') ?? true;
   const comment = (commentEl?.value || '').trim();
   const url = getFeedbackSubmitUrl();
   if (!url) {
@@ -7453,7 +7451,7 @@ function initExternalFeedbackWidget() {
     onMove._fbTimer = setTimeout(() => {
       onMove._fbTimer = null;
       if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
-      if (document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
+      if (document.getElementById('qf-svc-rating-overlay')?.classList.contains('show')) return;
       sessionStorage.setItem(FEEDBACK_SS_AUTO, '1');
       openExternalFeedbackModal();
     }, 300);
@@ -7465,14 +7463,14 @@ function initExternalFeedbackWidget() {
   document.documentElement.addEventListener('mouseleave', (e) => {
     if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
     if (typeof e.clientY !== 'number' || e.clientY > 24) return;
-    if (document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
+    if (document.getElementById('qf-svc-rating-overlay')?.classList.contains('show')) return;
     sessionStorage.setItem(FEEDBACK_SS_AUTO, '1');
     openExternalFeedbackModal();
   });
 
   const onEsc = (e) => {
     if (e.key !== 'Escape') return;
-    if (!document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
+    if (!document.getElementById('qf-svc-rating-overlay')?.classList.contains('show')) return;
     closeExternalFeedbackModal();
   };
   window._feedbackEscHandler = onEsc;
