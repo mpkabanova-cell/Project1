@@ -4,7 +4,7 @@
 
 Этот сервис:
 
-1. Принимает `POST /feedback` с телом `{"session_id","is_useful","comment"}` **без** ключа.
+1. Принимает `POST /feedback` с телом `{"tool_name","session_id","is_useful","comment"}` (как у upstream `POST /api/external/feedback`) **без** ключа.
 2. Подставляет `X-API-Key` из **`FEEDBACK_API_KEY`** (только на сервере).
 3. Пересылает запрос на `UPSTREAM_FEEDBACK_URL` (по умолчанию `https://ap-experiment-zone.onrender.com/api/external/feedback`).
 

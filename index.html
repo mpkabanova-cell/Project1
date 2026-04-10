@@ -7264,6 +7264,8 @@ async function _toggleResultDetail(header, rid) {
 // ─── EXTERNAL FEEDBACK (через прокси; ключ не в браузере) ─────────────────────
 const FEEDBACK_LS_SENT = 'oprosy_ext_feedback_sent';
 const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
+/** Идентификатор инструмента для POST …/api/external/feedback (англ.) */
+const FEEDBACK_TOOL_NAME = 'polls-and-cards';
 const _feedbackMoveOpts = { passive: true };
 
 function getFeedbackSubmitUrl() {
@@ -7321,6 +7323,7 @@ async function submitExternalFeedback() {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
+        tool_name: FEEDBACK_TOOL_NAME,
         session_id: getFeedbackSessionId(),
         is_useful,
         comment: comment || ''
