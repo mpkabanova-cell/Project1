@@ -7262,7 +7262,6 @@ async function _toggleResultDetail(header, rid) {
 }
 
 // ─── EXTERNAL FEEDBACK (через прокси; ключ не в браузере) ─────────────────────
-const FEEDBACK_LS_SENT = 'oprosy_ext_feedback_sent';
 const FEEDBACK_SS_AUTO = 'oprosy_ext_feedback_auto_prompt';
 /** Идентификатор инструмента для POST …/api/external/feedback (англ.) */
 const FEEDBACK_TOOL_NAME = 'polls-and-cards';
@@ -7296,7 +7295,6 @@ function feedbackSetUseful(useful) {
 }
 
 function openExternalFeedbackModal() {
-  if (localStorage.getItem(FEEDBACK_LS_SENT)) return;
   document.getElementById('feedback-modal-overlay')?.classList.add('show');
 }
 
@@ -7333,17 +7331,7 @@ async function submitExternalFeedback() {
       const t = await res.text();
       throw new Error(t.slice(0, 120) || ('HTTP ' + res.status));
     }
-    localStorage.setItem(FEEDBACK_LS_SENT, '1');
     closeExternalFeedbackModal();
-    document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
-    if (window._feedbackExitMove) {
-      window.removeEventListener('mousemove', window._feedbackExitMove, _feedbackMoveOpts);
-      window._feedbackExitMove = null;
-    }
-    if (window._feedbackEscHandler) {
-      document.removeEventListener('keydown', window._feedbackEscHandler);
-      window._feedbackEscHandler = null;
-    }
     toast('Спасибо за отзыв!');
   } catch (err) {
     const msg = err && err.message ? String(err.message) : 'Проверьте сеть';
@@ -7355,12 +7343,8 @@ async function submitExternalFeedback() {
 }
 
 function initExternalFeedbackWidget() {
-  if (localStorage.getItem(FEEDBACK_LS_SENT)) {
-    document.getElementById('feedback-fab')?.classList.add('feedback-fab--hidden');
-    return;
-  }
+  document.getElementById('feedback-fab')?.classList.remove('feedback-fab--hidden');
   const onMove = function feedbackExitIntentMove(e) {
-    if (localStorage.getItem(FEEDBACK_LS_SENT)) return;
     if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
     if (typeof e.clientY !== 'number' || e.clientY > 18) {
       if (onMove._fbTimer) {
@@ -7372,7 +7356,7 @@ function initExternalFeedbackWidget() {
     if (onMove._fbTimer) return;
     onMove._fbTimer = setTimeout(() => {
       onMove._fbTimer = null;
-      if (localStorage.getItem(FEEDBACK_LS_SENT) || sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
+      if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
       if (document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
       sessionStorage.setItem(FEEDBACK_SS_AUTO, '1');
       openExternalFeedbackModal();
@@ -7383,7 +7367,6 @@ function initExternalFeedbackWidget() {
 
   // Дополнительно: курсор уходит за верхнюю границу документа (к зоне вкладок браузера).
   document.documentElement.addEventListener('mouseleave', (e) => {
-    if (localStorage.getItem(FEEDBACK_LS_SENT)) return;
     if (sessionStorage.getItem(FEEDBACK_SS_AUTO)) return;
     if (typeof e.clientY !== 'number' || e.clientY > 24) return;
     if (document.getElementById('feedback-modal-overlay')?.classList.contains('show')) return;
